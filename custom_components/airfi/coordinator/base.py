@@ -143,3 +143,23 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             ) from exception
         else:
             return processed_data
+
+    async def async_set_holding_register(self, address: int, value: int) -> None:
+        """Write a holding register value via the API client.
+
+        This is the coordinator write bridge — entities call this method
+        instead of the API client directly to maintain the three-layer
+        architecture.
+
+        Args:
+            address: 1-based Modbus holding register address (e.g. 1 for 4x00001).
+            value: Integer value to write.
+
+        Raises:
+            AirfiApiClientError: Re-raised after logging if the write fails.
+        """
+        try:
+            await self.config_entry.runtime_data.client.async_write_holding_register(address, value)
+        except AirfiApiClientError as exception:
+            LOGGER.warning("Failed to write holding register %d: %s", address, exception)
+            raise

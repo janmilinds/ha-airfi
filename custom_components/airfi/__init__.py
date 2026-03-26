@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     from .data import AirfiConfigEntry
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SENSOR]
 
 # This integration is configured via config entries only
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)

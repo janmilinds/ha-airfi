@@ -239,6 +239,44 @@ class AirfiApiClient:
             msg = f"Unexpected Modbus read failure: {exception}"
             raise AirfiApiClientError(msg) from exception
 
+    async def async_write_holding_register(self, address: int, value: int) -> None:
+        """Write a single Airfi holding register over Modbus TCP.
+
+        Args:
+            address: 1-based Modbus holding register address (e.g. 1 for 4x00001).
+            value: Integer value to write.
+
+        Raises:
+            AirfiApiClientCommunicationError: If the connection or write fails.
+            AirfiApiClientError: For unexpected failures.
+        """
+
+        def _write() -> None:
+            _LOGGER.debug("Writing holding register: address=%d, value=%d", address, value)
+            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
+            if not client.connect():
+                msg = f"Unable to connect to device at {self._host}:{self._port}"
+                raise AirfiApiClientCommunicationError(msg)
+            try:
+                response = client.write_register(address, value, device_id=MODBUS_SLAVE_ID)
+                if response.isError():
+                    msg = f"Modbus write error for holding register at {address}"
+                    raise AirfiApiClientCommunicationError(msg)
+            finally:
+                client.close()
+
+        try:
+            async with asyncio.timeout(10):
+                await asyncio.to_thread(_write)
+        except TimeoutError as exception:
+            msg = f"Timeout while writing Modbus register: {exception}"
+            raise AirfiApiClientCommunicationError(msg) from exception
+        except AirfiApiClientError:
+            raise
+        except Exception as exception:
+            msg = f"Unexpected Modbus write failure: {exception}"
+            raise AirfiApiClientError(msg) from exception
+
     @staticmethod
     def _read_holding_registers(client: ModbusTcpClient, start_address: int, length: int) -> Any:
         """Read holding registers."""

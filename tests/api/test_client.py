@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
-from custom_components.airfi.api.client import AirfiApiClient
+from custom_components.airfi.api.client import AirfiApiClient, AirfiApiClientCommunicationError
 
 
 @pytest.mark.unit
@@ -65,3 +65,46 @@ async def test_async_get_data_builds_register_profile_once() -> None:
     assert first_result["modbus_map_version"] == "3.0.0"
     assert second_result["firmware_version"] == "3.8.1"
     assert second_result["modbus_map_version"] == "3.0.0"
+
+
+@pytest.mark.unit
+async def test_async_write_holding_register_calls_modbus_write() -> None:
+    """Test that async_write_holding_register writes the correct register and value."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=False))
+
+        await client.async_write_holding_register(address=1, value=3)
+
+    mock_instance.write_register.assert_called_once_with(1, 3, device_id=1)
+    mock_instance.close.assert_called_once()
+
+
+@pytest.mark.unit
+async def test_async_write_holding_register_raises_on_connection_failure() -> None:
+    """Test that a failed connection raises AirfiApiClientCommunicationError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = False
+
+        with pytest.raises(AirfiApiClientCommunicationError):
+            await client.async_write_holding_register(address=1, value=3)
+
+
+@pytest.mark.unit
+async def test_async_write_holding_register_raises_on_modbus_error_response() -> None:
+    """Test that a Modbus error response raises AirfiApiClientCommunicationError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=True))
+
+        with pytest.raises(AirfiApiClientCommunicationError):
+            await client.async_write_holding_register(address=1, value=3)
