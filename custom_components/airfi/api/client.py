@@ -39,7 +39,7 @@ class AirfiApiClientAuthenticationError(
     """Exception raised for authentication errors.
 
     Airfi Modbus integration does not currently use authentication, but this
-    exception remains for coordinator compatibility.
+    exception remains to preserve coordinator error mapping semantics.
     """
 
 
@@ -173,19 +173,8 @@ class AirfiApiClient:
             "holding_registers": holding_registers,
             "input_registers": input_registers,
             "lookup_registers": [],
-            # Compatibility keys for existing placeholder entities.
-            "userId": input_registers[0] if input_registers else 0,
-            "id": input_registers[1] if len(input_registers) > 1 else 0,
             "model": "Airfi",
         }
-
-    async def async_set_fan_speed(self, speed: str) -> Any:
-        """Compatibility method for placeholder entities in Phase 1."""
-        return {"status": "accepted", "fan_speed": speed}
-
-    async def async_set_target_humidity(self, humidity: int) -> Any:
-        """Compatibility method for placeholder entities in Phase 1."""
-        return {"status": "accepted", "target_humidity": humidity}
 
     async def _async_read_registers(
         self,

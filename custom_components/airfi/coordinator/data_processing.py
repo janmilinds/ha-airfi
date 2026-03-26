@@ -16,8 +16,6 @@ class AirfiDeviceData:
     holding_registers: list[int]
     input_registers: list[int]
     lookup_registers: list[int]
-    user_id: int
-    api_id: int
 
 
 def parse_device_data(raw_data: dict[str, Any]) -> AirfiDeviceData:
@@ -33,17 +31,9 @@ def parse_device_data(raw_data: dict[str, Any]) -> AirfiDeviceData:
         holding_registers=holding_registers,
         input_registers=input_registers,
         lookup_registers=lookup_registers,
-        user_id=int(raw_data.get("userId", input_registers[0] if input_registers else 0)),
-        api_id=int(raw_data.get("id", input_registers[1] if len(input_registers) > 1 else 0)),
     )
 
 
 def to_coordinator_payload(data: AirfiDeviceData) -> dict[str, Any]:
-    """Convert typed data to coordinator payload.
-
-    Includes compatibility keys used by existing placeholder entities.
-    """
-    payload = asdict(data)
-    payload["userId"] = data.user_id
-    payload["id"] = data.api_id
-    return payload
+    """Convert typed data to coordinator payload."""
+    return asdict(data)
