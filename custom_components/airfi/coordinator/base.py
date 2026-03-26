@@ -14,9 +14,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from custom_components.airfi.api import AirfiApiClientAuthenticationError, AirfiApiClientError
-from custom_components.airfi.const import LOGGER
+from custom_components.airfi.const import CONF_SERIAL_NUMBER, LOGGER
 from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
@@ -44,6 +45,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
     config_entry: AirfiConfigEntry
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the coordinator."""
+        super().__init__(*args, **kwargs)
+        self.feature_manager = AirfiFeatureManager()
+        self.input_registers: int = 0
+        self.holding_registers: int = 0
+
     async def _async_setup(self) -> None:
         """
         Set up the coordinator.
@@ -57,11 +65,28 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         This runs before the first data fetch, ensuring any required setup
         is complete before entities start requesting data.
         """
-        # Example: Fetch device info once at startup
-        # device_info = await self.config_entry.runtime_data.client.get_device_info()
-        # self._device_id = device_info["id"]
-        await self.config_entry.runtime_data.client.async_test_connection()
-        LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
+        try:
+            # Fetch lookup registers to validate firmware and get register counts
+            device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
+            lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
+
+            # Initialize feature manager and validate firmware
+            self.feature_manager.initialize(device_name, lookup_registers)
+
+            # Get register counts based on firmware version
+            self.input_registers, self.holding_registers = self.feature_manager.get_register_lengths()
+
+            self.config_entry.runtime_data.client.set_register_profile(
+                firmware_version=self.feature_manager.firmware_version,
+                modbus_map_version=self.feature_manager.modbus_map_version,
+                input_register_length=self.input_registers,
+                holding_register_length=self.holding_registers,
+            )
+
+            LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
+        except ValueError as exception:
+            LOGGER.error("Device validation failed: %s", exception)
+            raise ConfigEntryNotReady(str(exception)) from exception
 
     async def _async_update_data(self) -> Any:
         """
