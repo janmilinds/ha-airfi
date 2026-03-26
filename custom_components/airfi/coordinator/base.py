@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from custom_components.airfi.api import AirfiApiClientAuthenticationError, AirfiApiClientError
 from custom_components.airfi.const import LOGGER
+from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -59,6 +60,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         # Example: Fetch device info once at startup
         # device_info = await self.config_entry.runtime_data.client.get_device_info()
         # self._device_id = device_info["id"]
+        await self.config_entry.runtime_data.client.async_test_connection()
         LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
 
     async def _async_update_data(self) -> Any:
@@ -97,14 +99,12 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             UpdateFailed: If data fetching fails for other reasons, optionally with retry_after.
         """
         try:
-            # Optional: Get active entity contexts to optimize data fetching
-            # listening_contexts = set(self.async_contexts())
-            # LOGGER.debug("Active entity contexts: %s", listening_contexts)
+            raw_data = await self.config_entry.runtime_data.client.async_get_data()
+            processed_data = to_coordinator_payload(parse_device_data(raw_data))
 
-            # Fetch data from API
-            # In production, you could pass listening_contexts to optimize the API call:
-            # return await self.config_entry.runtime_data.client.async_get_data(listening_contexts)
-            return await self.config_entry.runtime_data.client.async_get_data()
+            # Preserve temporary phase-1 keys used by placeholder entities
+            if isinstance(self.data, dict) and "demo_fan_speed" in self.data:
+                processed_data["demo_fan_speed"] = self.data["demo_fan_speed"]
         except AirfiApiClientAuthenticationError as exception:
             LOGGER.warning("Authentication error - %s", exception)
             raise ConfigEntryAuthFailed(
@@ -120,3 +120,5 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                 translation_domain="airfi",
                 translation_key="update_failed",
             ) from exception
+        else:
+            return processed_data
