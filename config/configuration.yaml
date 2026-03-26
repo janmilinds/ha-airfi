@@ -157,4 +157,4 @@ logger:
 
     # Your integration debug logging - shows EVERYTHING from your integration
     custom_components.airfi: debug
-    custom_components.airfi.modbus: debug
+    custom_components.airfi.modbus: warning

@@ -85,23 +85,67 @@ class AirfiApiClient:
         self._host = host
         self._port = port
         self._timeout_seconds = timeout_seconds
+        self._firmware_version: str | None = None
+        self._modbus_map_version: str | None = None
+        self._input_register_length: int | None = None
+        self._holding_register_length: int | None = None
 
     async def async_test_connection(self) -> None:
         """Validate that the device is reachable and responds to lookup read."""
         await self._async_read_registers(start_address=1, length=3, register_type="input")
 
-    async def async_get_data(self) -> Any:
-        """Read Airfi device state from Modbus registers."""
-        input_lookup = await self._async_read_registers(start_address=1, length=3, register_type="input")
+    async def async_get_lookup_registers(self) -> list[int]:
+        """Read device lookup registers (firmware and modbus map version).
+
+        Returns:
+            List of lookup register values [unknown, firmware_version, modbus_map_version].
+
+        Raises:
+            AirfiApiClientCommunicationError: If unable to read from device.
+        """
+        return await self._async_read_registers(start_address=1, length=3, register_type="input")
+
+    def set_register_profile(
+        self,
+        *,
+        firmware_version: str,
+        modbus_map_version: str,
+        input_register_length: int,
+        holding_register_length: int,
+    ) -> None:
+        """Set cached register profile resolved at setup time."""
+        self._firmware_version = firmware_version
+        self._modbus_map_version = modbus_map_version
+        self._input_register_length = input_register_length
+        self._holding_register_length = holding_register_length
+
+    async def _async_ensure_register_profile(self) -> None:
+        """Initialize register profile once if coordinator did not preconfigure it."""
+        if (
+            self._firmware_version is not None
+            and self._modbus_map_version is not None
+            and self._input_register_length is not None
+            and self._holding_register_length is not None
+        ):
+            return
+
+        input_lookup = await self.async_get_lookup_registers()
         firmware_raw = input_lookup[1] if len(input_lookup) > 1 else 0
         modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
-        _LOGGER.debug(
-            "Lookup registers: firmware_raw=%d, modbus_map_version_raw=%d",
-            firmware_raw,
-            modbus_map_raw,
+        input_length, holding_length = _register_lengths(modbus_map_raw)
+        self.set_register_profile(
+            firmware_version=_as_version_string(firmware_raw),
+            modbus_map_version=_as_version_string(modbus_map_raw),
+            input_register_length=input_length,
+            holding_register_length=holding_length,
         )
 
-        input_length, holding_length = _register_lengths(modbus_map_raw)
+    async def async_get_data(self) -> Any:
+        """Read Airfi device state from Modbus registers."""
+        await self._async_ensure_register_profile()
+
+        input_length = self._input_register_length or 0
+        holding_length = self._holding_register_length or 0
         holding_registers = await self._async_read_registers(
             start_address=1,
             length=holding_length,
@@ -111,11 +155,6 @@ class AirfiApiClient:
             start_address=1,
             length=input_length,
             register_type="input",
-        )
-        _MODBUS_DUMP_LOGGER.debug(
-            "Lookup registers (length=%d): %s",
-            len(input_lookup),
-            input_lookup,
         )
         _MODBUS_DUMP_LOGGER.debug(
             "Input registers (length=%d): %s",
@@ -129,11 +168,11 @@ class AirfiApiClient:
         )
 
         return {
-            "firmware_version": _as_version_string(firmware_raw),
-            "modbus_map_version": _as_version_string(modbus_map_raw),
+            "firmware_version": self._firmware_version or "0.0.0",
+            "modbus_map_version": self._modbus_map_version or "0.0.0",
             "holding_registers": holding_registers,
             "input_registers": input_registers,
-            "lookup_registers": input_lookup,
+            "lookup_registers": [],
             # Compatibility keys for existing placeholder entities.
             "userId": input_registers[0] if input_registers else 0,
             "id": input_registers[1] if len(input_registers) > 1 else 0,
