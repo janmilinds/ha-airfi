@@ -1,20 +1,20 @@
-"""Number platform for airfi."""
+"""Fan platform for airfi."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.const import PARALLEL_UPDATES as PARALLEL_UPDATES
-from homeassistant.components.number import NumberEntityDescription
+from homeassistant.components.fan import FanEntityDescription
 
-from .fan_speed import ENTITY_DESCRIPTIONS as FAN_SPEED_DESCRIPTIONS, AirfiFanSpeedNumber
+from .fan import ENTITY_DESCRIPTIONS as FAN_DESCRIPTIONS, AirfiFan
 
 if TYPE_CHECKING:
     from custom_components.airfi.data import AirfiConfigEntry
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-ENTITY_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (*FAN_SPEED_DESCRIPTIONS,)
+ENTITY_DESCRIPTIONS: tuple[FanEntityDescription, ...] = (*FAN_DESCRIPTIONS,)
 
 
 async def async_setup_entry(
@@ -22,11 +22,11 @@ async def async_setup_entry(
     entry: AirfiConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the number platform."""
+    """Set up the fan platform."""
     async_add_entities(
-        AirfiFanSpeedNumber(
+        AirfiFan(
             coordinator=entry.runtime_data.coordinator,
             entity_description=entity_description,
         )
-        for entity_description in FAN_SPEED_DESCRIPTIONS
+        for entity_description in FAN_DESCRIPTIONS
     )
