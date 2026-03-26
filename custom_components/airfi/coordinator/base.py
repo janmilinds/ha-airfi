@@ -126,10 +126,6 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
             processed_data = to_coordinator_payload(parse_device_data(raw_data))
-
-            # Preserve temporary phase-1 keys used by placeholder entities
-            if isinstance(self.data, dict) and "demo_fan_speed" in self.data:
-                processed_data["demo_fan_speed"] = self.data["demo_fan_speed"]
         except AirfiApiClientAuthenticationError as exception:
             LOGGER.warning("Authentication error - %s", exception)
             raise ConfigEntryAuthFailed(
