@@ -1,0 +1,13 @@
+{
+  "domain": "airfi",
+  "name": "Airfi",
+  "codeowners": [
+    "@janmilinds"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/janmilinds/ha-airfi",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/janmilinds/ha-airfi/issues",
+  "version": "0.1.0"
+}
