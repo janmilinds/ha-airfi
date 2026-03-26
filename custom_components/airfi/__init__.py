@@ -21,13 +21,12 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.const import CONF_HOST, Platform
 import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import AirfiApiClient
-from .const import DOMAIN, LOGGER
+from .const import DEFAULT_MODBUS_PORT, DEFAULT_POLL_INTERVAL_SECONDS, DOMAIN, LOGGER
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
 from .service_actions import async_setup_services
@@ -114,9 +113,8 @@ async def async_setup_entry(
     """
     # Initialize client first
     client = AirfiApiClient(
-        username=entry.data[CONF_USERNAME],  # From config flow setup
-        password=entry.data[CONF_PASSWORD],  # From config flow setup
-        session=async_get_clientsession(hass),
+        host=entry.data[CONF_HOST],
+        port=DEFAULT_MODBUS_PORT,
     )
 
     # Initialize coordinator with config_entry
@@ -125,7 +123,7 @@ async def async_setup_entry(
         logger=LOGGER,
         name=DOMAIN,
         config_entry=entry,
-        update_interval=timedelta(hours=1),
+        update_interval=timedelta(seconds=DEFAULT_POLL_INTERVAL_SECONDS),
         always_update=False,  # Only update entities when data actually changes
     )
 

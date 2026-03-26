@@ -65,6 +65,7 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
                 ),
             },
             name=coordinator.config_entry.title,
-            manufacturer=coordinator.config_entry.domain,
+            manufacturer="Airfi",
             model=coordinator.data.get("model", "Unknown"),
+            sw_version=coordinator.data.get("firmware_version", "Unknown"),
         )

@@ -1,237 +1,222 @@
-"""
-API Client for airfi.
-
-This module provides the API client for communicating with external services.
-It demonstrates proper error handling, authentication patterns, and async operations.
-
-For more information on creating API clients:
-https://developers.home-assistant.io/docs/api_lib_index
-"""
+"""Modbus TCP API client for Airfi devices."""
 
 from __future__ import annotations
 
 import asyncio
-import socket
+import logging
 from typing import Any
 
-import aiohttp
+from pymodbus.client import ModbusTcpClient
+
+_LOGGER = logging.getLogger(__name__)
+_MODBUS_DUMP_LOGGER = logging.getLogger("custom_components.airfi.modbus")
+
+MODBUS_READ_LIMIT = 30
+MODBUS_SLAVE_ID = 1
+REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[tuple[int, int, int], tuple[int, int]], ...] = (
+    ((2, 7, 0), (42, 59)),
+    ((2, 5, 0), (40, 58)),
+    ((2, 3, 0), (40, 55)),
+    ((2, 1, 0), (40, 51)),
+    ((2, 0, 0), (40, 34)),
+    ((1, 5, 0), (31, 12)),
+)
 
 
 class AirfiApiClientError(Exception):
-    """Base exception to indicate a general API error."""
+    """Base exception for Airfi API client errors."""
 
 
 class AirfiApiClientCommunicationError(
     AirfiApiClientError,
 ):
-    """Exception to indicate a communication error with the API."""
+    """Exception raised for Modbus communication errors."""
 
 
 class AirfiApiClientAuthenticationError(
     AirfiApiClientError,
 ):
-    """Exception to indicate an authentication error with the API."""
+    """Exception raised for authentication errors.
 
-
-def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
+    Airfi Modbus integration does not currently use authentication, but this
+    exception remains for coordinator compatibility.
     """
-    Verify that the API response is valid.
 
-    Raises appropriate exceptions for authentication and HTTP errors.
 
-    Args:
-        response: The aiohttp ClientResponse to verify.
+def _as_version_tuple(value: int) -> tuple[int, int, int]:
+    """Convert register value to semantic version tuple.
 
-    Raises:
-        AirfiApiClientAuthenticationError: For 401/403 errors.
-        aiohttp.ClientResponseError: For other HTTP errors.
-
+    Example: 270 -> (2, 7, 0)
     """
-    if response.status in (401, 403):
-        msg = "Invalid credentials"
-        raise AirfiApiClientAuthenticationError(
-            msg,
-        )
-    response.raise_for_status()
+    digits = str(max(0, value))
+    if len(digits) >= 3:
+        return int(digits[0]), int(digits[1]), int(digits[2])
+    if len(digits) == 2:
+        return int(digits[0]), int(digits[1]), 0
+    return int(digits[0]), 0, 0
+
+
+def _as_version_string(value: int) -> str:
+    """Convert register value to version string."""
+    version = _as_version_tuple(value)
+    return f"{version[0]}.{version[1]}.{version[2]}"
+
+
+def _register_lengths(map_version_raw: int) -> tuple[int, int]:
+    """Return input/holding register lengths based on modbus map version."""
+    map_version = _as_version_tuple(map_version_raw)
+    for min_version, lengths in REGISTER_LENGTHS_BY_MAP_VERSION:
+        if map_version >= min_version:
+            return lengths
+
+    return REGISTER_LENGTHS_BY_MAP_VERSION[-1][1]
 
 
 class AirfiApiClient:
-    """
-    API Client for Smart Air Purifier integration.
-
-    This client demonstrates authentication and API communication patterns
-    for Home Assistant integrations. It handles HTTP requests, error handling,
-    and credential management.
-
-    The username and password are stored and would be used for:
-    - HTTP Basic Auth headers
-    - OAuth token exchange
-    - API key generation
-    - Session token management
-
-    Note: JSONPlaceholder is used as a demo endpoint and doesn't require auth.
-    In production, replace with your actual API endpoint that validates credentials.
-
-    For more information on API clients:
-    https://developers.home-assistant.io/docs/api_lib_index
-
-    Attributes:
-        _username: The username for API authentication.
-        _password: The password for API authentication.
-        _session: The aiohttp ClientSession for making requests.
-
-    """
+    """API client that reads and writes Airfi Modbus registers."""
 
     def __init__(
         self,
-        username: str,
-        password: str,
-        session: aiohttp.ClientSession,
+        host: str,
+        port: int,
+        timeout_seconds: float = 2.0,
     ) -> None:
-        """
-        Initialize the API Client with credentials.
+        """Initialize the Modbus client configuration."""
+        self._host = host
+        self._port = port
+        self._timeout_seconds = timeout_seconds
 
-        Args:
-            username: The username for authentication from config flow.
-            password: The password for authentication from config flow.
-            session: The aiohttp ClientSession to use for requests.
-
-        """
-        self._username = username
-        self._password = password
-        self._session = session
+    async def async_test_connection(self) -> None:
+        """Validate that the device is reachable and responds to lookup read."""
+        await self._async_read_registers(start_address=1, length=3, register_type="input")
 
     async def async_get_data(self) -> Any:
-        """
-        Get data from the API.
-
-        This method fetches the current state and sensor data from the device.
-        It demonstrates where credentials would be used in production:
-        - Authorization headers (Basic Auth, Bearer Token)
-        - Query parameters (username, api_key)
-        - Session cookies (after login)
-
-        Returns:
-            A dictionary containing the device data.
-
-        Raises:
-            AirfiApiClientAuthenticationError: If authentication fails.
-            AirfiApiClientCommunicationError: If communication fails.
-            AirfiApiClientError: For other API errors.
-
-        """
-        # In production: Use username/password for authentication
-        # Example patterns:
-        # 1. Basic Auth: auth=aiohttp.BasicAuth(self._username, self._password)
-        # 2. Token: headers={"Authorization": f"Bearer {self._get_token()}"}
-        # 3. API Key: params={"username": self._username, "key": self._password}
-
-        return await self._api_wrapper(
-            method="get",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-            # For demo purposes with JSONPlaceholder (no auth required)
-            # In production, add authentication here
+        """Read Airfi device state from Modbus registers."""
+        input_lookup = await self._async_read_registers(start_address=1, length=3, register_type="input")
+        firmware_raw = input_lookup[1] if len(input_lookup) > 1 else 0
+        modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
+        _LOGGER.debug(
+            "Lookup registers: firmware_raw=%d, modbus_map_version_raw=%d",
+            firmware_raw,
+            modbus_map_raw,
         )
+
+        input_length, holding_length = _register_lengths(modbus_map_raw)
+        holding_registers = await self._async_read_registers(
+            start_address=1,
+            length=holding_length,
+            register_type="holding",
+        )
+        input_registers = await self._async_read_registers(
+            start_address=1,
+            length=input_length,
+            register_type="input",
+        )
+        _MODBUS_DUMP_LOGGER.debug(
+            "Lookup registers (length=%d): %s",
+            len(input_lookup),
+            input_lookup,
+        )
+        _MODBUS_DUMP_LOGGER.debug(
+            "Input registers (length=%d): %s",
+            len(input_registers),
+            input_registers,
+        )
+        _MODBUS_DUMP_LOGGER.debug(
+            "Holding registers (length=%d): %s",
+            len(holding_registers),
+            holding_registers,
+        )
+
+        return {
+            "firmware_version": _as_version_string(firmware_raw),
+            "modbus_map_version": _as_version_string(modbus_map_raw),
+            "holding_registers": holding_registers,
+            "input_registers": input_registers,
+            "lookup_registers": input_lookup,
+            # Compatibility keys for existing placeholder entities.
+            "userId": input_registers[0] if input_registers else 0,
+            "id": input_registers[1] if len(input_registers) > 1 else 0,
+            "model": "Airfi",
+        }
 
     async def async_set_fan_speed(self, speed: str) -> Any:
-        """
-        Set the fan speed on the device.
-
-        Args:
-            speed: The fan speed to set (low, medium, high, auto).
-
-        Returns:
-            A dictionary containing the API response.
-
-        Raises:
-            AirfiApiClientAuthenticationError: If authentication fails.
-            AirfiApiClientCommunicationError: If communication fails.
-            AirfiApiClientError: For other API errors.
-
-        """
-        # In production: Send authenticated request to change fan speed
-        return await self._api_wrapper(
-            method="patch",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-            data={"fan_speed": speed, "user": self._username},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
+        """Compatibility method for placeholder entities in Phase 1."""
+        return {"status": "accepted", "fan_speed": speed}
 
     async def async_set_target_humidity(self, humidity: int) -> Any:
-        """
-        Set the target humidity on the device.
+        """Compatibility method for placeholder entities in Phase 1."""
+        return {"status": "accepted", "target_humidity": humidity}
 
-        Args:
-            humidity: The target humidity percentage (30-80).
-
-        Returns:
-            A dictionary containing the API response.
-
-        Raises:
-            AirfiApiClientAuthenticationError: If authentication fails.
-            AirfiApiClientCommunicationError: If communication fails.
-            AirfiApiClientError: For other API errors.
-
-        """
-        # In production: Send authenticated request to change humidity setting
-        return await self._api_wrapper(
-            method="patch",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-            data={"target_humidity": humidity, "user": self._username},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-
-    async def _api_wrapper(
+    async def _async_read_registers(
         self,
-        method: str,
-        url: str,
-        data: dict | None = None,
-        headers: dict | None = None,
-    ) -> Any:
-        """
-        Wrapper for API requests with error handling.
+        start_address: int,
+        length: int,
+        register_type: str,
+    ) -> list[int]:
+        """Read registers using chunked Modbus requests."""
+        values: list[int] = []
 
-        This method handles all HTTP requests and translates exceptions
-        into integration-specific exceptions.
+        for offset in range(0, length, MODBUS_READ_LIMIT):
+            read_start = start_address + offset
+            read_length = min(MODBUS_READ_LIMIT, length - offset)
+            chunk = await self._async_read_chunk(read_start, read_length, register_type)
+            values.extend(chunk)
 
-        Args:
-            method: The HTTP method (get, post, patch, etc.).
-            url: The URL to request.
-            data: Optional data to send in the request body.
-            headers: Optional headers to include in the request.
+        return values
 
-        Returns:
-            The JSON response from the API.
+    async def _async_read_chunk(self, start_address: int, length: int, register_type: str) -> list[int]:
+        """Read one register chunk in an executor thread."""
 
-        Raises:
-            AirfiApiClientAuthenticationError: If authentication fails.
-            AirfiApiClientCommunicationError: If communication fails.
-            AirfiApiClientError: For other API errors.
+        def _read() -> list[int]:
+            _LOGGER.debug(
+                "Reading %s registers: start_address=%d, length=%d",
+                register_type,
+                start_address,
+                length,
+            )
+            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
+            if not client.connect():
+                msg = f"Unable to connect to device at {self._host}:{self._port}"
+                raise AirfiApiClientCommunicationError(msg)
 
-        """
+            try:
+                if register_type == "holding":
+                    response = self._read_holding_registers(client, start_address, length)
+                else:
+                    response = self._read_input_registers(client, start_address, length)
+
+                if response.isError():
+                    msg = f"Modbus read error for {register_type} registers at {start_address}"
+                    raise AirfiApiClientCommunicationError(msg)
+
+                registers = getattr(response, "registers", None)
+                if not isinstance(registers, list) or len(registers) != length:
+                    msg = f"Unexpected Modbus response length for {register_type} registers at {start_address}"
+                    raise AirfiApiClientCommunicationError(msg)
+
+                return [int(value) for value in registers]
+            finally:
+                client.close()
+
         try:
             async with asyncio.timeout(10):
-                response = await self._session.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    json=data,
-                )
-                _verify_response_or_raise(response)
-                return await response.json()
-
+                return await asyncio.to_thread(_read)
         except TimeoutError as exception:
-            msg = f"Timeout error fetching information - {exception}"
-            raise AirfiApiClientCommunicationError(
-                msg,
-            ) from exception
-        except (aiohttp.ClientError, socket.gaierror) as exception:
-            msg = f"Error fetching information - {exception}"
-            raise AirfiApiClientCommunicationError(
-                msg,
-            ) from exception
+            msg = f"Timeout while reading Modbus registers: {exception}"
+            raise AirfiApiClientCommunicationError(msg) from exception
+        except AirfiApiClientError:
+            raise
         except Exception as exception:
-            msg = f"Something really wrong happened! - {exception}"
-            raise AirfiApiClientError(
-                msg,
-            ) from exception
+            msg = f"Unexpected Modbus read failure: {exception}"
+            raise AirfiApiClientError(msg) from exception
+
+    @staticmethod
+    def _read_holding_registers(client: ModbusTcpClient, start_address: int, length: int) -> Any:
+        """Read holding registers."""
+        return client.read_holding_registers(start_address, count=length, device_id=MODBUS_SLAVE_ID)
+
+    @staticmethod
+    def _read_input_registers(client: ModbusTcpClient, start_address: int, length: int) -> Any:
+        """Read input registers."""
+        return client.read_input_registers(start_address, count=length, device_id=MODBUS_SLAVE_ID)

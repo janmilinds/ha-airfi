@@ -19,7 +19,8 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from custom_components.airfi.const import CONF_SERIAL_NUMBER
+from homeassistant.const import CONF_HOST
 from homeassistant.helpers import selector
 
 
@@ -38,23 +39,22 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
-                CONF_USERNAME,
-                default=defaults.get(CONF_USERNAME, vol.UNDEFINED),
+                CONF_HOST,
+                default=defaults.get(CONF_HOST, vol.UNDEFINED),
             ): selector.TextSelector(
                 selector.TextSelectorConfig(
                     type=selector.TextSelectorType.TEXT,
                 ),
             ),
-            vol.Required(CONF_PASSWORD): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.PASSWORD,
-                ),
-            ),
+            vol.Required(
+                CONF_SERIAL_NUMBER,
+                default=defaults.get(CONF_SERIAL_NUMBER, vol.UNDEFINED),
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         },
     )
 
 
-def get_reconfigure_schema(username: str) -> vol.Schema:
+def get_reconfigure_schema(host: str, serial_number: str | None) -> vol.Schema:
     """
     Get schema for reconfigure step.
 
@@ -68,25 +68,22 @@ def get_reconfigure_schema(username: str) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
-                CONF_USERNAME,
-                default=username,
+                CONF_HOST,
+                default=host,
             ): selector.TextSelector(
                 selector.TextSelectorConfig(
                     type=selector.TextSelectorType.TEXT,
                 ),
             ),
             vol.Required(
-                CONF_PASSWORD,
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.PASSWORD,
-                ),
-            ),
+                CONF_SERIAL_NUMBER,
+                default=serial_number if serial_number is not None else vol.UNDEFINED,
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         },
     )
 
 
-def get_reauth_schema(username: str) -> vol.Schema:
+def get_reauth_schema(host: str, serial_number: str | None) -> vol.Schema:
     """
     Get schema for reauthentication step.
 
@@ -100,20 +97,17 @@ def get_reauth_schema(username: str) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
-                CONF_USERNAME,
-                default=username,
+                CONF_HOST,
+                default=host,
             ): selector.TextSelector(
                 selector.TextSelectorConfig(
                     type=selector.TextSelectorType.TEXT,
                 ),
             ),
             vol.Required(
-                CONF_PASSWORD,
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.PASSWORD,
-                ),
-            ),
+                CONF_SERIAL_NUMBER,
+                default=serial_number if serial_number is not None else vol.UNDEFINED,
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         },
     )
 
