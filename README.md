@@ -1,271 +1,151 @@
 # Airfi
 
+![Airfi Logo](docs/airfi.svg)
+
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]](LICENSE)
-
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
-<!--
-Uncomment and customize these badges if you want to use them:
+Home Assistant custom integration for controlling Airfi air handling units over local Modbus TCP.
 
-[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
-[![Discord][discord-shield]][discord]
--->
+## Features
 
-**✨ Develop in the cloud:** Want to contribute or customize this integration? Open it directly in GitHub Codespaces - no local setup required!
+- Local Modbus TCP integration, no cloud account required
+- Automatic device discovery (UDP multicast) with manual fallback
+- Fan control (on/off + speed percentage)
+- Temperature sensors:
+  - Outdoor air
+  - Extract air
+  - Exhaust air
+  - Supply air
+- Relative humidity sensor
+- Connectivity diagnostic binary sensor
+- Reconfigure flow for host updates without removing the integration
+- Automatic IP recovery after device IP changes (serial-based rediscovery)
+- Service for manual data refresh: `airfi.reload_data`
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/janmilinds/ha-airfi?quickstart=1)
+## Supported Models
 
-## ✨ Features
+The integration includes model mapping for Airfi model families and variants (L/R, Electric/Water, ENT/C5/mini where applicable), including:
 
-- **Easy Setup**: Simple configuration through the UI - no YAML required
-- **Air Quality Monitoring**: Track AQI and PM2.5 levels in real-time
-- **Filter Management**: Monitor filter life and get replacement alerts
-- **Smart Control**: Adjust fan speed, target humidity, and operating modes
-- **Child Lock**: Safety feature to prevent accidental changes
-- **Diagnostic Info**: View filter life, runtime hours, and device statistics
-- **Reconfigurable**: Change credentials anytime without removing the integration
-- **Options Flow**: Adjust settings like update interval after setup
-- **Custom Services**: Advanced control with built-in service calls
+- 60, 100, 130, 150
+- 250 (Electric/Water)
+- 350 (Electric/Water)
+- C5 variants
+- 53 mini / miniENT variants
+- ENT variants (60/130/150/250/350)
 
-**This integration will set up the following platforms.**
+## Installation
 
-Platform | Description
--- | --
-`sensor` | Air quality index (AQI), PM2.5, filter life, and runtime
-`binary_sensor` | API connection status and filter replacement alert
-`switch` | Child lock and LED display controls
-`select` | Fan speed selection (Low/Medium/High/Auto)
-`number` | Target humidity setting (30-80%)
-`button` | Reset filter timer after replacement
-`fan` | Air purifier fan control with speed settings
+### HACS (Recommended)
 
-> **💡 Interactive Demo**: The entities are interconnected for demonstration:
->
-> - Press the **Reset Filter Timer** button → **Filter Life Remaining** sensor updates to 100%
-> - Change the **Air Purifier** fan speed → **Fan Speed** select syncs automatically
-> - Change the **Fan Speed** select → **Air Purifier** fan syncs automatically
+Prerequisite: [HACS](https://hacs.xyz/) is installed.
 
-## 🚀 Quick Start
+This repository is not in the official HACS default list, so add it as a custom repository first:
 
-### Step 1: Install the Integration
+1. Open HACS in Home Assistant.
+2. Open **Integrations**.
+3. Click the three-dot menu in the top-right corner.
+4. Select **Custom repositories**.
+5. Add repository URL: `https://github.com/janmilinds/ha-airfi`.
+6. Select category: **Integration**.
+7. Click **Add**.
+8. Find **Airfi** in HACS and click **Download**.
+9. Restart Home Assistant.
 
-**Prerequisites:** This integration requires [HACS](https://hacs.xyz/) (Home Assistant Community Store) to be installed.
+### Manual Installation
 
-Click the button below to open the integration directly in HACS:
+1. Copy [custom_components/airfi](custom_components/airfi) to your Home Assistant `custom_components` directory.
+2. Restart Home Assistant.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jpawlowski&repository=ha-airfi&category=integration)
+## Setup
 
-Then:
+### Add Integration
 
-1. Click "Download" to install the integration
-2. **Restart Home Assistant** (required after installation)
-
-> **Note:** The My Home Assistant redirect will first take you to a landing page. Click the button there to open your Home Assistant instance.
-
-<details>
-<summary>**Manual Installation (Advanced)**</summary>
-
-If you prefer not to use HACS:
-
-1. Download the `custom_components/airfi/` folder from this repository
-2. Copy it to your Home Assistant's `custom_components/` directory
-3. Restart Home Assistant
-
-</details>
-
-### Step 2: Add and Configure the Integration
-
-**Important:** You must have installed the integration first (see Step 1) and restarted Home Assistant!
-
-#### Option 1: One-Click Setup (Quick)
-
-Click the button below to open the configuration dialog:
+Make sure installation is complete first (HACS or manual) and Home Assistant has been restarted after installation.
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=airfi)
 
-Follow the setup wizard:
+Or open: Settings -> Devices & Services -> Add Integration -> Airfi.
 
-1. Enter your username
-2. Enter your password
-3. Click Submit
+### Discovery and Manual Setup
 
-That's it! The integration will start loading your data.
+When setup starts, Airfi automatically scans your network for devices.
 
-#### Option 2: Manual Configuration
+- Typical scan time is about 5 seconds
+- In some environments the scan can take up to about 15 seconds
 
-1. Go to **Settings** → **Devices & Services**
-2. Click **"+ Add Integration"**
-3. Search for "Airfi"
-4. Follow the same setup steps as Option 1
+If no device is selected from discovery, you can add manually with:
 
-### Step 3: Adjust Settings (Optional)
+- Host (IP or hostname)
+- Serial number
+- Model
 
-After setup, you can adjust options:
+### Reconfigure
 
-1. Go to **Settings** → **Devices & Services**
-2. Find **Airfi**
-3. Click **Configure** to adjust:
-   - Update interval (how often to refresh data)
-   - Enable debug logging
+Reconfigure updates host only. Serial number and model remain fixed for the configured device entry.
 
-You can also **Reconfigure** your credentials anytime without removing the integration.
-
-### Step 4: Start Using!
-
-The integration creates several entities for your air purifier:
-
-- **Sensors**: Air quality index, PM2.5 levels, filter life remaining, total runtime
-- **Binary Sensors**: API connection status, filter replacement alert
-- **Switches**: Child lock, LED display control
-- **Select**: Fan speed (Low/Medium/High/Auto)
-- **Number**: Target humidity (30-80%)
-- **Button**: Reset filter timer
-- **Fan**: Air purifier fan control
-
-Find all entities in **Settings** → **Devices & Services** → **Airfi** → click on the device.
-
-## Available Entities
-
-### Sensors
-
-- **Air Quality Index (AQI)**: Real-time air quality measurement (0-500 scale)
-  - Includes air quality category (Good/Moderate/Unhealthy/etc.)
-  - Health recommendations based on current AQI
-- **PM2.5**: Fine particulate matter concentration in µg/m³
-- **Filter Life Remaining** (Diagnostic): Shows remaining filter life as percentage
-- **Total Runtime** (Diagnostic): Total operating hours of the device
-
-### Binary Sensors
-
-- **API Connection**: Shows whether the connection to the API is active
-  - On: Connected and receiving data
-  - Off: Connection lost or authentication failed
-  - Shows update interval and API endpoint information
-- **Filter Replacement Needed**: Alerts when filter needs replacement
-  - Shows estimated days remaining
-  - Turns on when filter life is low
-
-### Switches
-
-- **Child Lock**: Prevents accidental button presses on the device
-  - Icon changes based on state (locked/unlocked)
-- **LED Display**: Enable/disable the LED display
-  - Disabled by default - enable in entity settings if needed
-
-### Select
-
-- **Fan Speed**: Choose from Low, Medium, High, or Auto
-  - Icon changes dynamically based on selected speed
-  - Auto mode adjusts speed based on air quality
-  - Syncs bidirectionally with the Air Purifier fan entity
-
-### Number
-
-- **Target Humidity**: Set desired humidity level (30-80%)
-  - Adjustable in 5% increments
-  - Displayed as a slider in the UI
-
-### Button
-
-- **Reset Filter Timer**: Reset the filter life to 100%
-  - Press to reset after replacing the filter
-  - Instantly updates the Filter Life Remaining sensor
+## Created Entities
 
 ### Fan
 
-- **Air Purifier**: Control the air purifier fan speed and power
-  - Three speed levels: Low, Medium, High
-  - Syncs bidirectionally with the Fan Speed select entity
-  - Turn on/off functionality
+- Fan: on/off state and speed percentage (mapped to device speed levels)
 
-## Custom Services
+### Sensors
 
-The integration provides services for advanced automation:
+- Outdoor air temperature
+- Extract air temperature
+- Exhaust air temperature
+- Supply air temperature
+- Relative humidity
 
-### `airfi.example_action`
+### Binary Sensors
 
-Perform a custom action (customize this for your needs).
+- API connectivity (diagnostic)
 
-**Example:**
-
-```yaml
-service: airfi.example_action
-data:
-  # Add your parameters here
-```
+## Service
 
 ### `airfi.reload_data`
 
-Manually refresh data from the API without waiting for the update interval.
+Force an immediate coordinator refresh from the device.
 
-**Example:**
+Example:
 
 ```yaml
 service: airfi.reload_data
 ```
 
-Use these services in automations or scripts for more control.
+## Network and Discovery Notes
 
-## Configuration Options
+Auto-discovery uses UDP multicast:
 
-### During Setup
+- Group: `239.255.100.200`
+- Port: `3000`
 
-Name | Required | Description
--- | -- | --
-Username | Yes | Your account username
-Password | Yes | Your account password
+If Home Assistant and device are on different VLANs/subnets, multicast routing is required for discovery.
 
-### After Setup (Options)
+Manual setup works without multicast as long as Modbus TCP to the device is reachable.
 
-You can change these anytime by clicking **Configure**:
+## IP Address Changes
 
-Name | Default | Description
--- | -- | --
-Update Interval | 1 hour | How often to refresh data
-Enable Debugging | Off | Enable extra debug logging
+If the device IP changes, the integration can recover automatically:
+
+- On communication failure, it runs a short rediscovery
+- It matches by serial number
+- It updates the stored host and continues polling
+
+This reduces the need for manual reconfiguration after DHCP changes.
 
 ## Troubleshooting
 
-### Authentication Issues
+- Confirm device reachable on local network and Modbus TCP port `502`
+- Check entity `API connectivity`
+- For discovery issues, verify multicast visibility in your network
+- Download diagnostics from Devices & Services for deeper troubleshooting
 
-#### Reauthentication
-
-If your credentials expire or change, Home Assistant will automatically prompt you to reauthenticate:
-
-1. Go to **Settings** → **Devices & Services**
-2. Look for **"Action Required"** or **"Configuration Required"** message on the integration
-3. Click **"Reconfigure"** or follow the prompt
-4. Enter your updated credentials
-5. Click Submit
-
-The integration will automatically resume normal operation with the new credentials.
-
-#### Manual Credential Update
-
-You can also update credentials at any time without waiting for an error:
-
-1. Go to **Settings** → **Devices & Services**
-2. Find **Airfi**
-3. Click the **3 dots menu** → **Reconfigure**
-4. Enter new username/password
-5. Click Submit
-
-#### Connection Status
-
-Monitor your connection status with the **API Connection** binary sensor:
-
-- **On** (Connected): Integration is receiving data normally
-- **Off** (Disconnected): Connection lost or authentication failed
-  - Check the binary sensor attributes for diagnostic information
-  - Verify credentials if authentication failed
-  - Check network connectivity
-
-### Enable Debug Logging
-
-To enable debug logging for this integration, add the following to your `configuration.yaml`:
+Enable debug logging in [config/configuration.yaml](config/configuration.yaml):
 
 ```yaml
 logger:
@@ -274,90 +154,15 @@ logger:
     custom_components.airfi: debug
 ```
 
-### Common Issues
+## Development
 
-#### Authentication Errors
+- Project guidelines: [AGENTS.md](AGENTS.md)
+- Architecture notes: [docs/development/ARCHITECTURE.md](docs/development/ARCHITECTURE.md)
+- User docs: [docs/user/GETTING_STARTED.md](docs/user/GETTING_STARTED.md)
 
-If you receive authentication errors:
+## License
 
-1. Verify your username and password are correct
-2. Check that your account has the necessary permissions
-3. Wait for the automatic reauthentication prompt, or manually reconfigure
-4. Check the API Connection binary sensor for status
-
-#### Device Not Responding
-
-If your device is not responding:
-
-1. Check the **API Connection** binary sensor - it should be "On"
-2. Check your network connection
-3. Verify the device is powered on
-4. Check the integration diagnostics (Settings → Devices & Services → Airfi → 3 dots → Download diagnostics)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or pull request if you have suggestions or improvements.
-
-### 🛠️ Development Setup
-
-Want to contribute or customize this integration? You have two options:
-
-#### Cloud Development (Recommended)
-
-The easiest way to get started - develop directly in your browser with GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/janmilinds/ha-airfi?quickstart=1)
-
-- ✅ Zero local setup required
-- ✅ Pre-configured development environment
-- ✅ Home Assistant included for testing
-- ✅ 60 hours/month free for personal accounts
-
-#### Local Development
-
-Prefer working on your machine? You'll need:
-
-- Docker Desktop
-- VS Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-
-Then:
-
-1. Clone this repository
-2. Open in VS Code
-3. Click "Reopen in Container" when prompted
-
-Both options give you the same fully-configured development environment with Home Assistant, Python 3.13, and all necessary tools.
-
----
-
-## 🤖 AI-Assisted Development
-
-> **ℹ️ Transparency Notice**
->
-> This integration was developed with assistance from AI coding agents (GitHub Copilot, Claude, and others). While the codebase follows Home Assistant Core standards, AI-generated code may not be reviewed or tested to the same extent as manually written code.
->
-> AI tools were used to:
->
-> - Generate boilerplate code following Home Assistant patterns
-> - Implement standard integration features (config flow, coordinator, entities)
-> - Ensure code quality and type safety
-> - Write documentation and comments
->
-> Please be aware that AI-assisted development may result in unexpected behavior or edge cases that haven't been thoroughly tested. If you encounter any issues, please [open an issue](../../issues) on GitHub.
->
-> *Note: This section can be removed or modified if AI assistance was not used in your integration's development.*
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Made with ❤️ by [@janmilinds][user_profile]**
-
----
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
 [commits-shield]: https://img.shields.io/github/commit-activity/y/janmilinds/ha-airfi.svg?style=for-the-badge
 [commits]: https://github.com/janmilinds/ha-airfi/commits/main
@@ -367,11 +172,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [maintenance-shield]: https://img.shields.io/badge/maintainer-%40janmilinds-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/janmilinds/ha-airfi.svg?style=for-the-badge
 [releases]: https://github.com/janmilinds/ha-airfi/releases
-[user_profile]: https://github.com/jpawlowski
-
-<!-- Optional badge definitions - uncomment if needed:
-[buymecoffee]: https://www.buymeacoffee.com/jpawlowski
-[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
-[discord]: https://discord.gg/Qa5fW2R
-[discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
--->
