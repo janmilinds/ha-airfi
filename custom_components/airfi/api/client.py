@@ -119,6 +119,10 @@ class AirfiApiClient:
         self._input_register_length = input_register_length
         self._holding_register_length = holding_register_length
 
+    def update_host(self, host: str) -> None:
+        """Update target host after rediscovery finds the same device at a new IP."""
+        self._host = host
+
     async def _async_ensure_register_profile(self) -> None:
         """Initialize register profile once if coordinator did not preconfigure it."""
         if (

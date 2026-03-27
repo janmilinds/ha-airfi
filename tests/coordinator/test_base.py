@@ -10,6 +10,8 @@ from custom_components.airfi.api.client import AirfiApiClientCommunicationError
 from custom_components.airfi.const import DOMAIN
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi.data import AirfiData
+from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
+from homeassistant.const import CONF_HOST
 
 
 @pytest.mark.unit
@@ -93,3 +95,63 @@ async def test_async_set_holding_register_re_raises_on_client_error(hass, config
 
     with pytest.raises(AirfiApiClientCommunicationError):
         await coordinator.async_set_holding_register(address=1, value=3)
+
+
+@pytest.mark.unit
+async def test_async_update_data_recovers_after_device_ip_change(hass, config_entry, mock_integration) -> None:
+    """Test automatic rediscovery and host update when device IP changes."""
+    client = MagicMock()
+    client.async_get_data = AsyncMock(
+        side_effect=[
+            AirfiApiClientCommunicationError("timeout"),
+            {
+                "firmware_version": "3.8.1",
+                "modbus_map_version": "3.0.0",
+                "holding_registers": [],
+                "input_registers": [],
+                "lookup_registers": [],
+                "model": "Airfi",
+            },
+        ]
+    )
+    client.update_host = MagicMock()
+
+    coordinator = AirfiDataUpdateCoordinator(
+        hass=hass,
+        logger=MagicMock(),
+        name=DOMAIN,
+        config_entry=config_entry,
+        update_interval=None,
+        always_update=False,
+    )
+    config_entry.runtime_data = AirfiData(
+        client=client,
+        coordinator=coordinator,
+        integration=mock_integration,
+    )
+
+    discovered_device = AirfiDiscoveredDevice(
+        host="192.168.1.99",
+        serial=int(config_entry.data["serial_number"].split("-")[-1]),
+        model_id=1,
+    )
+
+    with (
+        patch(
+            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            new=AsyncMock(return_value=[discovered_device]),
+        ),
+        patch.object(hass.config_entries, "async_update_entry") as update_entry_mock,
+    ):
+        update_method = AirfiDataUpdateCoordinator.__dict__["_async_update_data"].__get__(
+            coordinator,
+            AirfiDataUpdateCoordinator,
+        )
+        result = await update_method()
+
+    client.update_host.assert_called_once_with("192.168.1.99")
+    update_entry_mock.assert_called_once_with(
+        config_entry,
+        data={**config_entry.data, CONF_HOST: "192.168.1.99"},
+    )
+    assert result["firmware_version"] == "3.8.1"
