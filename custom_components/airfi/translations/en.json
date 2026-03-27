@@ -2,27 +2,64 @@
   "config": {
     "step": {
       "user": {
+        "title": "Set Up Airfi",
+        "description": "Scanning your network for Airfi devices."
+      },
+      "fallback": {
+        "title": "No Devices Found",
+        "description": "No Airfi devices were found automatically. You can try discovery again or add a device manually.",
+        "menu_options": {
+          "discovery": "Try discovery again",
+          "manual": "Add device manually"
+        }
+      },
+      "manual": {
+        "title": "Manual Setup",
         "description": "If you need help with the configuration have a look at the [documentation]({documentation_url}).",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "host": "Host",
+          "serial_number": "Serial number",
+          "model_name": "Model"
+        }
+      },
+      "discovery": {
+        "title": "Discover Airfi Devices",
+        "description": "Scanning your network for Airfi devices."
+      },
+      "discovery_select": {
+        "title": "Select Discovered Device",
+        "description": "Found {count} Airfi device(s). Select one to continue.",
+        "data": {
+          "device": "Discovered device"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Confirm Device",
+        "description": "**{model}** at {host} (serial: {serial})\n\nOptionally give the device a custom name.",
+        "data": {
+          "name": "Name"
+        },
+        "data_description": {
+          "name": "Leave empty to use the default name."
         }
       },
       "reconfigure": {
         "description": "Update the credentials for this integration.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "host": "Host"
         }
       },
       "reauth_confirm": {
         "title": "Reauthenticate Integration",
         "description": "The credentials for {username} are no longer valid. Please provide updated credentials to restore access.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "host": "Host",
+          "serial_number": "Serial number"
         }
       }
+    },
+    "progress": {
+      "discovering_devices": "Searching your network for Airfi devices. This usually takes about 5 seconds, but can take up to 15 seconds."
     },
     "error": {
       "auth": "Username/Password is wrong.",
@@ -30,7 +67,10 @@
       "unknown": "Unknown error occurred."
     },
     "abort": {
-      "already_configured": "This entry is already configured."
+      "already_configured": "This entry is already configured.",
+      "discovery_failed": "Discovery scan failed.",
+      "discovery_no_devices": "No Airfi devices were found.",
+      "invalid_selection": "The selected device is no longer available."
     }
   },
   "options": {

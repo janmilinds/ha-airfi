@@ -1,46 +1,24 @@
-"""
-Credential validators.
-
-Validation functions for user credentials and authentication.
-
-When this file grows, consider splitting into:
-- credentials.py: Basic credential validation
-- oauth.py: OAuth-specific validation
-- api_auth.py: API authentication methods
-"""
+"""Connection validators for config flow."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.api import AirfiApiClient
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from custom_components.airfi.const import DEFAULT_MODBUS_PORT
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-async def validate_credentials(hass: HomeAssistant, username: str, password: str) -> None:
-    """
-    Validate user credentials by testing API connection.
-
-    Args:
-        hass: Home Assistant instance.
-        username: The username to validate.
-        password: The password to validate.
-
-    Raises:
-        AirfiApiClientAuthenticationError: If credentials are invalid.
-        AirfiApiClientCommunicationError: If communication fails.
-        AirfiApiClientError: For other API errors.
-
-    """
+async def validate_credentials(hass: HomeAssistant, host: str) -> None:
+    """Validate host by testing Modbus connection."""
+    del hass
     client = AirfiApiClient(
-        username=username,
-        password=password,
-        session=async_create_clientsession(hass),
+        host=host,
+        port=DEFAULT_MODBUS_PORT,
     )
-    await client.async_get_data()  # May raise authentication/communication errors
+    await client.async_test_connection()
 
 
 __all__ = [
