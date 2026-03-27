@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from custom_components.airfi.const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
+from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.redact import async_redact_data
 
@@ -19,10 +20,8 @@ if TYPE_CHECKING:
 
 # Fields to redact from diagnostics - CRITICAL for security!
 TO_REDACT = {
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    "username",
-    "password",
+    CONF_HOST,
+    CONF_SERIAL_NUMBER,
     "api_key",
     "token",
 }
@@ -34,7 +33,6 @@ async def async_get_config_entry_diagnostics(
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     coordinator = entry.runtime_data.coordinator
-    client = entry.runtime_data.client
     integration = entry.runtime_data.integration
 
     # Get device and entity information
@@ -76,8 +74,9 @@ async def async_get_config_entry_diagnostics(
 
     # API client information (no sensitive data)
     api_info = {
-        "base_endpoint": "https://jsonplaceholder.typicode.com",
-        "has_credentials": bool(client._username),  # noqa: SLF001
+        "transport": "modbus_tcp",
+        "host_configured": bool(entry.data.get(CONF_HOST)),
+        "port": DEFAULT_MODBUS_PORT,
     }
 
     # Integration information
@@ -115,9 +114,10 @@ async def async_get_config_entry_diagnostics(
         if isinstance(coordinator.data, dict):
             # Include sample data but sanitize sensitive info
             data_sample = {
-                "title": coordinator.data.get("title"),
-                "body_length": len(coordinator.data.get("body", "")) if coordinator.data.get("body") else 0,
-                "has_user_id": "userId" in coordinator.data,
+                "firmware_version": coordinator.data.get("firmware_version"),
+                "modbus_map_version": coordinator.data.get("modbus_map_version"),
+                "input_register_count": len(coordinator.data.get("input_registers", [])),
+                "holding_register_count": len(coordinator.data.get("holding_registers", [])),
             }
 
     return {

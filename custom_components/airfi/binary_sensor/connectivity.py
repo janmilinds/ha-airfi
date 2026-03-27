@@ -49,5 +49,5 @@ class AirfiConnectivitySensor(BinarySensorEntity, AirfiEntity):
         """Return additional state attributes."""
         return {
             "update_interval": str(self.coordinator.update_interval),
-            "api_endpoint": "JSONPlaceholder (Demo)",
+            "transport": "modbus_tcp",
         }

@@ -1,13 +1,9 @@
 """
 Custom integration to integrate airfi with Home Assistant.
 
-This integration demonstrates best practices for:
-- Config flow setup (user, reconfigure, reauth)
-- DataUpdateCoordinator pattern for efficient data fetching
-- Multiple platform types (sensor, binary_sensor, switch, select, number)
-- Service registration and handling
-- Device and entity management
-- Proper error handling and recovery
+The current implementation provides the Modbus transport, coordinator, config
+flow, and the connectivity entity needed to validate communication with the
+device while the remaining entity platforms are ported incrementally.
 
 For more details about this integration, please refer to:
 https://github.com/janmilinds/ha-airfi
@@ -21,13 +17,12 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.const import CONF_HOST, Platform
 import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import AirfiApiClient
-from .const import DOMAIN, LOGGER
+from .const import DEFAULT_MODBUS_PORT, DEFAULT_POLL_INTERVAL_SECONDS, DOMAIN, LOGGER
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
 from .service_actions import async_setup_services
@@ -37,15 +32,7 @@ if TYPE_CHECKING:
 
     from .data import AirfiConfigEntry
 
-PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
-    Platform.BUTTON,
-    Platform.FAN,
-    Platform.NUMBER,
-    Platform.SELECT,
-    Platform.SENSOR,
-    Platform.SWITCH,
-]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.FAN, Platform.SENSOR]
 
 # This integration is configured via config entries only
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -85,22 +72,21 @@ async def async_setup_entry(
     Set up this integration using UI.
 
     This is called when a config entry is loaded. It:
-    1. Creates the API client with credentials from the config entry
+    1. Creates the API client with device connection details from the config entry
     2. Initializes the DataUpdateCoordinator for data fetching
     3. Performs the first data refresh
-    4. Sets up all platforms (sensors, switches, etc.)
-    5. Registers services
-    6. Sets up reload listener for config changes
+    4. Sets up the currently supported platforms
+    5. Sets up reload listener for config changes
 
     Data flow in this integration:
-    1. User enters username/password in config flow (config_flow.py)
-    2. Credentials stored in entry.data[CONF_USERNAME/CONF_PASSWORD]
+    1. User enters host and serial number in config flow
+    2. Connection details are stored in the config entry
     3. API Client initialized with credentials (api/client.py)
-    4. Coordinator fetches data using authenticated client (coordinator/base.py)
-    5. Entities access data via self.coordinator.data (sensor/, binary_sensor/, etc.)
+    4. Coordinator fetches Modbus data using the client (coordinator/base.py)
+    5. Entities access data via self.coordinator.data
 
-    This pattern ensures credentials from setup flow are used throughout
-    the integration's lifecycle for API communication.
+    This pattern ensures connection details from setup flow are used throughout
+    the integration lifecycle.
 
     Args:
         hass: The Home Assistant instance.
@@ -114,9 +100,8 @@ async def async_setup_entry(
     """
     # Initialize client first
     client = AirfiApiClient(
-        username=entry.data[CONF_USERNAME],  # From config flow setup
-        password=entry.data[CONF_PASSWORD],  # From config flow setup
-        session=async_get_clientsession(hass),
+        host=entry.data[CONF_HOST],
+        port=DEFAULT_MODBUS_PORT,
     )
 
     # Initialize coordinator with config_entry
@@ -125,7 +110,7 @@ async def async_setup_entry(
         logger=LOGGER,
         name=DOMAIN,
         config_entry=entry,
-        update_interval=timedelta(hours=1),
+        update_interval=timedelta(seconds=DEFAULT_POLL_INTERVAL_SECONDS),
         always_update=False,  # Only update entities when data actually changes
     )
 
