@@ -35,6 +35,7 @@ class AirfiFeatureManager:
         """Initialize the feature manager."""
         self.firmware_version = ""
         self.modbus_map_version = ""
+        self.hw_version = ""
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
         """Initialize and validate device based on lookup registers.
@@ -56,7 +57,9 @@ class AirfiFeatureManager:
             )
             raise ValueError(msg)
 
+        # registers[0] = hardware version (3x00001)
         # registers[1] = firmware version, registers[2] = modbus map version
+        self.hw_version = self._version_string(lookup_registers[0])
         self.firmware_version = self._version_string(lookup_registers[1])
         self.modbus_map_version = self._version_string(lookup_registers[2])
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi.const import ATTRIBUTION
+from custom_components.airfi.const import ATTRIBUTION, CONF_MODEL_NAME, CONF_SERIAL_NUMBER
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -66,6 +66,8 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
             },
             name=coordinator.config_entry.title,
             manufacturer="Airfi",
-            model=coordinator.data.get("model", "Unknown"),
+            model=coordinator.config_entry.data.get(CONF_MODEL_NAME, "Airfi"),
+            serial_number=str(coordinator.config_entry.data.get(CONF_SERIAL_NUMBER, "")),
+            hw_version=coordinator.hw_version or None,
             sw_version=coordinator.data.get("firmware_version", "Unknown"),
         )
