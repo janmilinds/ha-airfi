@@ -16,7 +16,7 @@ SPEED_RANGE = (1, 5)
 ENTITY_DESCRIPTIONS: tuple[FanEntityDescription, ...] = (
     FanEntityDescription(
         key="fan",
-        name="Fan",
+        translation_key="fan",
         icon="mdi:fan",
     ),
 )

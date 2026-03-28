@@ -35,25 +35,25 @@ def convert_temperature(value: float) -> float:
 ENTITY_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="outdoor_air_temperature",
-        name="Outdoor air",
+        translation_key="outdoor_air_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     SensorEntityDescription(
         key="extract_air_temperature",
-        name="Extract air",
+        translation_key="extract_air_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     SensorEntityDescription(
         key="exhaust_air_temperature",
-        name="Exhaust air",
+        translation_key="exhaust_air_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     SensorEntityDescription(
         key="supply_air_temperature",
-        name="Supply air",
+        translation_key="supply_air_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),

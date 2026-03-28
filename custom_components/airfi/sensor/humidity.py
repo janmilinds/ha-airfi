@@ -16,7 +16,7 @@ INPUT_REGISTER_RELATIVE_HUMIDITY = 23
 ENTITY_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="relative_humidity",
-        name="Relative humidity",
+        translation_key="relative_humidity",
         device_class=SensorDeviceClass.HUMIDITY,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,

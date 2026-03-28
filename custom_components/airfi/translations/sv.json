@@ -1,0 +1,117 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfigurera Airfi"
+      },
+      "fallback": {
+        "title": "Inga enheter hittades",
+        "description": "Inga Airfi-enheter hittades automatiskt. Du kan försöka upptäcka enheter igen eller lägga till en enhet manuellt.",
+        "menu_options": {
+          "discovery": "Försök upptäcka enheter igen",
+          "manual": "Lägg till en enhet manuellt"
+        }
+      },
+      "manual": {
+        "title": "Manuell konfiguration",
+        "description": "Om du behöver hjälp med konfigurationen, se [dokumentationen]({documentation_url}).",
+        "data": {
+          "host": "IP-adress",
+          "serial_number": "Serienummer",
+          "model_name": "Modell"
+        }
+      },
+      "discovery_select": {
+        "title": "Välj upptäckt enhet",
+        "description": "Hittade {count} Airfi-enhet(er). Välj en för att fortsätta.",
+        "data": {
+          "device": "Upptäckt enhet"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Bekräfta enhet",
+        "description": "**{model}** på {host} (serienummer: {serial})\n\nDu kan ge enheten ett anpassat namn om du vill.",
+        "data": {
+          "name": "Namn"
+        },
+        "data_description": {
+          "name": "Lämna tomt för att använda standardnamnet."
+        }
+      },
+      "reconfigure": {
+        "description": "Uppdatera anslutningsinställningarna för denna integration.",
+        "data": {
+          "host": "IP-adress"
+        }
+      }
+    },
+    "progress": {
+      "discovering_devices": "Söker efter Airfi-enheter i ditt nätverk. Detta kan ta 5–15 sekunder."
+    },
+    "error": {
+      "cannot_connect": "Det gick inte att ansluta till enheten.",
+      "unknown": "Ett okänt fel uppstod."
+    },
+    "abort": {
+      "already_configured": "Denna enhet är redan konfigurerad.",
+      "discovery_failed": "Upptäckten av enheter misslyckades.",
+      "discovery_no_devices": "Inga Airfi-enheter hittades.",
+      "invalid_selection": "Den valda enheten är inte längre tillgänglig."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Konfigurera integrationsinställningar",
+        "description": "Anpassa hur denna integration fungerar.",
+        "data": {
+          "update_interval_hours": "Uppdateringsintervall (timmar)",
+          "enable_debugging": "Aktivera felsökningsloggning",
+          "custom_icon": "Anpassad ikon (valfritt)"
+        },
+        "data_description": {
+          "update_interval_hours": "Hur ofta data uppdateras från enheten (0,25 till 24 timmar)",
+          "enable_debugging": "Aktivera detaljerad loggning för felsökning",
+          "custom_icon": "Ersätt standardikonen för enheter (valfritt)"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Misslyckades med att uppdatera data från enheten."
+    },
+    "update_failed_rediscovery": {
+      "message": "Enheten upptäcktes igen, men datauppdateringen misslyckades fortfarande."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "api_connectivity": {
+        "name": "Enhetens anslutning"
+      }
+    },
+    "fan": {
+      "fan": {
+        "name": "Ventilation"
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "name": "Avluft"
+      },
+      "extract_air_temperature": {
+        "name": "Frånluft"
+      },
+      "outdoor_air_temperature": {
+        "name": "Uteluft"
+      },
+      "relative_humidity": {
+        "name": "Relativ fuktighet"
+      },
+      "supply_air_temperature": {
+        "name": "Tilluft"
+      }
+    }
+  }
+}

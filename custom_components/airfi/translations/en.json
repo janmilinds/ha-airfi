@@ -2,11 +2,10 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set Up Airfi",
-        "description": "Scanning your network for Airfi devices."
+        "title": "Set up Airfi"
       },
       "fallback": {
-        "title": "No Devices Found",
+        "title": "No devices found",
         "description": "No Airfi devices were found automatically. You can try discovery again or add a device manually.",
         "menu_options": {
           "discovery": "Try discovery again",
@@ -14,27 +13,23 @@
         }
       },
       "manual": {
-        "title": "Manual Setup",
-        "description": "If you need help with the configuration have a look at the [documentation]({documentation_url}).",
+        "title": "Manual setup",
+        "description": "If you need help with the configuration, have a look at the [documentation]({documentation_url}).",
         "data": {
-          "host": "Host",
+          "host": "IP address",
           "serial_number": "Serial number",
           "model_name": "Model"
         }
       },
-      "discovery": {
-        "title": "Discover Airfi Devices",
-        "description": "Scanning your network for Airfi devices."
-      },
       "discovery_select": {
-        "title": "Select Discovered Device",
+        "title": "Select discovered device",
         "description": "Found {count} Airfi device(s). Select one to continue.",
         "data": {
           "device": "Discovered device"
         }
       },
       "discovery_confirm": {
-        "title": "Confirm Device",
+        "title": "Confirm device",
         "description": "**{model}** at {host} (serial: {serial})\n\nOptionally give the device a custom name.",
         "data": {
           "name": "Name"
@@ -46,12 +41,12 @@
       "reconfigure": {
         "description": "Update the connection settings for this integration.",
         "data": {
-          "host": "Host"
+          "host": "IP address"
         }
       }
     },
     "progress": {
-      "discovering_devices": "Searching your network for Airfi devices. This usually takes about 5 seconds, but can take up to 15 seconds."
+      "discovering_devices": "Searching your network for Airfi devices. This may take 5 to 15 seconds."
     },
     "error": {
       "cannot_connect": "Unable to connect to the device.",
@@ -67,7 +62,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure Integration Options",
+        "title": "Configure integration options",
         "description": "Customize how this integration operates.",
         "data": {
           "update_interval_hours": "Update interval (hours)",
@@ -93,7 +88,29 @@
   "entity": {
     "binary_sensor": {
       "api_connectivity": {
-        "name": "Device Connection"
+        "name": "Device connection"
+      }
+    },
+    "fan": {
+      "fan": {
+        "name": "Ventilation"
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "name": "Exhaust air"
+      },
+      "extract_air_temperature": {
+        "name": "Extract air"
+      },
+      "outdoor_air_temperature": {
+        "name": "Outdoor air"
+      },
+      "relative_humidity": {
+        "name": "Relative humidity"
+      },
+      "supply_air_temperature": {
+        "name": "Supply air"
       }
     }
   }

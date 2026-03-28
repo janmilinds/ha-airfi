@@ -1,0 +1,117 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Skonfiguruj Airfi"
+      },
+      "fallback": {
+        "title": "Nie znaleziono urządzeń",
+        "description": "Nie znaleziono automatycznie żadnych urządzeń Airfi. Możesz spróbować wykrywania ponownie lub dodać urządzenie ręcznie.",
+        "menu_options": {
+          "discovery": "Spróbuj wykrywania ponownie",
+          "manual": "Dodaj urządzenie ręcznie"
+        }
+      },
+      "manual": {
+        "title": "Konfiguracja ręczna",
+        "description": "Jeśli potrzebujesz pomocy przy konfiguracji, zapoznaj się z [dokumentacją]({documentation_url}).",
+        "data": {
+          "host": "Adres IP",
+          "serial_number": "Numer seryjny",
+          "model_name": "Model"
+        }
+      },
+      "discovery_select": {
+        "title": "Wybierz wykryte urządzenie",
+        "description": "Znaleziono {count} urządzenie(a) Airfi. Wybierz jedno, aby kontynuować.",
+        "data": {
+          "device": "Wykryte urządzenie"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Potwierdź urządzenie",
+        "description": "**{model}** w {host} (numer seryjny: {serial})\n\nOpcjonalnie możesz nadać urządzeniu niestandardową nazwę.",
+        "data": {
+          "name": "Nazwa"
+        },
+        "data_description": {
+          "name": "Pozostaw puste, aby użyć domyślnej nazwy."
+        }
+      },
+      "reconfigure": {
+        "description": "Zaktualizuj ustawienia połączenia dla tej integracji.",
+        "data": {
+          "host": "Adres IP"
+        }
+      }
+    },
+    "progress": {
+      "discovering_devices": "Wyszukiwanie urządzeń Airfi w sieci. Może to potrwać 5–15 sekund."
+    },
+    "error": {
+      "cannot_connect": "Nie można połączyć się z urządzeniem.",
+      "unknown": "Wystąpił nieznany błąd."
+    },
+    "abort": {
+      "already_configured": "Ten wpis jest już skonfigurowany.",
+      "discovery_failed": "Skanowanie wykrywania nie powiodło się.",
+      "discovery_no_devices": "Nie znaleziono żadnych urządzeń Airfi.",
+      "invalid_selection": "Wybrane urządzenie nie jest już dostępne."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Skonfiguruj opcje integracji",
+        "description": "Dostosuj sposób działania tej integracji.",
+        "data": {
+          "update_interval_hours": "Interwał aktualizacji (godziny)",
+          "enable_debugging": "Włącz debugowanie",
+          "custom_icon": "Niestandardowa ikona (opcjonalnie)"
+        },
+        "data_description": {
+          "update_interval_hours": "Jak często odświeżać dane z urządzenia (0,25 do 24 godzin)",
+          "enable_debugging": "Włącz szczegółowe logowanie debugowania w celu rozwiązywania problemów",
+          "custom_icon": "Zastąp domyślną ikonę dla jednostek (opcjonalnie)"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Nie udało się zaktualizować danych z urządzenia."
+    },
+    "update_failed_rediscovery": {
+      "message": "Urządzenie zostało ponownie wykryte, ale odświeżenie danych nadal nie powiodło się."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "api_connectivity": {
+        "name": "Połączenie z urządzeniem"
+      }
+    },
+    "fan": {
+      "fan": {
+        "name": "Wentylacja"
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "name": "Powietrze wywiewane"
+      },
+      "extract_air_temperature": {
+        "name": "Powietrze wyciągane"
+      },
+      "outdoor_air_temperature": {
+        "name": "Powietrze zewnętrzne"
+      },
+      "relative_humidity": {
+        "name": "Wilgotność względna"
+      },
+      "supply_air_temperature": {
+        "name": "Powietrze nawiewane"
+      }
+    }
+  }
+}
