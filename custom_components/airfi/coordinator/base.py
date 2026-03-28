@@ -124,7 +124,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
             processed_data = to_coordinator_payload(parse_device_data(raw_data))
         except AirfiApiClientCommunicationError as exception:
-            LOGGER.warning("Communication error, attempting host rediscovery: %s", exception)
+            LOGGER.debug("Communication error, attempting host rediscovery: %s", exception)
             if await self._async_try_recover_host():
                 try:
                     raw_data = await self.config_entry.runtime_data.client.async_get_data()
