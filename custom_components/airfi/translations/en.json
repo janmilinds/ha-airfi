@@ -14,7 +14,7 @@
       },
       "manual": {
         "title": "Manual setup",
-        "description": "If you need help with the configuration have a look at the [documentation]({documentation_url}).",
+        "description": "If you need help with the configuration, have a look at the [documentation]({documentation_url}).",
         "data": {
           "host": "IP address",
           "serial_number": "Serial number",
