@@ -1,0 +1,117 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Määritä Airfi"
+      },
+      "fallback": {
+        "title": "Laitteita ei löytynyt",
+        "description": "Airfi-laitteita ei löytynyt automaattisesti. Voit yrittää etsiä laitteita uudelleen tai lisätä laitteen manuaalisesti.",
+        "menu_options": {
+          "discovery": "Yritä etsiä laitteita uudelleen",
+          "manual": "Lisää laite manuaalisesti"
+        }
+      },
+      "manual": {
+        "title": "Määritys käsin",
+        "description": "Jos tarvitset apua määrityksessä, katso [dokumentaatiota]({documentation_url}).",
+        "data": {
+          "host": "IP-osoite",
+          "serial_number": "Sarjanumero",
+          "model_name": "Malli"
+        }
+      },
+      "discovery_select": {
+        "title": "Valitse löydetty laite",
+        "description": "Löydettiin {count} Airfi-laite(tta). Valitse laite jatkaaksesi.",
+        "data": {
+          "device": "Löydetty laite"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Vahvista laite",
+        "description": "**{model}** osoitteessa {host} (sarja: {serial})\n\nVoit halutessasi antaa laitteelle mukautetun nimen.",
+        "data": {
+          "name": "Nimi"
+        },
+        "data_description": {
+          "name": "Jätä tyhjäksi käyttääksesi oletusnimeä."
+        }
+      },
+      "reconfigure": {
+        "description": "Päivitä tämän integraation yhteysasetukset.",
+        "data": {
+          "host": "IP-osoite"
+        }
+      }
+    },
+    "progress": {
+      "discovering_devices": "Etsitään Airfi-laitteita verkostasi. Tämä voi kestää 5–15 sekuntia."
+    },
+    "error": {
+      "cannot_connect": "Yhteyden muodostaminen laitteeseen epäonnistui.",
+      "unknown": "Odottamaton virhe."
+    },
+    "abort": {
+      "already_configured": "Tämä laite on jo määritetty.",
+      "discovery_failed": "Laitteiden etsintä epäonnistui.",
+      "discovery_no_devices": "Airfi-laitteita ei löytynyt.",
+      "invalid_selection": "Valittu laite ei ole enää saatavilla."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Määritä integraation asetukset",
+        "description": "Mukauta, miten tämä integraatio toimii.",
+        "data": {
+          "update_interval_hours": "Päivitysväli (tunnit)",
+          "enable_debugging": "Ota käyttöön virheenkorjauslokitus",
+          "custom_icon": "Mukautettu kuvake (valinnainen)"
+        },
+        "data_description": {
+          "update_interval_hours": "Kuinka usein päivitetään tiedot laitteesta (0,25 - 24 tuntia)",
+          "enable_debugging": "Ota käyttöön yksityiskohtainen virheenkorjauslokitus vianmääritystä varten",
+          "custom_icon": "Korvaa oletuskuvake entiteeteille (valinnainen)"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "update_failed": {
+      "message": "Laitteen tietojen päivitys epäonnistui."
+    },
+    "update_failed_rediscovery": {
+      "message": "Laite löydettiin uudelleen, mutta tietojen päivitys epäonnistui edelleen."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "api_connectivity": {
+        "name": "Laitteen yhteys"
+      }
+    },
+    "fan": {
+      "fan": {
+        "name": "Ilmanvaihto"
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "name": "Jäteilma"
+      },
+      "extract_air_temperature": {
+        "name": "Poistoilma"
+      },
+      "outdoor_air_temperature": {
+        "name": "Ulkoilma"
+      },
+      "relative_humidity": {
+        "name": "Poistoilman kosteus"
+      },
+      "supply_air_temperature": {
+        "name": "Tuloilma"
+      }
+    }
+  }
+}
