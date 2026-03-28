@@ -107,7 +107,7 @@
         "name": "Ulkoilma"
       },
       "relative_humidity": {
-        "name": "Poistoilman kosteus"
+        "name": "Suhteellinen kosteus"
       },
       "supply_air_temperature": {
         "name": "Tuloilma"

@@ -107,7 +107,7 @@
         "name": "Outdoor air"
       },
       "relative_humidity": {
-        "name": "Extract air humidity"
+        "name": "Relative humidity"
       },
       "supply_air_temperature": {
         "name": "Supply air"

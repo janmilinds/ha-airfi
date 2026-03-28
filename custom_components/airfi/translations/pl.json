@@ -107,7 +107,7 @@
         "name": "Powietrze zewnętrzne"
       },
       "relative_humidity": {
-        "name": "Wilgotność powietrza wyciąganego"
+        "name": "Wilgotność względna"
       },
       "supply_air_temperature": {
         "name": "Powietrze nawiewane"
