@@ -1,9 +1,9 @@
 """
-Core DataUpdateCoordinator implementation for airfi.
+Core DataUpdateCoordinator implementation for Airfi.
 
 This module contains the main coordinator class that manages data fetching
 and updates for all entities in the integration. It handles refresh cycles,
-error handling, and triggers reauthentication when needed.
+error handling, and triggers rediscovery when needed.
 
 For more information on coordinators:
 https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
@@ -14,11 +14,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.api import (
-    AirfiApiClientAuthenticationError,
-    AirfiApiClientCommunicationError,
-    AirfiApiClientError,
-)
+from custom_components.airfi.api import AirfiApiClientCommunicationError, AirfiApiClientError
 from custom_components.airfi.const import (
     CONF_SERIAL_NUMBER,
     DISCOVERY_RECOVERY_COOLDOWN_SECONDS,
@@ -29,7 +25,7 @@ from custom_components.airfi.coordinator.data_processing import parse_device_dat
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
@@ -38,21 +34,19 @@ if TYPE_CHECKING:
 
 class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
     """
-    Class to manage fetching data from the API.
+    Class to manage fetching data from the Airfi device.
 
     This coordinator handles all data fetching for the integration and distributes
     updates to all entities. It manages:
-    - Periodic data updates based on update_interval
-    - Error handling and recovery
-    - Authentication failure detection and reauthentication triggers
+    - Periodic Modbus polling based on update_interval
+    - Communication error handling and IP recovery via rediscovery
     - Data distribution to all entities
-    - Context-based data fetching (only fetch data for active entities)
 
     For more information:
     https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 
     Attributes:
-        config_entry: The config entry for this integration instance.
+    config_entry: The config entry for this integration instance.
     """
 
     config_entry: AirfiConfigEntry
@@ -115,48 +109,20 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> Any:
         """
-        Fetch data from API endpoint.
+        Fetch data from Airfi device via Modbus.
 
         This is the only method that should be implemented in a DataUpdateCoordinator.
         It is called automatically based on the update_interval.
 
-        Context-based fetching:
-        The coordinator tracks which entities are currently listening via async_contexts().
-        This allows optimizing API calls to only fetch data that's actually needed.
-        For example, if only sensor entities are enabled, we can skip fetching switch data.
-
-        The API client uses the credentials from config_entry to authenticate:
-        - username: from config_entry.data["username"]
-        - password: from config_entry.data["password"]
-
-        Expected API response structure (example):
-        {
-            "userId": 1,      # Used as device identifier
-            "id": 1,          # Data record ID
-            "title": "...",   # Additional metadata
-            "body": "...",    # Additional content
-            # In production, would include:
-            # "air_quality": {"aqi": 45, "pm25": 12.3},
-            # "filter": {"life_remaining": 75, "runtime_hours": 324},
-            # "settings": {"fan_speed": "medium", "humidity": 55}
-        }
-
         Returns:
-            The data from the API as a dictionary.
+        Coordinator payload dict with parsed register data.
 
         Raises:
-            ConfigEntryAuthFailed: If authentication fails, triggers reauthentication.
-            UpdateFailed: If data fetching fails for other reasons, optionally with retry_after.
+        UpdateFailed: If Modbus communication fails after recovery attempts.
         """
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
             processed_data = to_coordinator_payload(parse_device_data(raw_data))
-        except AirfiApiClientAuthenticationError as exception:
-            LOGGER.warning("Authentication error - %s", exception)
-            raise ConfigEntryAuthFailed(
-                translation_domain="airfi",
-                translation_key="authentication_failed",
-            ) from exception
         except AirfiApiClientCommunicationError as exception:
             LOGGER.warning("Communication error, attempting host rediscovery: %s", exception)
             if await self._async_try_recover_host():
@@ -179,9 +145,6 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             ) from exception
         except AirfiApiClientError as exception:
             LOGGER.exception("Error communicating with API")
-            # If the API provides rate limit information, you can honor it:
-            # if hasattr(exception, 'retry_after'):
-            #     raise UpdateFailed(retry_after=exception.retry_after) from exception
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",

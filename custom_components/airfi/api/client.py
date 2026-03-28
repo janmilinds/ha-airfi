@@ -33,16 +33,6 @@ class AirfiApiClientCommunicationError(
     """Exception raised for Modbus communication errors."""
 
 
-class AirfiApiClientAuthenticationError(
-    AirfiApiClientError,
-):
-    """Exception raised for authentication errors.
-
-    Airfi Modbus integration does not currently use authentication, but this
-    exception remains to preserve coordinator error mapping semantics.
-    """
-
-
 def _as_version_tuple(value: int) -> tuple[int, int, int]:
     """Convert register value to semantic version tuple.
 

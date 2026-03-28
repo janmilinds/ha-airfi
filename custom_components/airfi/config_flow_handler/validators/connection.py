@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-async def validate_credentials(hass: HomeAssistant, host: str) -> None:
+async def validate_connection(hass: HomeAssistant, host: str) -> None:
     """Validate host by testing Modbus connection."""
     del hass
     client = AirfiApiClient(
@@ -22,5 +22,5 @@ async def validate_credentials(hass: HomeAssistant, host: str) -> None:
 
 
 __all__ = [
-    "validate_credentials",
+    "validate_connection",
 ]

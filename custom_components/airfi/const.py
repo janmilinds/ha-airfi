@@ -1,4 +1,4 @@
-"""Constants for airfi."""
+"""Constants for Airfi."""
 
 from logging import Logger, getLogger
 

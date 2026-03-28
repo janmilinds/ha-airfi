@@ -1,4 +1,4 @@
-"""Connectivity binary sensor for airfi."""
+"""Connectivity binary sensor for Airfi."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ ENTITY_DESCRIPTIONS = (
 
 
 class AirfiConnectivitySensor(BinarySensorEntity, AirfiEntity):
-    """Connectivity sensor for airfi."""
+    """Connectivity sensor for Airfi."""
 
     def __init__(
         self,

@@ -1,4 +1,4 @@
-"""Fan platform for airfi."""
+"""Fan platform for Airfi."""
 
 from __future__ import annotations
 

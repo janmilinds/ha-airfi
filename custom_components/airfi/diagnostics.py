@@ -1,4 +1,4 @@
-"""Diagnostics support for airfi.
+"""Diagnostics support for Airfi.
 
 Learn more about diagnostics:
 https://developers.home-assistant.io/docs/core/integration_diagnostics
@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 TO_REDACT = {
     CONF_HOST,
     CONF_SERIAL_NUMBER,
-    "api_key",
-    "token",
 }
 
 

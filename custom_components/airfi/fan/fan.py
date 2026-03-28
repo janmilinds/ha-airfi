@@ -1,4 +1,4 @@
-"""Fan entity for airfi air handling unit."""
+"""Fan entity for Airfi air handling unit."""
 
 from __future__ import annotations
 
