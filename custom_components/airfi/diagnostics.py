@@ -1,4 +1,4 @@
-"""Diagnostics support for airfi.
+"""Diagnostics support for Airfi.
 
 Learn more about diagnostics:
 https://developers.home-assistant.io/docs/core/integration_diagnostics
@@ -72,8 +72,8 @@ async def async_get_config_entry_diagnostics(
         "data_keys": list(coordinator.data.keys()) if isinstance(coordinator.data, dict) else None,
     }
 
-    # API client information (no sensitive data)
-    api_info = {
+    # Modbus client information (no sensitive data)
+    modbus_info = {
         "transport": "modbus_tcp",
         "host_configured": bool(entry.data.get(CONF_HOST)),
         "port": DEFAULT_MODBUS_PORT,
@@ -96,7 +96,6 @@ async def async_get_config_entry_diagnostics(
         "domain": entry.domain,
         "title": entry.title,
         "state": str(entry.state),
-        "unique_id": entry.unique_id,
         "disabled_by": entry.disabled_by.value if entry.disabled_by else None,
         "data": async_redact_data(entry.data, TO_REDACT),
         "options": async_redact_data(entry.options, TO_REDACT),
@@ -124,7 +123,7 @@ async def async_get_config_entry_diagnostics(
         "entry": entry_info,
         "integration": integration_info,
         "coordinator": coordinator_info,
-        "api": api_info,
+        "modbus": modbus_info,
         "devices": device_info,
         "data_sample": data_sample,
         "error": error_info,

@@ -1,5 +1,5 @@
 """
-Entity package for airfi.
+Entity package for Airfi.
 
 Architecture:
     All platform entities inherit from (PlatformEntity, AirfiEntity).

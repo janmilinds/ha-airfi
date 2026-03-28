@@ -1,5 +1,5 @@
 """
-Config flow for airfi.
+Config flow for Airfi.
 
 This module provides backwards compatibility for hassfest.
 The actual implementation is in the config_flow_handler package.

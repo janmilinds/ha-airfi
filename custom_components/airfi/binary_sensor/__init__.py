@@ -1,4 +1,4 @@
-"""Binary sensor platform for airfi."""
+"""Binary sensor platform for Airfi."""
 
 from __future__ import annotations
 

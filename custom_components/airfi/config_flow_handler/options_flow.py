@@ -1,5 +1,5 @@
 """
-Options flow for airfi.
+Options flow for Airfi.
 
 This module implements the options flow that allows users to modify settings
 after the initial configuration, such as update intervals and debug settings.
