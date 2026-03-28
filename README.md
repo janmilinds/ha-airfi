@@ -1,6 +1,6 @@
 # Airfi
 
-![Airfi Logo](docs/airfi.svg)
+<img src="docs/logo.svg" alt="Airfi Logo" width="120" />
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
