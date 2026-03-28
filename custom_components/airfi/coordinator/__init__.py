@@ -1,5 +1,5 @@
 """
-Data update coordinator package for airfi.
+Data update coordinator package for Airfi.
 
 This package provides the coordinator infrastructure for managing periodic
 data updates and distributing them to all entities in the integration.

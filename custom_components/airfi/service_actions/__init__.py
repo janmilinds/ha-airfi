@@ -1,11 +1,11 @@
-"""Service actions package for airfi."""
+"""Service actions package for Airfi."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.const import DOMAIN, LOGGER
-from custom_components.airfi.service_actions.example_service import async_handle_reload_data
+from custom_components.airfi.service_actions.reload_service import async_handle_reload_data
 from homeassistant.core import ServiceCall
 
 if TYPE_CHECKING:

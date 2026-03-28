@@ -1,5 +1,5 @@
 """
-Custom integration to integrate airfi with Home Assistant.
+Custom integration to integrate Airfi with Home Assistant.
 
 The current implementation provides the Modbus transport, coordinator, config
 flow, and the connectivity entity needed to validate communication with the
@@ -79,9 +79,9 @@ async def async_setup_entry(
     5. Sets up reload listener for config changes
 
     Data flow in this integration:
-    1. User enters host and serial number in config flow
+    1. Device is discovered automatically or configured manually in config flow
     2. Connection details are stored in the config entry
-    3. API Client initialized with credentials (api/client.py)
+    3. API Client initialized with connection settings (api/client.py)
     4. Coordinator fetches Modbus data using the client (coordinator/base.py)
     5. Entities access data via self.coordinator.data
 

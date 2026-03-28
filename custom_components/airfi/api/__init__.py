@@ -1,5 +1,5 @@
 """
-API package for airfi.
+API package for Airfi.
 
 Architecture:
     Three-layer data flow: Entities → Coordinator → API Client.
@@ -8,25 +8,17 @@ Architecture:
 
 Exception hierarchy:
     AirfiApiClientError (base)
-    ├── AirfiApiClientCommunicationError (network/timeout)
-    └── AirfiApiClientAuthenticationError (401/403)
+    └── AirfiApiClientCommunicationError (network/timeout)
 
 Coordinator exception mapping:
-    ApiClientAuthenticationError → ConfigEntryAuthFailed (triggers reauth)
     ApiClientCommunicationError → UpdateFailed (auto-retry)
     ApiClientError             → UpdateFailed (auto-retry)
 """
 
-from .client import (
-    AirfiApiClient,
-    AirfiApiClientAuthenticationError,
-    AirfiApiClientCommunicationError,
-    AirfiApiClientError,
-)
+from .client import AirfiApiClient, AirfiApiClientCommunicationError, AirfiApiClientError
 
 __all__ = [
     "AirfiApiClient",
-    "AirfiApiClientAuthenticationError",
     "AirfiApiClientCommunicationError",
     "AirfiApiClientError",
 ]
