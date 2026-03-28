@@ -65,14 +65,10 @@
         "title": "Skonfiguruj opcje integracji",
         "description": "Dostosuj sposób działania tej integracji.",
         "data": {
-          "update_interval_hours": "Interwał aktualizacji (godziny)",
-          "enable_debugging": "Włącz debugowanie",
-          "custom_icon": "Niestandardowa ikona (opcjonalnie)"
+          "update_interval_seconds": "Interwał aktualizacji (sekundy)"
         },
         "data_description": {
-          "update_interval_hours": "Jak często odświeżać dane z urządzenia (0,25 do 24 godzin)",
-          "enable_debugging": "Włącz szczegółowe logowanie debugowania w celu rozwiązywania problemów",
-          "custom_icon": "Zastąp domyślną ikonę dla jednostek (opcjonalnie)"
+          "update_interval_seconds": "Jak często odświeżać dane z urządzenia (5 do 60 sekund)"
         }
       }
     }

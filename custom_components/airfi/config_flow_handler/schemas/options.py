@@ -17,7 +17,7 @@ from typing import Any
 
 import voluptuous as vol
 
-from custom_components.airfi.const import DEFAULT_ENABLE_DEBUGGING, DEFAULT_UPDATE_INTERVAL_HOURS
+from custom_components.airfi.const import DEFAULT_POLL_INTERVAL_SECONDS
 from homeassistant.helpers import selector
 
 
@@ -36,25 +36,17 @@ def get_options_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
     return vol.Schema(
         {
             vol.Optional(
-                "update_interval_hours",
-                default=defaults.get("update_interval_hours", DEFAULT_UPDATE_INTERVAL_HOURS),
+                "update_interval_seconds",
+                default=defaults.get("update_interval_seconds", DEFAULT_POLL_INTERVAL_SECONDS),
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=0.25,
-                    max=24,
-                    step=0.25,
-                    unit_of_measurement="h",
+                    min=5,
+                    max=60,
+                    step=1,
+                    unit_of_measurement="s",
                     mode=selector.NumberSelectorMode.BOX,
                 ),
             ),
-            vol.Optional(
-                "enable_debugging",
-                default=defaults.get("enable_debugging", DEFAULT_ENABLE_DEBUGGING),
-            ): selector.BooleanSelector(),
-            vol.Optional(
-                "custom_icon",
-                default=defaults.get("custom_icon"),
-            ): selector.IconSelector(),
         },
     )
 

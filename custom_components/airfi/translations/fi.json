@@ -65,14 +65,10 @@
         "title": "Määritä integraation asetukset",
         "description": "Mukauta, miten tämä integraatio toimii.",
         "data": {
-          "update_interval_hours": "Päivitysväli (tunnit)",
-          "enable_debugging": "Ota käyttöön virheenkorjauslokitus",
-          "custom_icon": "Mukautettu kuvake (valinnainen)"
+          "update_interval_seconds": "Päivitysväli (sekuntia)"
         },
         "data_description": {
-          "update_interval_hours": "Kuinka usein päivitetään tiedot laitteesta (0,25 - 24 tuntia)",
-          "enable_debugging": "Ota käyttöön yksityiskohtainen virheenkorjauslokitus vianmääritystä varten",
-          "custom_icon": "Korvaa oletuskuvake entiteeteille (valinnainen)"
+          "update_interval_seconds": "Kuinka usein päivitetään tiedot laitteesta (5–60 sekuntia)"
         }
       }
     }

@@ -65,14 +65,10 @@
         "title": "Konfigurera integrationsinställningar",
         "description": "Anpassa hur denna integration fungerar.",
         "data": {
-          "update_interval_hours": "Uppdateringsintervall (timmar)",
-          "enable_debugging": "Aktivera felsökningsloggning",
-          "custom_icon": "Anpassad ikon (valfritt)"
+          "update_interval_seconds": "Uppdateringsintervall (sekunder)"
         },
         "data_description": {
-          "update_interval_hours": "Hur ofta data uppdateras från enheten (0,25 till 24 timmar)",
-          "enable_debugging": "Aktivera detaljerad loggning för felsökning",
-          "custom_icon": "Ersätt standardikonen för enheter (valfritt)"
+          "update_interval_seconds": "Hur ofta data uppdateras från enheten (5 till 60 sekunder)"
         }
       }
     }

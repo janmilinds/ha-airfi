@@ -65,14 +65,10 @@
         "title": "Configure integration options",
         "description": "Customize how this integration operates.",
         "data": {
-          "update_interval_hours": "Update interval (hours)",
-          "enable_debugging": "Enable debug logging",
-          "custom_icon": "Custom icon (optional)"
+          "update_interval_seconds": "Update interval (seconds)"
         },
         "data_description": {
-          "update_interval_hours": "How often to refresh data from the device (0.25 to 24 hours)",
-          "enable_debugging": "Enable detailed debug logging for troubleshooting",
-          "custom_icon": "Override the default icon for entities (optional)"
+          "update_interval_seconds": "How often to refresh data from the device (5 to 60 seconds)"
         }
       }
     }
