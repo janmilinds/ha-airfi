@@ -85,6 +85,9 @@
   "exceptions": {
     "update_failed": {
       "message": "Failed to update data from the device."
+    },
+    "update_failed_rediscovery": {
+      "message": "Device was rediscovered but data refresh still failed."
     }
   },
   "entity": {

@@ -130,21 +130,18 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                     raw_data = await self.config_entry.runtime_data.client.async_get_data()
                     processed_data = to_coordinator_payload(parse_device_data(raw_data))
                 except AirfiApiClientError as retry_exception:
-                    LOGGER.exception("Rediscovered device but refresh still failed")
                     raise UpdateFailed(
                         translation_domain="airfi",
-                        translation_key="update_failed",
+                        translation_key="update_failed_rediscovery",
                     ) from retry_exception
                 else:
                     return processed_data
 
-            LOGGER.exception("Error communicating with API")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
             ) from exception
         except AirfiApiClientError as exception:
-            LOGGER.exception("Error communicating with API")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
