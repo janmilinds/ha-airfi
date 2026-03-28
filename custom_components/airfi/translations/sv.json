@@ -107,7 +107,7 @@
         "name": "Uteluft"
       },
       "relative_humidity": {
-        "name": "Frånluftens fuktighet"
+        "name": "Relativ fuktighet"
       },
       "supply_air_temperature": {
         "name": "Tilluft"
