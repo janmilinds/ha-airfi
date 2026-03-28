@@ -1,5 +1,5 @@
 """
-Base entity class for airfi.
+Base entity class for Airfi.
 
 This module provides the base entity class that all integration entities inherit from.
 It handles common functionality like device info, unique IDs, and coordinator integration.
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
     """
-    Base entity class for airfi.
+    Base entity class for Airfi.
 
     All entities in this integration inherit from this class, which provides:
     - Automatic coordinator updates

@@ -1,10 +1,9 @@
 """
-Config flow for airfi.
+Config flow for Airfi.
 
 This module implements the main configuration flow including:
 - Initial user setup
 - Reconfiguration of existing entries
-- Reauthentication flow
 
 For more information:
 https://developers.home-assistant.io/docs/config_entries_config_flow_handler
@@ -20,11 +19,10 @@ from slugify import slugify
 from custom_components.airfi.config_flow_handler.schemas import (
     get_discovery_confirm_schema,
     get_discovery_select_schema,
-    get_reauth_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
-from custom_components.airfi.config_flow_handler.validators import validate_credentials
+from custom_components.airfi.config_flow_handler.validators import validate_connection
 from custom_components.airfi.const import (
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
@@ -42,22 +40,20 @@ if TYPE_CHECKING:
 
 # Map exception types to error keys for user-facing messages
 ERROR_MAP = {
-    "AirfiApiClientAuthenticationError": "auth",
     "AirfiApiClientCommunicationError": "cannot_connect",
 }
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """
-    Handle a config flow for airfi.
+    Handle a config flow for Airfi.
 
     This class manages the configuration flow for the integration, including
-    initial setup, reconfiguration, and reauthentication.
+    initial setup and reconfiguration.
 
     Supported flows:
     - user: Initial setup via UI
     - reconfigure: Update existing configuration
-    - reauth: Handle expired credentials
 
     For more details:
     https://developers.home-assistant.io/docs/config_entries_config_flow_handler
@@ -188,7 +184,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                await validate_credentials(
+                await validate_connection(
                     self.hass,
                     host=user_input[CONF_HOST],
                 )
@@ -223,8 +219,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """
         Handle reconfiguration of the integration.
 
-        Allows users to update their credentials without removing and re-adding
-        the integration.
+        Allows users to update the connection settings without removing and re-adding the integration.
 
         Args:
             user_input: The user input from the reconfigure form, or None for initial display.
@@ -238,7 +233,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                await validate_credentials(
+                await validate_connection(
                     self.hass,
                     host=user_input[CONF_HOST],
                 )
@@ -257,70 +252,6 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 serial_number=entry.data.get(CONF_SERIAL_NUMBER),
             ),
             errors=errors,
-        )
-
-    async def async_step_reauth(
-        self,
-        entry_data: dict[str, Any] | None = None,
-    ) -> config_entries.ConfigFlowResult:
-        """
-        Handle reauthentication when credentials are invalid.
-
-        This flow is automatically triggered when the coordinator catches
-        an authentication error (ConfigEntryAuthFailed).
-
-        Args:
-            entry_data: The existing entry data (unused, per convention).
-
-        Returns:
-            The result of the reauth_confirm step.
-
-        """
-        return await self.async_step_reauth_confirm()
-
-    async def async_step_reauth_confirm(
-        self,
-        user_input: dict[str, Any] | None = None,
-    ) -> config_entries.ConfigFlowResult:
-        """
-        Handle reauthentication confirmation.
-
-        Shows the reauthentication form and processes updated credentials.
-
-        Args:
-            user_input: The user input with updated credentials, or None for initial display.
-
-        Returns:
-            The config flow result, either showing a form or updating the entry.
-
-        """
-        entry = self._get_reauth_entry()
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            try:
-                await validate_credentials(
-                    self.hass,
-                    host=user_input[CONF_HOST],
-                )
-            except Exception as exception:  # noqa: BLE001
-                errors["base"] = self._map_exception_to_error(exception)
-            else:
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data={**entry.data, **user_input},
-                )
-
-        return self.async_show_form(
-            step_id="reauth_confirm",
-            data_schema=get_reauth_schema(
-                host=entry.data.get(CONF_HOST, ""),
-                serial_number=entry.data.get(CONF_SERIAL_NUMBER),
-            ),
-            errors=errors,
-            description_placeholders={
-                "username": entry.data.get(CONF_HOST, ""),
-            },
         )
 
     async def async_step_discovery(
@@ -410,10 +341,10 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="invalid_selection")
 
         if user_input is not None:
-            # Validate credentials on discovered host
+            # Validate connection to discovered host
             errors: dict[str, str] = {}
             try:
-                await validate_credentials(
+                await validate_connection(
                     self.hass,
                     host=self.selected_device.host,
                 )

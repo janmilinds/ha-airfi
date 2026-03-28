@@ -7,25 +7,19 @@ as the integration grows.
 
 Package structure:
 -----------------
-- credentials.py: Credential validation and authentication
-- sanitizers.py: Input sanitization and normalization
+- connection.py: Connection validators (e.g., testing API connectivity)
 
 When validators grow (>300 lines per file), split further:
-- credentials/basic.py, credentials/oauth.py, credentials/api_key.py
-- sanitizers/text.py, sanitizers/network.py, sanitizers/identifiers.py
-- discovery/bluetooth.py, discovery/zeroconf.py, discovery/ssdp.py
-- devices/validation.py, devices/discovery.py
+ - connection/modbus.py, connection/discovery.py
 
 All validators are re-exported from this __init__.py for convenient imports.
 """
 
 from __future__ import annotations
 
-from custom_components.airfi.config_flow_handler.validators.credentials import validate_credentials
-from custom_components.airfi.config_flow_handler.validators.sanitizers import sanitize_username
+from custom_components.airfi.config_flow_handler.validators.connection import validate_connection
 
 # Re-export all validators for convenient imports
 __all__ = [
-    "sanitize_username",
-    "validate_credentials",
+    "validate_connection",
 ]

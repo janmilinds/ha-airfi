@@ -25,7 +25,7 @@ async def test_user_flow_creates_entry(hass) -> None:
 
     with (
         patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_credentials",
+            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
             new=AsyncMock(return_value=None),
         ),
         patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
@@ -57,7 +57,7 @@ async def test_user_flow_shows_cannot_connect_error(hass) -> None:
     handler.flow_id = "test-flow"
 
     with patch(
-        "custom_components.airfi.config_flow_handler.config_flow.validate_credentials",
+        "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
         new=AsyncMock(side_effect=AirfiApiClientCommunicationError("boom")),
     ):
         result = await handler.async_step_user(

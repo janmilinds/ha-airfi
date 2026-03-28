@@ -1,11 +1,11 @@
-"""Service action handlers for airfi."""
+"""Service action handlers for Airfi."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.const import LOGGER
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -41,7 +41,7 @@ async def async_handle_reload_data(
 
     try:
         await coordinator.async_request_refresh()
-    except (UpdateFailed, ConfigEntryAuthFailed, ConfigEntryNotReady) as exception:
+    except (UpdateFailed, ConfigEntryNotReady) as exception:
         LOGGER.exception("Failed to reload data: %s", exception)
         # Return error response instead of raising
         return {

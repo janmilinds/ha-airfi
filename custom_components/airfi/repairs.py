@@ -1,4 +1,4 @@
-"""Repairs platform for airfi."""
+"""Repairs platform for Airfi."""
 
 from __future__ import annotations
 
@@ -20,39 +20,11 @@ async def async_create_fix_flow(
 ) -> RepairsFlow:
     """Create a repair flow based on the issue_id."""
     # Map issue IDs to their corresponding repair flow classes
-    if issue_id == "deprecated_api_endpoint":
-        return DeprecatedApiEndpointRepairFlow()
     if issue_id == "missing_configuration":
         return MissingConfigurationRepairFlow()
 
     # Fallback for unknown issue IDs
     return UnknownIssueRepairFlow(issue_id)
-
-
-class DeprecatedApiEndpointRepairFlow(RepairsFlow):
-    """Handler for deprecated API endpoint repair."""
-
-    async def async_step_init(self, user_input: dict[str, str] | None = None) -> FlowResult:
-        """Handle the initial repair step."""
-        if user_input is not None:
-            # User confirmed the fix - update the config entry
-            entry = cast(
-                "ConfigEntry",
-                self.hass.config_entries.async_get_entry(self.handler),
-            )
-            if entry:
-                new_data = {**entry.data, "api_version": "v2"}
-                self.hass.config_entries.async_update_entry(entry, data=new_data)
-
-                # Remove the repair issue
-                ir.async_delete_issue(self.hass, entry.domain, "deprecated_api_endpoint")
-
-                # Reload the config entry to use the new API endpoint
-                await self.hass.config_entries.async_reload(entry.entry_id)
-
-            return self.async_create_entry(data={})
-
-        return self.async_show_form(step_id="init")
 
 
 class MissingConfigurationRepairFlow(RepairsFlow):

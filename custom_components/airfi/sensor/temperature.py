@@ -1,4 +1,4 @@
-"""Temperature sensor entities for airfi."""
+"""Temperature sensor entities for Airfi."""
 
 from __future__ import annotations
 

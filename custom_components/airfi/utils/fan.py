@@ -1,4 +1,4 @@
-"""Fan register address constants for airfi."""
+"""Fan register address constants for Airfi."""
 
 from __future__ import annotations
 

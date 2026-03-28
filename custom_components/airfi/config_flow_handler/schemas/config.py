@@ -4,13 +4,11 @@ Config flow schemas.
 Schemas for the main configuration flow steps:
 - User setup
 - Reconfiguration
-- Reauthentication
 - Discovery
 - Discovery confirm (select device + override name)
 
 When this file grows too large (>300 lines), consider splitting into:
 - user.py: User setup schemas
-- reauth.py: Reauthentication schemas
 - reconfigure.py: Reconfiguration schemas
 - discovery.py: Discovery schemas
 """
@@ -47,7 +45,7 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
         defaults: Optional dictionary of default values to pre-populate the form.
 
     Returns:
-        Voluptuous schema for user credentials input.
+        Voluptuous schema for user connection settings input.
 
     """
     defaults = defaults or {}
@@ -101,35 +99,6 @@ def get_reconfigure_schema(host: str, serial_number: str | None) -> vol.Schema:
                     type=selector.TextSelectorType.TEXT,
                 ),
             ),
-        },
-    )
-
-
-def get_reauth_schema(host: str, serial_number: str | None) -> vol.Schema:
-    """
-    Get schema for reauthentication step.
-
-    Args:
-        username: Current username to pre-fill in the form.
-
-    Returns:
-        Voluptuous schema for reauthentication.
-
-    """
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_HOST,
-                default=host,
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.TEXT,
-                ),
-            ),
-            vol.Required(
-                CONF_SERIAL_NUMBER,
-                default=serial_number if serial_number is not None else vol.UNDEFINED,
-            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         },
     )
 
@@ -208,7 +177,6 @@ def get_discovery_confirm_schema(
 __all__ = [
     "get_discovery_confirm_schema",
     "get_discovery_select_schema",
-    "get_reauth_schema",
     "get_reconfigure_schema",
     "get_user_schema",
 ]
