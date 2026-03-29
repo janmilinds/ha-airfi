@@ -50,6 +50,7 @@
     },
     "error": {
       "cannot_connect": "Det gick inte att ansluta till enheten.",
+      "cannot_retrieve_data": "Det gick inte att hämta data från enheten.",
       "unknown": "Ett okänt fel uppstod."
     },
     "abort": {

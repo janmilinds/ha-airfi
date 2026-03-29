@@ -50,6 +50,7 @@
     },
     "error": {
       "cannot_connect": "Nie można połączyć się z urządzeniem.",
+      "cannot_retrieve_data": "Nie można pobrać danych z urządzenia.",
       "unknown": "Wystąpił nieznany błąd."
     },
     "abort": {

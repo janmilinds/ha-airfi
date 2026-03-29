@@ -40,7 +40,8 @@ if TYPE_CHECKING:
 
 # Map exception types to error keys for user-facing messages
 ERROR_MAP = {
-    "AirfiApiClientCommunicationError": "cannot_connect",
+    "AirfiApiClientConnectionError": "cannot_connect",
+    "AirfiApiClientModbusError": "cannot_retrieve_data",
 }
 
 

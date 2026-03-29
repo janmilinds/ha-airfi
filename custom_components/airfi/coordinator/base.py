@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.api import AirfiApiClientCommunicationError, AirfiApiClientError
+from custom_components.airfi.api import AirfiApiClientError
 from custom_components.airfi.const import (
     CONF_SERIAL_NUMBER,
     DISCOVERY_RECOVERY_COOLDOWN_SECONDS,
@@ -22,6 +22,7 @@ from custom_components.airfi.const import (
     LOGGER,
 )
 from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
+from custom_components.airfi.coordinator.error_handling import log_modbus_failure, should_try_rediscovery
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
@@ -73,15 +74,14 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         This runs before the first data fetch, ensuring any required setup
         is complete before entities start requesting data.
         """
-        # Fetch lookup registers to validate firmware and get register counts
         device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
-        except AirfiApiClientCommunicationError as exception:
-            if await self._async_try_recover_host():
+        except AirfiApiClientError as exception:
+            if should_try_rediscovery(exception) and await self._async_try_recover_host():
                 try:
                     lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
-                except AirfiApiClientCommunicationError as retry_exception:
+                except AirfiApiClientError as retry_exception:
                     raise ConfigEntryNotReady(str(retry_exception)) from retry_exception
             else:
                 raise ConfigEntryNotReady(str(exception)) from exception
@@ -122,32 +122,24 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         """
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
-            processed_data = to_coordinator_payload(parse_device_data(raw_data))
-        except AirfiApiClientCommunicationError as exception:
-            LOGGER.debug("Communication error, attempting host rediscovery: %s", exception)
-            if await self._async_try_recover_host():
+            return to_coordinator_payload(parse_device_data(raw_data))
+        except AirfiApiClientError as exception:
+            if should_try_rediscovery(exception) and await self._async_try_recover_host():
                 try:
                     raw_data = await self.config_entry.runtime_data.client.async_get_data()
-                    processed_data = to_coordinator_payload(parse_device_data(raw_data))
+                    return to_coordinator_payload(parse_device_data(raw_data))
                 except AirfiApiClientError as retry_exception:
+                    log_modbus_failure(retry_exception, "post-rediscovery fetch")
                     raise UpdateFailed(
                         translation_domain="airfi",
                         translation_key="update_failed_rediscovery",
                     ) from retry_exception
-                else:
-                    return processed_data
 
+            log_modbus_failure(exception, "data fetch")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
             ) from exception
-        except AirfiApiClientError as exception:
-            raise UpdateFailed(
-                translation_domain="airfi",
-                translation_key="update_failed",
-            ) from exception
-        else:
-            return processed_data
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.

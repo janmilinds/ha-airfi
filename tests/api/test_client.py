@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 
-from custom_components.airfi.api.client import AirfiApiClient, AirfiApiClientCommunicationError
+from custom_components.airfi.api.client import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
 
 
 @pytest.mark.unit
@@ -84,21 +84,25 @@ async def test_async_write_holding_register_calls_modbus_write() -> None:
 
 
 @pytest.mark.unit
-async def test_async_write_holding_register_raises_on_connection_failure() -> None:
-    """Test that a failed connection raises AirfiApiClientCommunicationError."""
+async def test_async_write_holding_register_raises_connection_error_on_tcp_failure() -> None:
+    """Test that a failed TCP connection raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
     with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
         mock_instance = MockTcpClient.return_value
         mock_instance.connect.return_value = False
 
-        with pytest.raises(AirfiApiClientCommunicationError):
+        with pytest.raises(AirfiApiClientConnectionError):
             await client.async_write_holding_register(address=1, value=3)
 
 
 @pytest.mark.unit
-async def test_async_write_holding_register_raises_on_modbus_error_response() -> None:
-    """Test that a Modbus error response raises AirfiApiClientCommunicationError."""
+async def test_async_write_holding_register_raises_modbus_error_on_error_response() -> None:
+    """Test that a Modbus error response raises AirfiApiClientModbusError.
+
+    This covers cases such as writing an invalid value to a register or
+    targeting a register address that does not support writes.
+    """
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
     with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
@@ -106,5 +110,5 @@ async def test_async_write_holding_register_raises_on_modbus_error_response() ->
         mock_instance.connect.return_value = True
         mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=True))
 
-        with pytest.raises(AirfiApiClientCommunicationError):
+        with pytest.raises(AirfiApiClientModbusError):
             await client.async_write_holding_register(address=1, value=3)

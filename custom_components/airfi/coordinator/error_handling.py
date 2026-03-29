@@ -1,122 +1,61 @@
 """
-Error handling and recovery strategies for the coordinator.
+Error handling utilities for the coordinator.
 
-This module provides utilities for handling errors that occur during
-data updates, including retry logic, circuit breaker patterns, and
-graceful degradation strategies.
+This module centralises error classification and logging decisions so that
+coordinator/base.py stays focused on data fetching and recovery flow.
 
-Use cases:
-- Retry logic with exponential backoff
-- Circuit breaker to prevent cascading failures
-- Error categorization and appropriate responses
-- Graceful degradation when partial data is available
+Current responsibilities:
+- Classifying whether a connection error warrants a rediscovery attempt
+- Logging Modbus failures at the appropriate severity
+
+Planned future responsibilities (not yet implemented):
+- Graceful degradation via handle_partial_data when register groups are
+  fetched independently and a partial result is available
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
-
+from custom_components.airfi.api import AirfiApiClientConnectionError
 from custom_components.airfi.const import LOGGER
 
 
-def should_retry_update(exception: Exception, attempt: int) -> bool:
-    """
-    Determine if an update should be retried based on the error type.
+def should_try_rediscovery(exception: Exception) -> bool:
+    """Return True if the error warrants a rediscovery attempt.
+
+    Rediscovery is only useful when the device is unreachable at the TCP
+    level — the device may have changed IP address. Modbus protocol errors
+    indicate the device is reachable, so rediscovery would not help.
 
     Args:
-        exception: The exception that occurred during update.
-        attempt: The current retry attempt number (0-indexed).
+        exception: The exception raised by the API client.
 
     Returns:
-        True if the update should be retried, False otherwise.
+        True if rediscovery should be attempted, False otherwise.
 
     Example:
-        >>> from requests.exceptions import Timeout
-        >>> should_retry_update(Timeout(), 0)
+        >>> from custom_components.airfi.api import AirfiApiClientConnectionError
+        >>> should_try_rediscovery(AirfiApiClientConnectionError("timeout"))
         True
-        >>> should_retry_update(ValueError(), 0)
+        >>> from custom_components.airfi.api import AirfiApiClientModbusError
+        >>> should_try_rediscovery(AirfiApiClientModbusError("bad response"))
         False
     """
-    # Placeholder for retry logic
-    # Consider exception type, attempt count, and error patterns
-    max_retries = 3
-    return attempt < max_retries
+    return isinstance(exception, AirfiApiClientConnectionError)
 
 
-def calculate_backoff_delay(attempt: int) -> timedelta:
-    """
-    Calculate exponential backoff delay for retry attempts.
+def log_modbus_failure(exception: Exception, context: str) -> None:
+    """Log a Modbus communication failure with context.
 
-    Args:
-        attempt: The current retry attempt number (0-indexed).
-
-    Returns:
-        The delay to wait before the next retry attempt.
-
-    Example:
-        >>> calculate_backoff_delay(0)
-        timedelta(seconds=1)
-        >>> calculate_backoff_delay(2)
-        timedelta(seconds=4)
-    """
-    base_delay = 1  # seconds
-    max_delay = 60  # seconds
-
-    delay = min(base_delay * (2**attempt), max_delay)
-    return timedelta(seconds=delay)
-
-
-def handle_partial_data(data: dict, error: Exception) -> dict:
-    """
-    Handle scenarios where only partial data is available due to errors.
-
-    This function can decide whether to:
-    - Use cached data
-    - Use partial data with fallback values
-    - Raise the error to make entities unavailable
-
-    Args:
-        data: The partial data that was successfully retrieved.
-        error: The error that prevented full data retrieval.
-
-    Returns:
-        The data to use for this update cycle.
-
-    Example:
-        >>> partial = {"sensor1": 42}
-        >>> handle_partial_data(partial, Exception("sensor2 timeout"))
-        {"sensor1": 42}
-    """
-    LOGGER.debug("Handling partial data due to: %s", error)
-
-    # Decide on strategy based on error type and available data
-    # This is a placeholder for future implementation
-    return data
-
-
-def log_update_failure(exception: Exception, attempt: int, total_attempts: int) -> None:
-    """
-    Log update failures with appropriate severity based on context.
+    Uses debug level — Home Assistant already surfaces coordinator update
+    failures to the user via UpdateFailed, so additional warning/error
+    logging here would be duplicative and noisy.
 
     Args:
         exception: The exception that caused the failure.
-        attempt: The current attempt number.
-        total_attempts: The total number of attempts that will be made.
+        context: Short description of what was being attempted, e.g.
+                 "initial fetch" or "post-rediscovery fetch".
 
     Example:
-        >>> log_update_failure(Exception("timeout"), 1, 3)
-        # Logs warning on first attempt, error on final attempt
+        >>> log_modbus_failure(exception, "initial fetch")
     """
-    if attempt < total_attempts - 1:
-        LOGGER.warning(
-            "Update failed (attempt %d/%d): %s",
-            attempt + 1,
-            total_attempts,
-            exception,
-        )
-    else:
-        LOGGER.error(
-            "Update failed after %d attempts: %s",
-            total_attempts,
-            exception,
-        )
+    LOGGER.debug("Modbus failure during %s: %s", context, exception)

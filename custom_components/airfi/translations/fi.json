@@ -50,6 +50,7 @@
     },
     "error": {
       "cannot_connect": "Yhteyden muodostaminen laitteeseen epäonnistui.",
+      "cannot_retrieve_data": "Tietojen hakeminen laitteesta epäonnistui.",
       "unknown": "Odottamaton virhe."
     },
     "abort": {

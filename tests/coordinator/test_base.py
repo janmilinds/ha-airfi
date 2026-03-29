@@ -6,12 +6,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from custom_components.airfi.api.client import AirfiApiClientCommunicationError
+from custom_components.airfi.api.client import AirfiApiClientConnectionError, AirfiApiClientModbusError
 from custom_components.airfi.const import DOMAIN
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
 from homeassistant.const import CONF_HOST
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
 @pytest.mark.unit
@@ -88,12 +89,26 @@ async def test_async_set_holding_register_delegates_to_client(hass, config_entry
 
 
 @pytest.mark.unit
-async def test_async_set_holding_register_re_raises_on_client_error(hass, config_entry, mock_integration) -> None:
-    """Test that write bridge re-raises API client errors."""
+async def test_async_set_holding_register_re_raises_connection_error(hass, config_entry, mock_integration) -> None:
+    """Test that write bridge re-raises TCP connection errors."""
     coordinator, client = _build_coordinator(hass, config_entry, mock_integration)
-    client.async_write_holding_register.side_effect = AirfiApiClientCommunicationError("timeout")
+    client.async_write_holding_register.side_effect = AirfiApiClientConnectionError("timeout")
 
-    with pytest.raises(AirfiApiClientCommunicationError):
+    with pytest.raises(AirfiApiClientConnectionError):
+        await coordinator.async_set_holding_register(address=1, value=3)
+
+
+@pytest.mark.unit
+async def test_async_set_holding_register_re_raises_modbus_error(hass, config_entry, mock_integration) -> None:
+    """Test that write bridge re-raises Modbus protocol errors.
+
+    This covers cases such as writing an invalid value or targeting a
+    register address that does not support writes.
+    """
+    coordinator, client = _build_coordinator(hass, config_entry, mock_integration)
+    client.async_write_holding_register.side_effect = AirfiApiClientModbusError("illegal data value")
+
+    with pytest.raises(AirfiApiClientModbusError):
         await coordinator.async_set_holding_register(address=1, value=3)
 
 
@@ -103,7 +118,7 @@ async def test_async_update_data_recovers_after_device_ip_change(hass, config_en
     client = MagicMock()
     client.async_get_data = AsyncMock(
         side_effect=[
-            AirfiApiClientCommunicationError("timeout"),
+            AirfiApiClientConnectionError("timeout"),
             {
                 "firmware_version": "3.8.1",
                 "modbus_map_version": "3.0.0",
@@ -155,3 +170,48 @@ async def test_async_update_data_recovers_after_device_ip_change(hass, config_en
         data={**config_entry.data, CONF_HOST: "192.168.1.99"},
     )
     assert result["firmware_version"] == "3.8.1"
+
+
+@pytest.mark.unit
+async def test_async_update_data_does_not_rediscover_on_modbus_error(hass, config_entry, mock_integration) -> None:
+    """Test that Modbus protocol errors do not trigger rediscovery.
+
+    Rediscovery is only warranted when the device is unreachable at the
+    TCP level. A Modbus error means the device is reachable but the
+    protocol exchange failed.
+    """
+    client = MagicMock()
+    client.async_get_data = AsyncMock(side_effect=AirfiApiClientModbusError("bad response"))
+
+    coordinator = AirfiDataUpdateCoordinator(
+        hass=hass,
+        logger=MagicMock(),
+        name=DOMAIN,
+        config_entry=config_entry,
+        update_interval=None,
+        always_update=False,
+    )
+    config_entry.runtime_data = AirfiData(
+        client=client,
+        coordinator=coordinator,
+        integration=mock_integration,
+    )
+
+    with (
+        patch(
+            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            new=AsyncMock(return_value=[]),
+        ) as scan_mock,
+        patch(
+            "custom_components.airfi.coordinator.base.should_try_rediscovery",
+            return_value=False,
+        ),
+    ):
+        update_method = AirfiDataUpdateCoordinator.__dict__["_async_update_data"].__get__(
+            coordinator,
+            AirfiDataUpdateCoordinator,
+        )
+        with pytest.raises(UpdateFailed):
+            await update_method()
+
+    scan_mock.assert_not_awaited()
