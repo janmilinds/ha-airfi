@@ -1,6 +1,2 @@
 # yaml-language-server: $schema=../../schemas/yaml/services_schema.yaml
-# Describes the format for available services for Airfi
-
-reload_data:
-  name: Reload Data
-  description: Force a refresh of the integration data from Modbus device(s)
+# Describes the format for available services for airfi
