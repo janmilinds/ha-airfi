@@ -22,7 +22,6 @@ ENTITY_DESCRIPTIONS = (
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:api",
-        has_entity_name=True,
     ),
 )
 
