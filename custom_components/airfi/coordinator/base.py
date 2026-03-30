@@ -34,7 +34,11 @@ from custom_components.airfi.const import (
     RECOVERY_TRIGGER_SECONDS,
 )
 from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
-from custom_components.airfi.coordinator.error_handling import log_modbus_failure, should_try_rediscovery
+from custom_components.airfi.coordinator.error_handling import (
+    log_connection_failure,
+    log_modbus_failure,
+    should_try_rediscovery,
+)
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
@@ -107,7 +111,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
         except AirfiApiClientError as exception:
-            if should_try_rediscovery(exception) and await self._async_try_recover_host():
+            if should_try_rediscovery(exception) and await self._async_try_recover_host(force=True):
                 try:
                     lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
                 except AirfiApiClientError as retry_exception:
@@ -162,13 +166,19 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                         self._async_on_connection_restored()
                         return to_coordinator_payload(parse_device_data(raw_data))
                     except AirfiApiClientError as retry_exception:
-                        log_modbus_failure(retry_exception, "post-rediscovery fetch")
+                        if should_try_rediscovery(retry_exception):
+                            log_connection_failure(retry_exception, "post-rediscovery fetch")
+                        else:
+                            log_modbus_failure(retry_exception, "post-rediscovery fetch")
                         raise UpdateFailed(
                             translation_domain="airfi",
                             translation_key="update_failed_rediscovery",
                         ) from retry_exception
 
-            log_modbus_failure(exception, "data fetch")
+            if should_try_rediscovery(exception):
+                log_connection_failure(exception, "data fetch")
+            else:
+                log_modbus_failure(exception, "data fetch")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
@@ -215,7 +225,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _async_on_connection_restored(self) -> None:
         """Handle a successful connection and reset recovery state."""
-        if self._recovery_state == RecoveryState.IDLE and not self._issue_raised:
+        if self._connection_lost_at is None and self._recovery_state == RecoveryState.IDLE and not self._issue_raised:
             return
 
         LOGGER.info("Device connection restored, resetting recovery state")
@@ -246,12 +256,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             LOGGER.warning("Failed to write holding register %d: %s", address, exception)
             raise
 
-    async def _async_try_recover_host(self) -> bool:
+    async def _async_try_recover_host(self, *, force: bool = False) -> bool:
         """Try to rediscover the configured serial number at a new IP address.
 
-        Only runs when in RECOVERING state and the cooldown has elapsed.
+        Only runs when in RECOVERING state and the cooldown has elapsed,
+        unless explicitly forced (used during initial setup).
         """
-        if self._recovery_state != RecoveryState.RECOVERING:
+        if not force and self._recovery_state != RecoveryState.RECOVERING:
             return False
 
         serial = self.config_entry.data.get(CONF_SERIAL_NUMBER)

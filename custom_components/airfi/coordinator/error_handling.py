@@ -1,5 +1,5 @@
 """
-Error handling utilities for the coordinator.
+Error handling utilities for the Airfi coordinator.
 
 This module centralises error classification and logging decisions so that
 coordinator/base.py stays focused on data fetching and recovery flow.
@@ -59,3 +59,17 @@ def log_modbus_failure(exception: Exception, context: str) -> None:
         >>> log_modbus_failure(exception, "initial fetch")
     """
     LOGGER.debug("Modbus failure during %s: %s", context, exception)
+
+
+def log_connection_failure(exception: Exception, context: str) -> None:
+    """Log a TCP connection failure with context.
+
+    Uses debug level for the same reason as log_modbus_failure: coordinator
+    update failures are surfaced via UpdateFailed, so warning/error logging
+    here would be noisy.
+
+    Args:
+        exception: The exception that caused the failure.
+        context: Short description of what was being attempted.
+    """
+    LOGGER.debug("Connection failure during %s: %s", context, exception)
