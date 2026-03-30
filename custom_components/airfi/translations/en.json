@@ -50,8 +50,7 @@
     },
     "error": {
       "cannot_connect": "Unable to connect to the device.",
-      "cannot_retrieve_data": "Unable to retrieve data from the device.",
-      "unknown": "Unknown error occurred."
+      "cannot_retrieve_data": "Unable to retrieve data from the device."
     },
     "abort": {
       "already_configured": "This entry is already configured.",
@@ -80,6 +79,26 @@
     },
     "update_failed_rediscovery": {
       "message": "Device was rediscovered but data refresh still failed."
+    }
+  },
+  "issues": {
+    "device_unreachable": {
+      "title": "{name} is unreachable",
+      "fix_flow": {
+        "error": {
+          "cannot_connect": "Could not connect to the device at this IP address.",
+          "cannot_retrieve_data": "Connected to the device but could not read required data."
+        },
+        "step": {
+          "init": {
+            "title": "{name} is unreachable",
+            "description": "Update the IP address for {name} if it has changed. If the IP address has not changed, keep the current value and verify the device/network connection.",
+            "data": {
+              "host": "IP address"
+            }
+          }
+        }
+      }
     }
   },
   "entity": {

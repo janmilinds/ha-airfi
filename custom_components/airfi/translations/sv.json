@@ -50,8 +50,7 @@
     },
     "error": {
       "cannot_connect": "Det gick inte att ansluta till enheten.",
-      "cannot_retrieve_data": "Det gick inte att hämta data från enheten.",
-      "unknown": "Ett okänt fel uppstod."
+      "cannot_retrieve_data": "Det gick inte att hämta data från enheten."
     },
     "abort": {
       "already_configured": "Denna enhet är redan konfigurerad.",
@@ -80,6 +79,26 @@
     },
     "update_failed_rediscovery": {
       "message": "Enheten upptäcktes igen, men datauppdateringen misslyckades fortfarande."
+    }
+  },
+  "issues": {
+    "device_unreachable": {
+      "title": "{name} kan inte nås",
+      "fix_flow": {
+        "error": {
+          "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen.",
+          "cannot_retrieve_data": "Anslutning till enheten lyckades, men nödvändiga data kunde inte läsas."
+        },
+        "step": {
+          "init": {
+            "title": "{name} kan inte nås",
+            "description": "Uppdatera IP-adressen för {name} om den har ändrats. Om IP-adressen inte har ändrats, behåll det aktuella värdet och kontrollera enhetens eller nätverkets anslutning.",
+            "data": {
+              "host": "IP-adress"
+            }
+          }
+        }
+      }
     }
   },
   "entity": {

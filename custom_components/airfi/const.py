@@ -30,6 +30,15 @@ DISCOVERY_DEVICE_PORT = 4000
 DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS = 5
 DISCOVERY_RECOVERY_COOLDOWN_SECONDS = 60
 
+# Recovery configuration
+# How long the device must be unreachable before rediscovery is triggered (90 seconds)
+RECOVERY_TRIGGER_SECONDS = 90
+# How long the device must be unreachable before a repairs issue is raised (10 minutes)
+RECOVERY_ISSUE_SECONDS = 600
+
+# Repairs issue identifiers
+ISSUE_DEVICE_UNREACHABLE = "device_unreachable"
+
 # Device models (byte 11 parsing: index = (model_id - 1) // 2, variant = L if odd else R)
 # Variant placeholder {} is replaced with L/R based on model_id parity
 AIRFI_MODELS = [

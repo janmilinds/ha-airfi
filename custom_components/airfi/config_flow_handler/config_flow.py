@@ -32,17 +32,12 @@ from custom_components.airfi.const import (
     LOGGER,
 )
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
+from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 
 if TYPE_CHECKING:
     from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow
-
-# Map exception types to error keys for user-facing messages
-ERROR_MAP = {
-    "AirfiApiClientConnectionError": "cannot_connect",
-    "AirfiApiClientModbusError": "cannot_retrieve_data",
-}
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -405,8 +400,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         """
         LOGGER.warning("Error in config flow: %s", exception)
-        exception_name = type(exception).__name__
-        return ERROR_MAP.get(exception_name, "unknown")
+        return map_connection_exception_to_error(exception)
 
 
 __all__ = ["AirfiConfigFlowHandler"]
