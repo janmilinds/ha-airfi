@@ -50,7 +50,7 @@
     },
     "error": {
       "cannot_connect": "Det gick inte att ansluta till enheten.",
-      "unknown": "Ett okänt fel uppstod."
+      "cannot_retrieve_data": "Det gick inte att hämta data från enheten."
     },
     "abort": {
       "already_configured": "Denna enhet är redan konfigurerad.",
@@ -65,14 +65,10 @@
         "title": "Konfigurera integrationsinställningar",
         "description": "Anpassa hur denna integration fungerar.",
         "data": {
-          "update_interval_hours": "Uppdateringsintervall (timmar)",
-          "enable_debugging": "Aktivera felsökningsloggning",
-          "custom_icon": "Anpassad ikon (valfritt)"
+          "update_interval_seconds": "Uppdateringsintervall (sekunder)"
         },
         "data_description": {
-          "update_interval_hours": "Hur ofta data uppdateras från enheten (0,25 till 24 timmar)",
-          "enable_debugging": "Aktivera detaljerad loggning för felsökning",
-          "custom_icon": "Ersätt standardikonen för enheter (valfritt)"
+          "update_interval_seconds": "Hur ofta data uppdateras från enheten (5 till 60 sekunder)"
         }
       }
     }
@@ -83,6 +79,26 @@
     },
     "update_failed_rediscovery": {
       "message": "Enheten upptäcktes igen, men datauppdateringen misslyckades fortfarande."
+    }
+  },
+  "issues": {
+    "device_unreachable": {
+      "title": "{name} kan inte nås",
+      "fix_flow": {
+        "error": {
+          "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen.",
+          "cannot_retrieve_data": "Anslutning till enheten lyckades, men nödvändiga data kunde inte läsas."
+        },
+        "step": {
+          "init": {
+            "title": "{name} kan inte nås",
+            "description": "Uppdatera IP-adressen för {name} om den har ändrats. Om IP-adressen inte har ändrats, behåll det aktuella värdet och kontrollera enhetens eller nätverkets anslutning.",
+            "data": {
+              "host": "IP-adress"
+            }
+          }
+        }
+      }
     }
   },
   "entity": {

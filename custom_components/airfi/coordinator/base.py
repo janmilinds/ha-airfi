@@ -5,6 +5,13 @@ This module contains the main coordinator class that manages data fetching
 and updates for all entities in the integration. It handles refresh cycles,
 error handling, and triggers rediscovery when needed.
 
+Recovery state machine:
+    IDLE        — device is reachable, normal polling
+    RECOVERING  — device unreachable for > RECOVERY_TRIGGER_SECONDS,
+                  rediscovery active; repairs issue raised after
+                  RECOVERY_ISSUE_SECONDS
+    (back to IDLE when connection is restored, issue auto-resolved)
+
 For more information on coordinators:
 https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 """
@@ -12,24 +19,42 @@ https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.api import AirfiApiClientCommunicationError, AirfiApiClientError
+from custom_components.airfi.api import AirfiApiClientError
 from custom_components.airfi.const import (
     CONF_SERIAL_NUMBER,
     DISCOVERY_RECOVERY_COOLDOWN_SECONDS,
     DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
+    DOMAIN,
+    ISSUE_DEVICE_UNREACHABLE,
     LOGGER,
+    RECOVERY_ISSUE_SECONDS,
+    RECOVERY_TRIGGER_SECONDS,
 )
 from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
+from custom_components.airfi.coordinator.error_handling import (
+    log_connection_failure,
+    log_modbus_failure,
+    should_try_rediscovery,
+)
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
     from custom_components.airfi.data import AirfiConfigEntry
+
+
+class RecoveryState(Enum):
+    """Recovery state of the coordinator."""
+
+    IDLE = "idle"
+    RECOVERING = "recovering"
 
 
 class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
@@ -40,6 +65,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
     updates to all entities. It manages:
     - Periodic Modbus polling based on update_interval
     - Communication error handling and IP recovery via rediscovery
+    - Repairs issue lifecycle when the device is unreachable for an extended period
     - Data distribution to all entities
 
     For more information:
@@ -59,6 +85,14 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         self.holding_registers: int = 0
         self.hw_version: str = ""
         self._last_rediscovery_attempt: float | None = None
+        self._connection_lost_at: float | None = None
+        self._recovery_state: RecoveryState = RecoveryState.IDLE
+        self._issue_raised: bool = False
+
+    @property
+    def _device_unreachable_issue_id(self) -> str:
+        """Return the issue ID for unreachable-device repairs for this entry."""
+        return f"{ISSUE_DEVICE_UNREACHABLE}_{self.config_entry.entry_id}"
 
     async def _async_setup(self) -> None:
         """
@@ -73,15 +107,14 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         This runs before the first data fetch, ensuring any required setup
         is complete before entities start requesting data.
         """
-        # Fetch lookup registers to validate firmware and get register counts
         device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
-        except AirfiApiClientCommunicationError as exception:
-            if await self._async_try_recover_host():
+        except AirfiApiClientError as exception:
+            if should_try_rediscovery(exception) and await self._async_try_recover_host(force=True):
                 try:
                     lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
-                except AirfiApiClientCommunicationError as retry_exception:
+                except AirfiApiClientError as retry_exception:
                     raise ConfigEntryNotReady(str(retry_exception)) from retry_exception
             else:
                 raise ConfigEntryNotReady(str(exception)) from exception
@@ -122,32 +155,86 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         """
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
-            processed_data = to_coordinator_payload(parse_device_data(raw_data))
-        except AirfiApiClientCommunicationError as exception:
-            LOGGER.debug("Communication error, attempting host rediscovery: %s", exception)
-            if await self._async_try_recover_host():
-                try:
-                    raw_data = await self.config_entry.runtime_data.client.async_get_data()
-                    processed_data = to_coordinator_payload(parse_device_data(raw_data))
-                except AirfiApiClientError as retry_exception:
-                    raise UpdateFailed(
-                        translation_domain="airfi",
-                        translation_key="update_failed_rediscovery",
-                    ) from retry_exception
-                else:
-                    return processed_data
-
-            raise UpdateFailed(
-                translation_domain="airfi",
-                translation_key="update_failed",
-            ) from exception
+            self._async_on_connection_restored()
+            return to_coordinator_payload(parse_device_data(raw_data))
         except AirfiApiClientError as exception:
+            if should_try_rediscovery(exception):
+                self._async_on_connection_lost()
+                if await self._async_try_recover_host():
+                    try:
+                        raw_data = await self.config_entry.runtime_data.client.async_get_data()
+                        self._async_on_connection_restored()
+                        return to_coordinator_payload(parse_device_data(raw_data))
+                    except AirfiApiClientError as retry_exception:
+                        if should_try_rediscovery(retry_exception):
+                            log_connection_failure(retry_exception, "post-rediscovery fetch")
+                        else:
+                            log_modbus_failure(retry_exception, "post-rediscovery fetch")
+                        raise UpdateFailed(
+                            translation_domain="airfi",
+                            translation_key="update_failed_rediscovery",
+                        ) from retry_exception
+
+            if should_try_rediscovery(exception):
+                log_connection_failure(exception, "data fetch")
+            else:
+                log_modbus_failure(exception, "data fetch")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
             ) from exception
-        else:
-            return processed_data
+
+    def _async_on_connection_lost(self) -> None:
+        """Handle a connection loss event and trigger recovery if thresholds are met."""
+        loop = asyncio.get_running_loop()
+        now = loop.time()
+
+        if self._connection_lost_at is None:
+            self._connection_lost_at = now
+            LOGGER.debug("Device connection lost, starting outage timer")
+
+        outage_duration = now - self._connection_lost_at
+
+        if outage_duration >= RECOVERY_TRIGGER_SECONDS and self._recovery_state == RecoveryState.IDLE:
+            self._recovery_state = RecoveryState.RECOVERING
+            LOGGER.warning(
+                "Device unreachable for %.0f seconds, activating rediscovery",
+                outage_duration,
+            )
+
+        if outage_duration >= RECOVERY_ISSUE_SECONDS and not self._issue_raised:
+            self._issue_raised = True
+            LOGGER.warning(
+                "Device unreachable for %.0f minutes, raising repair issue",
+                outage_duration / 60,
+            )
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                self._device_unreachable_issue_id,
+                data={
+                    "entry_id": self.config_entry.entry_id,
+                },
+                is_fixable=True,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key=ISSUE_DEVICE_UNREACHABLE,
+                translation_placeholders={
+                    "name": self.config_entry.title,
+                },
+            )
+
+    def _async_on_connection_restored(self) -> None:
+        """Handle a successful connection and reset recovery state."""
+        if self._connection_lost_at is None and self._recovery_state == RecoveryState.IDLE and not self._issue_raised:
+            return
+
+        LOGGER.info("Device connection restored, resetting recovery state")
+        self._connection_lost_at = None
+        self._recovery_state = RecoveryState.IDLE
+
+        if self._issue_raised:
+            self._issue_raised = False
+            ir.async_delete_issue(self.hass, DOMAIN, self._device_unreachable_issue_id)
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.
@@ -169,8 +256,15 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             LOGGER.warning("Failed to write holding register %d: %s", address, exception)
             raise
 
-    async def _async_try_recover_host(self) -> bool:
-        """Try to rediscover the configured serial number at a new IP address."""
+    async def _async_try_recover_host(self, *, force: bool = False) -> bool:
+        """Try to rediscover the configured serial number at a new IP address.
+
+        Only runs when in RECOVERING state and the cooldown has elapsed,
+        unless explicitly forced (used during initial setup).
+        """
+        if not force and self._recovery_state != RecoveryState.RECOVERING:
+            return False
+
         serial = self.config_entry.data.get(CONF_SERIAL_NUMBER)
         if serial is None:
             return False

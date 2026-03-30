@@ -50,7 +50,7 @@
     },
     "error": {
       "cannot_connect": "Nie można połączyć się z urządzeniem.",
-      "unknown": "Wystąpił nieznany błąd."
+      "cannot_retrieve_data": "Nie można pobrać danych z urządzenia."
     },
     "abort": {
       "already_configured": "Ten wpis jest już skonfigurowany.",
@@ -65,14 +65,10 @@
         "title": "Skonfiguruj opcje integracji",
         "description": "Dostosuj sposób działania tej integracji.",
         "data": {
-          "update_interval_hours": "Interwał aktualizacji (godziny)",
-          "enable_debugging": "Włącz debugowanie",
-          "custom_icon": "Niestandardowa ikona (opcjonalnie)"
+          "update_interval_seconds": "Interwał aktualizacji (sekundy)"
         },
         "data_description": {
-          "update_interval_hours": "Jak często odświeżać dane z urządzenia (0,25 do 24 godzin)",
-          "enable_debugging": "Włącz szczegółowe logowanie debugowania w celu rozwiązywania problemów",
-          "custom_icon": "Zastąp domyślną ikonę dla jednostek (opcjonalnie)"
+          "update_interval_seconds": "Jak często odświeżać dane z urządzenia (5 do 60 sekund)"
         }
       }
     }
@@ -83,6 +79,26 @@
     },
     "update_failed_rediscovery": {
       "message": "Urządzenie zostało ponownie wykryte, ale odświeżenie danych nadal nie powiodło się."
+    }
+  },
+  "issues": {
+    "device_unreachable": {
+      "title": "{name} jest niedostępne",
+      "fix_flow": {
+        "error": {
+          "cannot_connect": "Nie udało się połączyć z urządzeniem pod tym adresem IP.",
+          "cannot_retrieve_data": "Połączono z urządzeniem, ale nie udało się odczytać wymaganych danych."
+        },
+        "step": {
+          "init": {
+            "title": "{name} jest niedostępne",
+            "description": "Zaktualizuj adres IP urządzenia {name}, jeśli się zmienił. Jeśli adres IP się nie zmienił, pozostaw bieżącą wartość i sprawdź połączenie urządzenia lub sieci.",
+            "data": {
+              "host": "Adres IP"
+            }
+          }
+        }
+      }
     }
   },
   "entity": {

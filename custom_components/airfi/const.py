@@ -16,8 +16,6 @@ CONF_MODEL_NAME = "model_name"
 PARALLEL_UPDATES = 1
 
 # Default configuration values
-DEFAULT_UPDATE_INTERVAL_HOURS = 1
-DEFAULT_ENABLE_DEBUGGING = False
 DEFAULT_MODBUS_PORT = 502
 DEFAULT_POLL_INTERVAL_SECONDS = 10
 
@@ -31,6 +29,15 @@ DISCOVERY_QUIET_PERIOD_SECONDS = 3
 DISCOVERY_DEVICE_PORT = 4000
 DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS = 5
 DISCOVERY_RECOVERY_COOLDOWN_SECONDS = 60
+
+# Recovery configuration
+# How long the device must be unreachable before rediscovery is triggered (90 seconds)
+RECOVERY_TRIGGER_SECONDS = 90
+# How long the device must be unreachable before a repairs issue is raised (10 minutes)
+RECOVERY_ISSUE_SECONDS = 600
+
+# Repairs issue identifiers
+ISSUE_DEVICE_UNREACHABLE = "device_unreachable"
 
 # Device models (byte 11 parsing: index = (model_id - 1) // 2, variant = L if odd else R)
 # Variant placeholder {} is replaced with L/R based on model_id parity

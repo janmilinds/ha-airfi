@@ -8,17 +8,20 @@ Architecture:
 
 Exception hierarchy:
     AirfiApiClientError (base)
-    └── AirfiApiClientCommunicationError (network/timeout)
+    ├── AirfiApiClientConnectionError (TCP unreachable / timeout)
+    └── AirfiApiClientModbusError (Modbus protocol failure)
 
 Coordinator exception mapping:
-    ApiClientCommunicationError → UpdateFailed (auto-retry)
-    ApiClientError             → UpdateFailed (auto-retry)
+    AirfiApiClientConnectionError → may trigger rediscovery → UpdateFailed
+    AirfiApiClientModbusError     → UpdateFailed (no rediscovery)
+    AirfiApiClientError           → UpdateFailed
 """
 
-from .client import AirfiApiClient, AirfiApiClientCommunicationError, AirfiApiClientError
+from .client import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientError, AirfiApiClientModbusError
 
 __all__ = [
     "AirfiApiClient",
-    "AirfiApiClientCommunicationError",
+    "AirfiApiClientConnectionError",
     "AirfiApiClientError",
+    "AirfiApiClientModbusError",
 ]

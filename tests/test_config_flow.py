@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from custom_components.airfi.api import AirfiApiClientCommunicationError
+from custom_components.airfi.api import AirfiApiClientConnectionError
 from custom_components.airfi.config_flow_handler.config_flow import AirfiConfigFlowHandler
 from custom_components.airfi.const import CONF_MODEL_NAME, CONF_SERIAL_NUMBER
 from homeassistant.const import CONF_HOST
@@ -50,7 +50,7 @@ async def test_user_flow_creates_entry(hass) -> None:
 
 @pytest.mark.unit
 async def test_user_flow_shows_cannot_connect_error(hass) -> None:
-    """Test that communication errors are mapped to the user-facing error key."""
+    """Test that a TCP connection error is mapped to the cannot_connect error key."""
     handler = AirfiConfigFlowHandler()
     handler.hass = hass
     handler.context = {"source": "user"}
@@ -58,7 +58,7 @@ async def test_user_flow_shows_cannot_connect_error(hass) -> None:
 
     with patch(
         "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-        new=AsyncMock(side_effect=AirfiApiClientCommunicationError("boom")),
+        new=AsyncMock(side_effect=AirfiApiClientConnectionError("timeout")),
     ):
         result = await handler.async_step_user(
             {

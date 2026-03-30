@@ -25,7 +25,6 @@ from .api import AirfiApiClient
 from .const import DEFAULT_MODBUS_PORT, DEFAULT_POLL_INTERVAL_SECONDS, DOMAIN, LOGGER
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
-from .service_actions import async_setup_services
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -39,28 +38,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """
-    Set up the integration.
-
-    This is called once at Home Assistant startup to register service actions.
-    Service actions must be registered here (not in async_setup_entry) to ensure:
-    - Service action validation works correctly
-    - Service actions are available even without config entries
-    - Helpful error messages are provided
-
-    This is a Silver Quality Scale requirement.
-
-    Args:
-        hass: The Home Assistant instance.
-        config: The Home Assistant configuration.
-
-    Returns:
-        True if setup was successful.
-
-    For more information:
-    https://developers.home-assistant.io/docs/dev_101_services
-    """
-    await async_setup_services(hass)
+    """Set up the integration."""
     return True
 
 
@@ -105,12 +83,14 @@ async def async_setup_entry(
     )
 
     # Initialize coordinator with config_entry
+    # Determine update interval from options (seconds)
+    seconds = entry.options.get("update_interval_seconds", DEFAULT_POLL_INTERVAL_SECONDS)
     coordinator = AirfiDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
         config_entry=entry,
-        update_interval=timedelta(seconds=DEFAULT_POLL_INTERVAL_SECONDS),
+        update_interval=timedelta(seconds=int(seconds)),
         always_update=False,  # Only update entities when data actually changes
     )
 
@@ -153,6 +133,7 @@ async def async_unload_entry(
     For more information:
     https://developers.home-assistant.io/docs/config_entries_index/#unloading-entries
     """
+
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
