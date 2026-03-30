@@ -24,7 +24,8 @@ Home Assistant custom integration for controlling Airfi air handling units over 
 - Connectivity diagnostic binary sensor
 - Reconfigure flow for host updates without removing the integration
 - Automatic IP recovery after device IP changes (serial-based rediscovery)
-- Service for manual data refresh: `airfi.reload_data`
+- Repairs flow for unreachable devices (guided host update + connection validation)
+- Configurable polling interval in options flow (`update_interval_seconds`)
 
 ## Supported Models
 
@@ -87,6 +88,12 @@ If no device is selected from discovery, you can add manually with:
 
 Reconfigure updates host only. Serial number and model remain fixed for the configured device entry.
 
+### Options
+
+Options flow currently provides:
+
+- Update interval in seconds (`update_interval_seconds`, range 5-60)
+
 ## Created Entities
 
 ### Fan
@@ -105,17 +112,9 @@ Reconfigure updates host only. Serial number and model remain fixed for the conf
 
 - API connectivity (diagnostic)
 
-## Service
+## Services
 
-### `airfi.reload_data`
-
-Force an immediate coordinator refresh from the device.
-
-Example:
-
-```yaml
-service: airfi.reload_data
-```
+This integration currently does not expose custom service actions.
 
 ## Network and Discovery Notes
 
@@ -137,6 +136,15 @@ If the device IP changes, the integration can recover automatically:
 - It updates the stored host and continues polling
 
 This reduces the need for manual reconfiguration after DHCP changes.
+
+## Repairs
+
+If the device stays unreachable for an extended period, Home Assistant can show
+a repair issue for the integration. The repair flow lets you:
+
+- Update the stored host/IP address
+- Validate connectivity before saving
+- Reload the config entry after applying the fix
 
 ## Troubleshooting
 
