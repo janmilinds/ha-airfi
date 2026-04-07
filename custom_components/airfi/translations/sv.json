@@ -74,6 +74,12 @@
     }
   },
   "exceptions": {
+    "device_unreachable": {
+      "message": "Det gick inte att ansluta till enheten på {host}."
+    },
+    "setup_firmware_error": {
+      "message": "Validering av enhetens firmware misslyckades: {error}"
+    },
     "update_failed": {
       "message": "Misslyckades med att uppdatera data från enheten."
     },

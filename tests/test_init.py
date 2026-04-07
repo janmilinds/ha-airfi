@@ -44,6 +44,10 @@ async def test_async_setup_entry_creates_runtime_data(hass, entry) -> None:
     """Test that async_setup_entry initialises client, coordinator and platforms."""
     with (
         patch(
+            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            new=AsyncMock(),
+        ),
+        patch(
             "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
@@ -63,6 +67,10 @@ async def test_async_setup_entry_creates_runtime_data(hass, entry) -> None:
 async def test_async_unload_entry_unloads_platforms(hass, entry) -> None:
     """Test that async_unload_entry delegates to async_unload_platforms."""
     with (
+        patch(
+            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            new=AsyncMock(),
+        ),
         patch(
             "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(),

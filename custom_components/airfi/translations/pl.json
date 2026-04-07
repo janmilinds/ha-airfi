@@ -74,6 +74,12 @@
     }
   },
   "exceptions": {
+    "device_unreachable": {
+      "message": "Nie udało się połączyć z urządzeniem pod adresem {host}."
+    },
+    "setup_firmware_error": {
+      "message": "Walidacja oprogramowania urządzenia nie powiodła się: {error}"
+    },
     "update_failed": {
       "message": "Nie udało się zaktualizować danych z urządzenia."
     },

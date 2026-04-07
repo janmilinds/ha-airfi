@@ -94,20 +94,19 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         """Return the issue ID for unreachable-device repairs for this entry."""
         return f"{ISSUE_DEVICE_UNREACHABLE}_{self.config_entry.entry_id}"
 
-    async def _async_setup(self) -> None:
+    async def async_initial_setup(self) -> None:
         """
-        Set up the coordinator.
+        Perform the initial one-time device handshake.
 
-        This method is called automatically during async_config_entry_first_refresh()
-        and is the ideal place for one-time initialization tasks such as:
-        - Loading device information
-        - Setting up event listeners
-        - Initializing caches
-
-        This runs before the first data fetch, ensuring any required setup
-        is complete before entities start requesting data.
+        Called directly from async_setup_entry BEFORE async_config_entry_first_refresh
+        so that any ConfigEntryNotReady exceptions propagate straight to
+        config_entries.py without being swallowed by
+        DataUpdateCoordinator.__wrap_async_setup (which re-wraps them as a
+        plain, translation-less ConfigEntryNotReady, destroying the
+        translation_key).
         """
         device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
+        host = self.config_entry.data.get(CONF_HOST, "unknown")
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
         except AirfiApiClientError as exception:
@@ -115,9 +114,15 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                 try:
                     lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
                 except AirfiApiClientError as retry_exception:
-                    raise ConfigEntryNotReady(str(retry_exception)) from retry_exception
+                    raise ConfigEntryNotReady(
+                        translation_key="device_unreachable",
+                        translation_placeholders={"host": str(host)},
+                    ) from retry_exception
             else:
-                raise ConfigEntryNotReady(str(exception)) from exception
+                raise ConfigEntryNotReady(
+                    translation_key="device_unreachable",
+                    translation_placeholders={"host": str(host)},
+                ) from exception
         try:
             # Initialize feature manager and validate firmware
             self.feature_manager.initialize(device_name, lookup_registers)
@@ -138,7 +143,10 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except ValueError as exception:
             LOGGER.error("Device validation failed: %s", exception)
-            raise ConfigEntryNotReady(str(exception)) from exception
+            raise ConfigEntryNotReady(
+                translation_key="setup_firmware_error",
+                translation_placeholders={"error": str(exception)},
+            ) from exception
 
     async def _async_update_data(self) -> Any:
         """

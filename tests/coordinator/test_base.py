@@ -53,7 +53,7 @@ async def test_async_setup_uses_serial_number_and_caches_profile(hass, config_en
     ):
         coordinator.feature_manager.firmware_version = "3.8.1"
         coordinator.feature_manager.modbus_map_version = "3.0.0"
-        setup_method = AirfiDataUpdateCoordinator.__dict__["_async_setup"].__get__(
+        setup_method = AirfiDataUpdateCoordinator.__dict__["async_initial_setup"].__get__(
             coordinator,
             AirfiDataUpdateCoordinator,
         )
@@ -302,9 +302,8 @@ def _make_coordinator(
 
 
 async def _call_setup(coordinator: AirfiDataUpdateCoordinator) -> None:
-    """Call the coordinator's _async_setup directly."""
-    setup = AirfiDataUpdateCoordinator.__dict__["_async_setup"].__get__(coordinator, AirfiDataUpdateCoordinator)
-    await setup()
+    """Call the coordinator's async_initial_setup directly."""
+    await coordinator.async_initial_setup()
 
 
 async def _call_update(coordinator: AirfiDataUpdateCoordinator):
@@ -314,13 +313,13 @@ async def _call_update(coordinator: AirfiDataUpdateCoordinator):
 
 
 # ---------------------------------------------------------------------------
-# _async_setup — error paths
+# async_initial_setup — error paths
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
 async def test_async_setup_raises_config_entry_not_ready_on_api_error(hass, config_entry, mock_integration) -> None:
-    """Test that _async_setup raises ConfigEntryNotReady when lookup fails and rediscovery fails."""
+    """Test that async_initial_setup raises ConfigEntryNotReady when lookup fails and rediscovery fails."""
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
@@ -336,7 +335,7 @@ async def test_async_setup_raises_config_entry_not_ready_on_api_error(hass, conf
 
 @pytest.mark.unit
 async def test_async_setup_rediscovers_on_connection_error(hass, config_entry, mock_integration) -> None:
-    """Test that _async_setup tries rediscovery on connection error and retries lookup."""
+    """Test that async_initial_setup tries rediscovery on connection error and retries lookup."""
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     # First call fails, second succeeds after rediscovery
     client.async_get_lookup_registers = AsyncMock(side_effect=[AirfiApiClientConnectionError("timeout"), [0, 381, 300]])
@@ -361,7 +360,7 @@ async def test_async_setup_rediscovers_on_connection_error(hass, config_entry, m
 
 @pytest.mark.unit
 async def test_async_setup_rediscovery_succeeds_but_retry_fails(hass, config_entry, mock_integration) -> None:
-    """Test that _async_setup raises ConfigEntryNotReady when retry after rediscovery also fails."""
+    """Test that async_initial_setup raises ConfigEntryNotReady when retry after rediscovery also fails."""
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
@@ -380,13 +379,13 @@ async def test_async_setup_rediscovery_succeeds_but_retry_fails(hass, config_ent
 
 @pytest.mark.unit
 async def test_async_setup_feature_manager_validation_error(hass, config_entry, mock_integration) -> None:
-    """Test that _async_setup raises ConfigEntryNotReady on feature validation failure."""
+    """Test that async_initial_setup raises ConfigEntryNotReady on feature validation failure."""
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(return_value=[0, 381, 300])
 
     with (
         patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("bad firmware")),
-        pytest.raises(ConfigEntryNotReady, match="bad firmware"),
+        pytest.raises(ConfigEntryNotReady),
     ):
         await _call_setup(coordinator)
 
