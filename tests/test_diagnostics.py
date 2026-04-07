@@ -11,6 +11,7 @@ from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.const import CONF_HOST
+from homeassistant.helpers import device_registry as dr
 
 
 def _build_config_entry_with_runtime_data(hass) -> MockConfigEntry:
@@ -163,3 +164,28 @@ async def test_diagnostics_modbus_info(hass) -> None:
     assert result["modbus"]["transport"] == "modbus_tcp"
     assert result["modbus"]["host_configured"] is True
     assert result["modbus"]["port"] == 502
+
+
+@pytest.mark.unit
+async def test_diagnostics_includes_device_info(hass) -> None:
+    """Test that diagnostics lists devices from the device registry."""
+    entry = _build_config_entry_with_runtime_data(hass)
+
+    # Register a device for this config entry
+    device_reg = dr.async_get(hass)
+    device_reg.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, "AIRFI-12345")},
+        manufacturer="Airfi",
+        model="Model 60 L",
+        name="Airfi AIRFI-12345",
+        sw_version="3.8.1",
+    )
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert len(result["devices"]) == 1
+    device = result["devices"][0]
+    assert device["manufacturer"] == "Airfi"
+    assert device["model"] == "Model 60 L"
+    assert device["name"] == "Airfi AIRFI-12345"
