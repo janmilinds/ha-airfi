@@ -1,26 +1,36 @@
 # Getting Started with Airfi
 
-This guide will help you install and set up the Airfi custom integration for Home Assistant.
+This guide covers installation, setup, and first steps for the Airfi custom integration for Home Assistant.
+
+## What is Airfi?
+
+Airfi is a Home Assistant integration for **Airfi ventilation units** (heat recovery ventilators). It communicates with the unit over **Modbus TCP** on your local network and provides:
+
+- **Fan control** — turn ventilation on/off and set speed (5 levels)
+- **Temperature sensors** — outdoor, extract, exhaust, and supply air temperatures
+- **Humidity sensor** — relative humidity measurement
+- **Connectivity monitoring** — device reachability status
+- **Automatic device discovery** — finds Airfi units on your network via UDP multicast
 
 ## Prerequisites
 
 - Home Assistant 2025.7.0 or newer
 - HACS (Home Assistant Community Store) installed
-- Network connectivity to [external service/device]
+- An Airfi ventilation unit connected to the same network as Home Assistant
 
 ## Installation
 
 ### Via HACS (Recommended)
 
 1. Open HACS in your Home Assistant instance
-2. Go to "Integrations"
+2. Go to **Integrations**
 3. Click the three dots in the top right corner
-4. Select "Custom repositories"
+4. Select **Custom repositories**
 5. Add this repository URL: `https://github.com/janmilinds/ha-airfi`
-6. Set category to "Integration"
-7. Click "Add"
-8. Find "Airfi" in the integration list
-9. Click "Download"
+6. Set category to **Integration**
+7. Click **Add**
+8. Find **Airfi** in the integration list
+9. Click **Download**
 10. Restart Home Assistant
 
 ### Manual Installation
@@ -36,113 +46,109 @@ After installation, add the integration:
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
-3. Search for "Airfi"
-4. Follow the configuration steps:
+3. Search for **Airfi**
+4. The integration will automatically scan your network for Airfi devices
 
-### Step 1: Connection Information
+### Automatic Discovery
 
-Enter the required connection details:
+If an Airfi unit is found on your network, you will see a list of discovered devices showing the serial number and model. Select your device and click **Submit**.
 
-- **Host/IP Address:** The hostname or IP address of your device/service
-- **API Key/Token:** Your authentication credentials (if applicable)
-- **Port:** Connection port (default: 8080)
+### Manual Configuration
 
-Click **Submit** to test the connection.
+If automatic discovery does not find your device (e.g., the unit is on a different subnet), choose **Configure manually** and enter:
 
-### Step 2: Configuration Options
+- **Host/IP Address** — the IP address of your Airfi ventilation unit (Modbus TCP port 502 is used automatically)
 
-Configure optional settings:
-
-- **Update Interval:** How often to poll for updates (default: 5 minutes)
-- **Name:** Friendly name for this integration instance
-
-Click **Submit** to complete setup.
+Click **Submit** to test the connection and complete setup.
 
 ## What Gets Created
 
 After successful setup, the integration creates:
 
-### Devices
+### Device
 
-- **Device Name:** Main device representing your connected service/hardware
-  - Model information
-  - Software version
-  - Configuration URL (link to device web interface)
+A device entry representing your Airfi ventilation unit with:
+
+- Manufacturer: Airfi
+- Model name (e.g., Model 60 L, Model 100 R)
+- Serial number
+- Firmware and hardware versions
 
 ### Entities
 
-The following entities are automatically created:
+| Entity | Type | Description |
+|--------|------|-------------|
+| **Fan** | `fan` | Main ventilation control — on/off and 5-speed control |
+| **Outdoor air temperature** | `sensor` | Temperature of incoming outdoor air (°C) |
+| **Extract air temperature** | `sensor` | Temperature of air extracted from the building (°C) |
+| **Exhaust air temperature** | `sensor` | Temperature of air exhausted outdoors (°C) |
+| **Supply air temperature** | `sensor` | Temperature of air supplied to the building (°C) |
+| **Relative humidity** | `sensor` | Indoor relative humidity (%) |
+| **API connectivity** | `binary_sensor` | Whether the unit is reachable (diagnostic) |
 
-#### Sensors
-
-- `sensor.<device_name>_<sensor_name>` - Descriptive sensor measurements
-- More sensors as applicable to your setup
-
-#### Binary Sensors
-
-- `binary_sensor.<device_name>_<sensor_name>` - On/off status indicators
-
-#### Switches
-
-- `switch.<device_name>_<switch_name>` - Controllable on/off switches
-
-#### Other Platforms
-
-Additional entities may be created depending on your device capabilities.
+All temperature and humidity sensors support **long-term statistics** in Home Assistant.
 
 ## First Steps
 
 ### Dashboard Cards
 
-Add entities to your dashboard:
-
-1. Go to your dashboard
-2. Click **Edit Dashboard** → **Add Card**
-3. Choose card type (e.g., "Entities", "Glance")
-4. Select entities from "Airfi"
-
-Example entities card:
+Add a card to monitor your ventilation unit:
 
 ```yaml
 type: entities
-title: Airfi
+title: Airfi Ventilation
 entities:
-  - sensor.device_name_sensor
-  - binary_sensor.device_name_connectivity
-  - switch.device_name_switch
+  - entity: fan.airfi_fan
+  - entity: sensor.airfi_supply_air_temperature
+  - entity: sensor.airfi_extract_air_temperature
+  - entity: sensor.airfi_outdoor_air_temperature
+  - entity: sensor.airfi_relative_humidity
 ```
 
 ### Automations
 
-Use the integration in automations:
-
-**Example - Trigger on sensor change:**
+**Example — boost ventilation when humidity is high:**
 
 ```yaml
 automation:
-  - alias: "React to sensor value"
+  - alias: "Boost ventilation on high humidity"
     trigger:
-      - trigger: state
-        entity_id: sensor.device_name_sensor
+      - trigger: numeric_state
+        entity_id: sensor.airfi_relative_humidity
+        above: 70
     action:
-      - action: notify.notify
+      - action: fan.set_percentage
+        target:
+          entity_id: fan.airfi_fan
         data:
-          message: "Sensor changed to {{ trigger.to_state.state }}"
+          percentage: 100
 ```
 
-**Example - Control switch based on time:**
+**Example — reduce ventilation at night:**
 
 ```yaml
 automation:
-  - alias: "Turn on in morning"
+  - alias: "Night mode ventilation"
     trigger:
       - trigger: time
-        at: "07:00:00"
+        at: "22:00:00"
     action:
-      - action: switch.turn_on
+      - action: fan.set_percentage
         target:
-          entity_id: switch.device_name_switch
+          entity_id: fan.airfi_fan
+        data:
+          percentage: 20
 ```
+
+## Configuration Options
+
+After setup, you can adjust the polling interval:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find **Airfi** and click **Configure**
+3. Set **Update interval** (5–60 seconds, default 30)
+
+See [CONFIGURATION.md](./CONFIGURATION.md) for full details.
 
 ## Troubleshooting
 
@@ -150,19 +156,24 @@ automation:
 
 If setup fails with connection errors:
 
-1. Verify the host/IP address is correct and reachable
-2. Check that the API key/token is valid
-3. Ensure no firewall is blocking the connection
+1. Verify the IP address is correct and reachable (`ping <ip>`)
+2. Ensure nothing is blocking Modbus TCP port 502
+3. Check that the Airfi unit is powered on and connected to the network
 4. Check Home Assistant logs for detailed error messages
 
 ### Entities Not Updating
 
 If entities show "Unavailable" or don't update:
 
-1. Check that the device/service is online
-2. Verify API credentials haven't expired
-3. Review logs: **Settings** → **System** → **Logs**
-4. Try reloading the integration
+1. Check that the ventilation unit is powered on and on the network
+2. Look at the **API connectivity** binary sensor — it shows `off` when the unit is unreachable
+3. The integration automatically attempts to rediscover the device if its IP changes (e.g., DHCP lease renewal)
+4. Review logs: **Settings** → **System** → **Logs**
+5. Try reloading the integration
+
+### Device Unreachable Repair
+
+If the unit is unreachable for more than 10 minutes, a **repair issue** is created in Home Assistant. You can resolve it by fixing the network issue and clicking **Fix** in the repairs panel — the integration will re-test connectivity.
 
 ### Debug Logging
 
@@ -175,17 +186,24 @@ logger:
     custom_components.airfi: debug
 ```
 
-Add this to `configuration.yaml`, restart, and reproduce the issue. Check logs for detailed information.
+Add this to `configuration.yaml`, restart, and reproduce the issue.
+
+## Removing the Integration
+
+To remove the integration:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find **Airfi**
+3. Click the three dots menu (⋮) and select **Delete**
+
+This removes the integration, its device, and all associated entities. No manual cleanup is needed — the integration does not create any files outside of Home Assistant's database.
 
 ## Next Steps
 
 - See [CONFIGURATION.md](./CONFIGURATION.md) for detailed configuration options
-- See [EXAMPLES.md](./EXAMPLES.md) for more automation examples
 - Report issues at [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues)
 
 ## Support
 
-For help and discussion:
-
-- [GitHub Discussions](https://github.com/janmilinds/ha-airfi/discussions)
-- [Home Assistant Community Forum](https://community.home-assistant.io/)
+- [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues) — bug reports and feature requests
+- [GitHub Discussions](https://github.com/janmilinds/ha-airfi/discussions) — questions and help
