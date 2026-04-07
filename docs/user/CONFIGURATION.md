@@ -13,14 +13,14 @@ These values are set during initial setup and stored in the config entry:
 | Option | Type | Source | Description |
 |--------|------|--------|-------------|
 | **Host** | string | Auto-discovered or manual | IP address of the ventilation unit |
-| **Serial Number** | string | Read from device | Unique device identifier (used as unique ID) |
-| **Model Name** | string | Read from device | Device model (e.g., "Airfi 100 L") |
+| **Serial Number** | string | Auto-discovered or manual | Unique device identifier (used as unique ID) |
+| **Model Name** | string | Auto-discovered or manual | Device model (e.g., "Airfi 100 L") |
 
 - **Port** is always 502 (Modbus TCP standard) and not configurable
 - **No authentication** — Modbus TCP does not use credentials
 - **No SSL** — communication is local-network Modbus TCP
 
-The host, serial number, and model are auto-populated when using discovery. For manual setup, you enter the host IP and the integration reads device information via Modbus.
+When using **automatic discovery**, all three fields are populated from the device's UDP announcement. When using **manual setup**, you must enter all three fields yourself: host IP, serial number (from the device label), and model (selected from a dropdown).
 
 ### Reconfigure
 
@@ -80,11 +80,17 @@ Fan speed presets map directly to the ventilation unit's speed settings (1 = low
 
 All sensors report `measurement` state class, making them suitable for long-term statistics in Home Assistant.
 
-### Binary Sensors
+### Diagnostic Entities (Disabled by Default)
 
-| Entity | Device Class | Category | Description |
-|--------|-------------|----------|-------------|
-| **Connectivity** | connectivity | diagnostic | Whether the unit is reachable via Modbus TCP |
+These entities are disabled by default and can be enabled in entity settings if needed:
+
+| Entity | Type | Category | Description |
+|--------|------|----------|-------------|
+| **Device connection** | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
+| **Firmware version** | sensor | diagnostic | Current firmware version of the unit |
+| **Modbus map version** | sensor | diagnostic | Modbus register map version |
+
+The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
 
 ### Disabling Entities
 
@@ -170,16 +176,6 @@ The integration polls the ventilation unit via Modbus TCP at the configured upda
 All entity states are updated together in a single coordinator cycle. The poll is synchronous Modbus TCP executed in an executor thread to avoid blocking the Home Assistant event loop.
 
 **Recovery behavior:** If the device becomes unreachable for more than 90 seconds, the integration attempts to rediscover the device via UDP multicast (the device may have changed IP). If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
-
-## Use Cases
-
-Typical use cases for the integration:
-
-- **Monitor indoor air quality** — Track supply, extract, outdoor, and exhaust air temperatures plus humidity levels over time using Home Assistant's long-term statistics.
-- **Automate ventilation speed** — Adjust fan speed based on humidity, CO2 sensors, time of day, or occupancy using Home Assistant automations.
-- **Away mode control** — Automatically switch to low-speed away mode when everyone leaves home (via presence detection) and restore normal speed on return.
-- **Dashboard monitoring** — Display real-time ventilation status, temperatures, and humidity on Lovelace dashboards.
-- **Alert on problems** — Get notified when the ventilation unit becomes unreachable or humidity rises above a threshold.
 
 ## Known Limitations
 

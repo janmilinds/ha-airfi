@@ -57,9 +57,11 @@ If an Airfi unit is found on your network, you will see a list of discovered dev
 
 If automatic discovery does not find your device (e.g., the unit is on a different subnet), choose **Configure manually** and enter:
 
-- **Host/IP Address** — the IP address of your Airfi ventilation unit (Modbus TCP port 502 is used automatically)
+- **Host/IP Address** — the IP address of your Airfi ventilation unit
+- **Serial Number** — the device serial number (found on the unit's label)
+- **Model** — select your model from the dropdown list
 
-Click **Submit** to test the connection and complete setup.
+Modbus TCP port 502 is used automatically. Click **Submit** to test the connection and complete setup.
 
 ## What Gets Created
 
@@ -139,6 +141,13 @@ automation:
         data:
           percentage: 20
 ```
+
+### More Use Cases
+
+- **Monitor indoor air quality** — track temperatures and humidity over time using Home Assistant's long-term statistics
+- **Away mode control** — automatically switch to low-speed away mode when everyone leaves home (via presence detection) and restore normal speed on return
+- **Dashboard monitoring** — display real-time ventilation status, temperatures, and humidity on Lovelace dashboards
+- **Alert on problems** — get notified when the ventilation unit becomes unreachable or humidity rises above a threshold
 
 ## Configuration Options
 
