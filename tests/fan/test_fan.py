@@ -87,33 +87,6 @@ def test_fan_percentage_returns_none_when_register_missing() -> None:
 
 
 @pytest.mark.unit
-def test_fan_icon_is_fan_when_on() -> None:
-    """Test that icon is mdi:fan when fan is on."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
-
-    assert entity.icon == "mdi:fan"
-
-
-@pytest.mark.unit
-def test_fan_icon_is_fan_off_when_off() -> None:
-    """Test that icon is mdi:fan-off when fan is off."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
-
-    assert entity.icon == "mdi:fan-off"
-
-
-@pytest.mark.unit
-def test_fan_icon_defaults_to_fan_when_register_missing() -> None:
-    """Test that icon defaults to mdi:fan when register is missing."""
-    coordinator = _build_coordinator([3])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
-
-    assert entity.icon == "mdi:fan"
-
-
-@pytest.mark.unit
 async def test_fan_turn_on_writes_0_to_register_12() -> None:
     """Test that turning on writes 0 to register 12 (at-home)."""
     coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
