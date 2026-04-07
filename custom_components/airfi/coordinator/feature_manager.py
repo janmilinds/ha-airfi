@@ -9,6 +9,7 @@ from __future__ import annotations
 from packaging import version
 
 from custom_components.airfi.const import LOGGER
+from custom_components.airfi.utils import version_string
 
 
 class AirfiFeatureManager:
@@ -59,9 +60,9 @@ class AirfiFeatureManager:
 
         # registers[0] = hardware version (3x00001)
         # registers[1] = firmware version, registers[2] = modbus map version
-        self.hw_version = self._version_string(lookup_registers[0])
-        self.firmware_version = self._version_string(lookup_registers[1])
-        self.modbus_map_version = self._version_string(lookup_registers[2])
+        self.hw_version = version_string(lookup_registers[0])
+        self.firmware_version = version_string(lookup_registers[1])
+        self.modbus_map_version = version_string(lookup_registers[2])
 
         self._validate_firmware_version()
         self._log_device_info(device_name)
@@ -136,26 +137,6 @@ class AirfiFeatureManager:
         LOGGER.info("  Firmware version: %s", self.firmware_version)
         LOGGER.info("  Modbus map version: %s", self.modbus_map_version)
         LOGGER.info("-" * len(headline))
-
-    @staticmethod
-    def _version_string(register_value: int) -> str:
-        """Convert register value to version string.
-
-        Example: 270 -> "2.7.0"
-
-        Args:
-            register_value: The register value to convert.
-
-        Returns:
-            Version string (e.g., "2.7.0").
-
-        """
-        digits = str(max(0, register_value))
-        if len(digits) >= 3:
-            return f"{digits[0]}.{digits[1]}.{digits[2]}"
-        if len(digits) == 2:
-            return f"{digits[0]}.{digits[1]}.0"
-        return f"{digits[0]}.0.0"
 
 
 __all__ = ["AirfiFeatureManager"]

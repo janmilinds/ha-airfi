@@ -8,6 +8,8 @@ from typing import Any
 
 from pymodbus.client import ModbusTcpClient
 
+from custom_components.airfi.utils import version_string, version_tuple
+
 _LOGGER = logging.getLogger(__name__)
 _MODBUS_DUMP_LOGGER = logging.getLogger("custom_components.airfi.modbus")
 
@@ -45,28 +47,9 @@ class AirfiApiClientModbusError(AirfiApiClientError):
     """
 
 
-def _as_version_tuple(value: int) -> tuple[int, int, int]:
-    """Convert register value to semantic version tuple.
-
-    Example: 270 -> (2, 7, 0)
-    """
-    digits = str(max(0, value))
-    if len(digits) >= 3:
-        return int(digits[0]), int(digits[1]), int(digits[2])
-    if len(digits) == 2:
-        return int(digits[0]), int(digits[1]), 0
-    return int(digits[0]), 0, 0
-
-
-def _as_version_string(value: int) -> str:
-    """Convert register value to version string."""
-    version = _as_version_tuple(value)
-    return f"{version[0]}.{version[1]}.{version[2]}"
-
-
 def _register_lengths(map_version_raw: int) -> tuple[int, int]:
     """Return input/holding register lengths based on modbus map version."""
-    map_version = _as_version_tuple(map_version_raw)
+    map_version = version_tuple(map_version_raw)
     for min_version, lengths in REGISTER_LENGTHS_BY_MAP_VERSION:
         if map_version >= min_version:
             return lengths
@@ -141,8 +124,8 @@ class AirfiApiClient:
         modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
         input_length, holding_length = _register_lengths(modbus_map_raw)
         self.set_register_profile(
-            firmware_version=_as_version_string(firmware_raw),
-            modbus_map_version=_as_version_string(modbus_map_raw),
+            firmware_version=version_string(firmware_raw),
+            modbus_map_version=version_string(modbus_map_raw),
             input_register_length=input_length,
             holding_register_length=holding_length,
         )

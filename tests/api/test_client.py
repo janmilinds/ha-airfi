@@ -11,10 +11,9 @@ from custom_components.airfi.api.client import (
     AirfiApiClientConnectionError,
     AirfiApiClientError,
     AirfiApiClientModbusError,
-    _as_version_string,
-    _as_version_tuple,
     _register_lengths,
 )
+from custom_components.airfi.utils import version_string, version_tuple
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
@@ -35,7 +34,7 @@ from custom_components.airfi.api.client import (
 )
 def test_as_version_tuple(value: int, expected: tuple[int, int, int]) -> None:
     """Test version tuple conversion from register values."""
-    assert _as_version_tuple(value) == expected
+    assert version_tuple(value) == expected
 
 
 @pytest.mark.unit
@@ -49,7 +48,7 @@ def test_as_version_tuple(value: int, expected: tuple[int, int, int]) -> None:
 )
 def test_as_version_string(value: int, expected: str) -> None:
     """Test version string conversion from register values."""
-    assert _as_version_string(value) == expected
+    assert version_string(value) == expected
 
 
 @pytest.mark.unit

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi.utils import version_string
 
 
 @pytest.mark.unit
@@ -62,12 +63,10 @@ def test_feature_manager_fallback_register_lengths() -> None:
 @pytest.mark.unit
 def test_version_string_two_digit_register_value() -> None:
     """Test that a 2-digit register value produces correct version string."""
-    result = AirfiFeatureManager._version_string(27)  # noqa: SLF001
-    assert result == "2.7.0"
+    assert version_string(27) == "2.7.0"
 
 
 @pytest.mark.unit
 def test_version_string_one_digit_register_value() -> None:
     """Test that a 1-digit register value produces correct version string."""
-    result = AirfiFeatureManager._version_string(5)  # noqa: SLF001
-    assert result == "5.0.0"
+    assert version_string(5) == "5.0.0"
