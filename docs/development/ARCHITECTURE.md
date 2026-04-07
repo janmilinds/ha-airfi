@@ -7,51 +7,58 @@ This document describes the technical architecture of the Airfi custom component
 ```text
 custom_components/airfi/
 ├── __init__.py              # Integration setup and unload
-├── config_flow.py           # Config flow entry point
+├── config_flow.py           # Config flow entry point (delegates to handler)
 ├── const.py                 # Constants and configuration keys
-├── coordinator/             # Data update coordinator package
-│   ├── __init__.py          # Exports AirfiDataUpdateCoordinator
-│   ├── base.py              # Main coordinator class
-│   ├── data_processing.py   # Data validation and transformation
-│   ├── error_handling.py    # Error recovery and retry logic
-│   └── listeners.py         # Entity callbacks and event listeners
-├── data.py                  # Data classes and type definitions
-├── diagnostics.py           # Diagnostic data for troubleshooting
-├── entity/                  # Base entity package
-│   ├── __init__.py          # Exports AirfiEntity
-│   └── base.py              # Base entity class implementation
+├── data.py                  # Runtime data classes (AirfiConfigEntry)
+├── diagnostics.py           # Diagnostic data (with automatic redaction)
+├── icons.json               # Entity icon definitions and translations
 ├── manifest.json            # Integration metadata
-├── repairs.py               # Repair flows for fixing issues
-├── services.yaml            # Service action definitions (legacy filename)
-├── api/                     # External API communication
-│   ├── __init__.py
-│   └── client.py            # API client implementation
+├── repairs.py               # Repair flows (device_unreachable)
+├── services.yaml            # Service action definitions (empty, reserved)
+├── api/                     # Modbus TCP communication
+│   ├── __init__.py          # Exports AirfiApiClient, exceptions
+│   └── client.py            # Modbus TCP client (pymodbus)
+├── binary_sensor/           # Binary sensor platform
+│   ├── __init__.py          # Platform setup
+│   └── connectivity.py      # Device connectivity entity
 ├── config_flow_handler/     # Config flow implementation
 │   ├── __init__.py          # Package exports
+│   ├── config_flow.py       # Main flow (user, discovery, reconfigure)
 │   ├── handler.py           # Backward compatibility wrapper
-│   ├── config_flow.py       # Main config flow (user, reauth, reconfigure)
-│   ├── options_flow.py      # Options flow
-│   ├── subentry_flow.py     # Subentry flow template
+│   ├── options_flow.py      # Options flow (update interval)
 │   ├── schemas/             # Voluptuous schemas
 │   │   ├── __init__.py      # Schema exports
 │   │   ├── config.py        # Config flow schemas
 │   │   └── options.py       # Options flow schemas
 │   └── validators/          # Input validation
 │       ├── __init__.py      # Validator exports
-│       ├── credentials.py   # Credential validation
-│       └── sanitizers.py    # Input sanitizers
-├── entity_utils/            # Entity helper utilities
-│   ├── __init__.py
-│   ├── device_info.py       # Device information helpers
-│   └── state_helpers.py     # State management utilities
-├── service_actions/         # Service action implementations
-│   ├── __init__.py
-│   └── example_service.py   # Example service action handler
+│       └── connection.py    # Connection validation (Modbus TCP)
+├── coordinator/             # Data update coordinator package
+│   ├── __init__.py          # Exports AirfiDataUpdateCoordinator
+│   ├── base.py              # Main coordinator class
+│   ├── data_processing.py   # Data validation and transformation
+│   ├── error_handling.py    # Error recovery and retry logic
+│   └── feature_manager.py   # Feature flags based on firmware version
+├── entity/                  # Base entity package
+│   ├── __init__.py          # Exports AirfiEntity
+│   └── base.py              # Base entity class (device info, unique ID)
+├── fan/                     # Fan platform
+│   ├── __init__.py          # Platform setup
+│   └── fan.py               # Ventilation fan entity (5-speed)
+├── sensor/                  # Sensor platform
+│   ├── __init__.py          # Platform setup
+│   ├── humidity.py          # Humidity sensor entity
+│   └── temperature.py       # Temperature sensor entities (4 types)
 ├── translations/            # Localization files
-│   └── en.json              # English translations
-└── <platform>/              # Platform-specific implementations
-    ├── __init__.py          # Platform setup
-    └── <entity>.py          # Individual entity implementations
+│   ├── en.json              # English
+│   ├── fi.json              # Finnish
+│   ├── pl.json              # Polish
+│   └── sv.json              # Swedish
+└── utils/                   # Integration-wide utilities
+    ├── __init__.py
+    ├── discovery.py         # UDP multicast device discovery
+    ├── error_mapping.py     # Modbus error code mapping
+    └── fan.py               # Fan speed conversion helpers
 ```
 
 ## Core Components
@@ -60,46 +67,37 @@ custom_components/airfi/
 
 **Directory:** `coordinator/`
 
-The coordinator package manages periodic data fetching from the external API and distributes
-updates to all entities. It is organized as a package with separate modules for different concerns:
+The coordinator package manages periodic data fetching from the ventilation unit via Modbus TCP
+and distributes updates to all entities. It is organized as a package with separate modules:
 
 **Package structure:**
 
 - `base.py` - Main coordinator class (`AirfiDataUpdateCoordinator`)
 - `data_processing.py` - Data validation, transformation, and caching utilities
-- `error_handling.py` - Error recovery strategies, retry logic, and circuit breaker patterns
-- `listeners.py` - Entity callbacks, event listeners, and performance monitoring
+- `error_handling.py` - Error recovery strategies and retry logic
+- `feature_manager.py` - Feature flags based on firmware version
 
 **Core functionality:**
 
-- Configurable update interval (default: 5 minutes)
+- Configurable update interval (default: 10 seconds, range 5–60)
 - Error handling with exponential backoff
 - Shared data access for all entities
 - Automatic retry on transient failures
 - Data validation and transformation before distribution
-- Performance monitoring and metrics
+- Device recovery via UDP rediscovery when unreachable
 
 **Key class:** `AirfiDataUpdateCoordinator` (exported from `coordinator/__init__.py`)
-
-**Design rationale:**
-
-The coordinator is structured as a package rather than a single file to support future extensibility:
-
-- **Separation of concerns**: Core logic, error handling, and data processing are isolated
-- **Easy extension**: New features (caching, metrics, webhooks) can be added as new modules
-- **Maintainability**: Individual modules stay focused and manageable (<400 lines)
-- **Testability**: Each module can be tested independently
 
 ### API Client
 
 **Directory:** `api/`
 
-Handles all communication with external APIs or devices. Implements:
+Handles all communication with the Airfi ventilation unit via Modbus TCP. Implements:
 
-- Async HTTP requests using `aiohttp`
-- Connection management and timeouts
-- Authentication handling
-- Error translation to custom exceptions
+- Synchronous pymodbus calls run via `hass.async_add_executor_job()`
+- Modbus register reading (holding registers for config, input registers for sensors)
+- Modbus register writing (fan speed, settings)
+- Connection management and error translation to custom exceptions
 
 **Key class:** `AirfiApiClient`
 
@@ -112,18 +110,19 @@ is organized modularly to support complex flows without becoming monolithic.
 
 **Structure:**
 
-- `config_flow.py`: Main flow (user setup, reauth, reconfigure)
-- `options_flow.py`: Options flow for post-setup configuration
+- `config_flow.py`: Main flow (user setup, discovery, reconfigure)
+- `options_flow.py`: Options flow for update interval configuration
 - `schemas/`: Voluptuous schemas for all forms
-- `validators/`: Validation logic separated from flow logic
-- `subentry_flow.py`: Template for multi-device/location support
+- `validators/`: Connection validation (Modbus TCP reachability)
 
 **Supported flows:**
 
-- Initial user setup with validation
-- Options flow for reconfiguration
-- Reauthentication flow for expired credentials
-- Ready for subentry flows (multi-device support)
+- Automatic discovery via UDP multicast
+- Manual user setup with host entry
+- Reconfigure flow for changing device IP
+- Options flow for update interval
+
+**Note:** No reauthentication flow — Modbus TCP has no authentication.
 
 **Key classes:**
 
@@ -162,25 +161,25 @@ Platform entities inherit from both:
 
 ```text
 ┌─────────────────┐
-│  Config Entry   │ ← Created by config flow
-└────────┬────────┘
+│  Config Entry    │ ← Created by config flow (discovery or manual)
+└────────┬─────────┘
          │
          ▼
-┌─────────────────┐
-│   Coordinator   │ ← Fetches data from API every 5 min
-└────────┬────────┘
+┌─────────────────┐     ┌─────────────────┐
+│   Coordinator    │────▶│  API Client      │ ← Modbus TCP reads/writes
+└────────┬─────────┘     └─────────────────┘
          │
          ▼
     ┌────┴────┐
     │  Data   │ ← Stored in coordinator.data
     └────┬────┘
          │
-    ┌────┴────────────────┐
-    │                     │
-    ▼                     ▼
-┌─────────┐         ┌─────────┐
-│ Sensor  │         │ Switch  │ ← Entities read from coordinator
-└─────────┘         └─────────┘
+    ┌────┼───────────────┐
+    │    │               │
+    ▼    ▼               ▼
+┌──────┐┌──────────┐┌──────────────┐
+│ Fan  ││ Sensors  ││Binary Sensor │ ← Read from coordinator
+└──────┘└──────────┘└──────────────┘
 ```
 
 ## AI Agent Instructions
