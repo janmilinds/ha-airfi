@@ -132,6 +132,63 @@ Ensure:
 - Port 502 is not blocked by firewalls
 - UDP multicast is allowed if using automatic discovery
 
+## Supported Devices
+
+The integration supports all Airfi ventilation unit models with Modbus map version 1.5.0 or newer. Supported models (L = left, R = right variant):
+
+| Model Family | Variants |
+|-------------|----------|
+| **60** | 60 L, 60 R |
+| **100** | 100 L, 100 R |
+| **130** | 130 L, 130 R |
+| **150** | 150 L, 150 R |
+| **250 Electric** | 250 L Electric, 250 R Electric |
+| **250 Water** | 250 L Water, 250 R Water |
+| **350 Electric** | 350 L Electric, 350 R Electric |
+| **350 Water** | 350 L Water, 350 R Water |
+| **C5 Electric** | C5 L Electric, C5 R Electric |
+| **C5 Water** | C5 L Water, C5 R Water |
+| **53 mini** | 53 mini L, 53 mini R |
+| **53 miniENT** | 53 miniENT L, 53 miniENT R |
+| **60 ENT** | 60 ENT L, 60 ENT R |
+| **130 ENT** | 130 ENT L, 130 ENT R |
+| **150 ENT** | 150 ENT L, 150 ENT R |
+| **250 ENT Electric** | 250 ENT L Electric, 250 ENT R Electric |
+| **250 ENT Water** | 250 ENT L Water, 250 ENT R Water |
+| **350 ENT Electric** | 350 ENT L Electric, 350 ENT R Electric |
+| **350 ENT Water** | 350 ENT L Water, 350 ENT R Water |
+
+**Firmware note:** Firmware version 3.2.0 is known to have issues and is explicitly unsupported. Update to a newer firmware version if you encounter compatibility problems.
+
+## Data Update Mechanism
+
+The integration polls the ventilation unit via Modbus TCP at the configured update interval (default: 10 seconds). Each poll cycle reads:
+
+- **Input registers** — Sensor values (temperatures, humidity, device status)
+- **Holding registers** — Configuration state (fan speed, operating mode)
+
+All entity states are updated together in a single coordinator cycle. The poll is synchronous Modbus TCP executed in an executor thread to avoid blocking the Home Assistant event loop.
+
+**Recovery behavior:** If the device becomes unreachable for more than 90 seconds, the integration attempts to rediscover the device via UDP multicast (the device may have changed IP). If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
+
+## Use Cases
+
+Typical use cases for the integration:
+
+- **Monitor indoor air quality** — Track supply, extract, outdoor, and exhaust air temperatures plus humidity levels over time using Home Assistant's long-term statistics.
+- **Automate ventilation speed** — Adjust fan speed based on humidity, CO2 sensors, time of day, or occupancy using Home Assistant automations.
+- **Away mode control** — Automatically switch to low-speed away mode when everyone leaves home (via presence detection) and restore normal speed on return.
+- **Dashboard monitoring** — Display real-time ventilation status, temperatures, and humidity on Lovelace dashboards.
+- **Alert on problems** — Get notified when the ventilation unit becomes unreachable or humidity rises above a threshold.
+
+## Known Limitations
+
+- **Single device per config entry** — Each ventilation unit requires its own config entry (multiple units are supported, but each is added separately).
+- **No write-back for all registers** — Currently only fan speed and at-home/away mode can be controlled. Other unit settings must be configured via the unit's own interface.
+- **Local network only** — Modbus TCP requires direct network access; remote access needs a VPN or similar solution.
+- **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. Very short polling intervals (5 seconds) with an unstable connection may cause brief delays.
+- **No authentication** — Modbus TCP has no built-in security. Ensure the ventilation unit is on a trusted network.
+
 ## Related Documentation
 
 - [Getting Started](./GETTING_STARTED.md) — Installation, setup, and removal
