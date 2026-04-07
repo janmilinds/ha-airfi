@@ -119,6 +119,12 @@
       "extract_air_temperature": {
         "name": "Poistoilma"
       },
+      "firmware_version": {
+        "name": "Ohjelmistoversio"
+      },
+      "modbus_map_version": {
+        "name": "Modbus-karttaversio"
+      },
       "outdoor_air_temperature": {
         "name": "Ulkoilma"
       },

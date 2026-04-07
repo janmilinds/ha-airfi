@@ -119,6 +119,12 @@
       "extract_air_temperature": {
         "name": "Extract air"
       },
+      "firmware_version": {
+        "name": "Firmware version"
+      },
+      "modbus_map_version": {
+        "name": "Modbus map version"
+      },
       "outdoor_air_temperature": {
         "name": "Outdoor air"
       },

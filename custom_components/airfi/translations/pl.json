@@ -119,6 +119,12 @@
       "extract_air_temperature": {
         "name": "Powietrze wyciągane"
       },
+      "firmware_version": {
+        "name": "Wersja oprogramowania"
+      },
+      "modbus_map_version": {
+        "name": "Wersja mapy Modbus"
+      },
       "outdoor_air_temperature": {
         "name": "Powietrze zewnętrzne"
       },

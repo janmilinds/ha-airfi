@@ -13,6 +13,12 @@
       "extract_air_temperature": {
         "default": "mdi:thermometer-chevron-down"
       },
+      "firmware_version": {
+        "default": "mdi:chip"
+      },
+      "modbus_map_version": {
+        "default": "mdi:map-outline"
+      },
       "outdoor_air_temperature": {
         "default": "mdi:sun-thermometer"
       },

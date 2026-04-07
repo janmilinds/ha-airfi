@@ -119,6 +119,12 @@
       "extract_air_temperature": {
         "name": "Frånluft"
       },
+      "firmware_version": {
+        "name": "Firmwareversion"
+      },
+      "modbus_map_version": {
+        "name": "Modbus-kartversion"
+      },
       "outdoor_air_temperature": {
         "name": "Uteluft"
       },
