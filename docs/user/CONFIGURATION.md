@@ -1,249 +1,138 @@
 # Configuration Reference
 
-This document describes all configuration options and settings available in the Airfi custom integration.
+All configuration options for the Airfi ventilation unit integration.
 
-## Integration Configuration
+## Initial Setup
 
-### Initial Setup Options
+The integration is configured entirely through the Home Assistant UI — no YAML configuration is needed.
 
-These options are configured during initial setup via the Home Assistant UI.
+### Connection Settings (Config Entry)
 
-#### Connection Settings
+These values are set during initial setup and stored in the config entry:
 
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| **Host** | string | Yes | - | Hostname or IP address of the device/service |
-| **Port** | integer | No | 8080 | Connection port |
-| **API Key** | string | Yes* | - | Authentication key or token |
-| **Use SSL** | boolean | No | false | Enable HTTPS connection |
+| Option | Type | Source | Description |
+|--------|------|--------|-------------|
+| **Host** | string | Auto-discovered or manual | IP address of the ventilation unit |
+| **Serial Number** | string | Read from device | Unique device identifier (used as unique ID) |
+| **Model Name** | string | Read from device | Device model (e.g., "Airfi 100 L") |
 
-*Required if the device/service requires authentication.
+- **Port** is always 502 (Modbus TCP standard) and not configurable
+- **No authentication** — Modbus TCP does not use credentials
+- **No SSL** — communication is local-network Modbus TCP
 
-#### Update Settings
+The host, serial number, and model are auto-populated when using discovery. For manual setup, you enter the host IP and the integration reads device information via Modbus.
 
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| **Update Interval** | integer (seconds) | No | 300 | How often to poll for updates (minimum: 30 seconds) |
-| **Name** | string | No | "Device" | Friendly name for the integration instance |
+### Reconfigure
 
-### Options Flow (Reconfiguration)
+To change the device IP address after setup:
 
-After initial setup, you can modify settings:
+1. Go to **Settings** → **Devices & Services**
+2. Find "Airfi"
+3. Click the three-dot menu (⋮) → **Reconfigure**
+4. Enter the new IP address
+5. Click **Submit**
+
+This is useful when the ventilation unit gets a new IP address (e.g., DHCP lease change). Consider assigning a static IP or DHCP reservation to avoid this.
+
+## Options (Runtime Settings)
+
+After initial setup, you can modify runtime options:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find "Airfi"
 3. Click **Configure**
-4. Modify settings
-5. Click **Submit**
 
-**Available options:**
+| Option | Type | Range | Default | Description |
+|--------|------|-------|---------|-------------|
+| **Update interval** | integer (seconds) | 5–60 | 10 | How often to poll the device for updates |
 
-- Update interval
-- Name/identifier
-- Connection timeout
-- Additional features (device-specific)
+### Choosing an Update Interval
 
-## Entity Configuration
+The integration polls the ventilation unit via Modbus TCP at the configured interval:
 
-### Entity Customization
+- **5 seconds** — Near real-time monitoring, higher network usage
+- **10 seconds** (default) — Good balance for most setups
+- **30–60 seconds** — Lower resource usage, suitable for slow-changing values
 
-Customize entities via the UI or `configuration.yaml`:
+Modbus TCP is lightweight, so even 5-second polling is fine for local network use. Increase the interval only if you notice issues with multiple Modbus devices sharing the same unit.
 
-#### Via Home Assistant UI
+## Entities
 
-1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find and click the entity
-3. Click the settings icon
-4. Modify:
-   - Entity ID
-   - Name
-   - Icon
-   - Device class (for applicable entities)
-   - Area assignment
+The integration creates one device with the following entities:
 
-#### Via configuration.yaml
+### Fan
 
-```yaml
-homeassistant:
-  customize:
-    sensor.device_name_sensor:
-      friendly_name: "Custom Sensor Name"
-      icon: mdi:custom-icon
-      unit_of_measurement: "units"
-```
+| Entity | Description | Features |
+|--------|-------------|----------|
+| **Ventilation** | Main ventilation fan control | 5 speed presets (1–5), on/off |
+
+Fan speed presets map directly to the ventilation unit's speed settings (1 = lowest, 5 = highest). Turning the fan off sets speed to 0; turning it on restores the previous speed or defaults to speed 1.
+
+### Sensors
+
+| Entity | Device Class | Unit | State Class | Description |
+|--------|-------------|------|-------------|-------------|
+| **Supply air temperature** | temperature | °C | measurement | Air temperature after heat exchanger |
+| **Extract air temperature** | temperature | °C | measurement | Air drawn from rooms |
+| **Outdoor air temperature** | temperature | °C | measurement | Outside air intake |
+| **Exhaust air temperature** | temperature | °C | measurement | Air exhausted outside |
+| **Humidity** | humidity | % | measurement | Relative humidity |
+
+All sensors report `measurement` state class, making them suitable for long-term statistics in Home Assistant.
+
+### Binary Sensors
+
+| Entity | Device Class | Category | Description |
+|--------|-------------|----------|-------------|
+| **Connectivity** | connectivity | diagnostic | Whether the unit is reachable via Modbus TCP |
 
 ### Disabling Entities
 
 If you don't need certain entities:
 
 1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find the entity
-3. Click it, then click **Settings** icon
+2. Find and click the entity
+3. Click the settings icon (⚙)
 4. Toggle **Enable entity** off
 
-Disabled entities won't update or consume resources.
+Disabled entities stop polling and don't consume resources.
 
-## Services
+## Multiple Devices
 
-The integration provides the following services:
-
-### `airfi.example_service`
-
-Execute an example service action on the device.
-
-**Service data:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `entity_id` | string or list | No | Target entity/entities (if omitted, targets all) |
-| `parameter` | string | Yes | Service-specific parameter |
-| `value` | integer | No | Numeric value for the action |
-
-**Example:**
-
-```yaml
-service: airfi.example_service
-target:
-  entity_id: switch.device_name_switch
-data:
-  parameter: "setting_name"
-  value: 42
-```
-
-### Using Services in Automations
-
-```yaml
-automation:
-  - alias: "Call service at sunset"
-    trigger:
-      - trigger: sun
-        event: sunset
-    action:
-      - action: airfi.example_service
-        target:
-          entity_id: switch.device_name_switch
-        data:
-          parameter: "mode"
-          value: 1
-```
-
-## Advanced Configuration
-
-### Multiple Instances
-
-You can add multiple instances of this integration for different devices:
+You can add multiple Airfi ventilation units — each gets its own config entry:
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
 3. Search for "Airfi"
-4. Configure with different connection details
+4. The discovery scan will find any new units on the network
 
-Each instance creates separate entities with unique entity IDs.
-
-### Network Configuration
-
-If the device is on a different network or behind a firewall:
-
-- Ensure ports are open (default: 8080)
-- Configure port forwarding if needed
-- Consider VPN for remote access
-- Some devices may require static IP addresses
-
-### Polling Behavior
-
-The integration uses polling to fetch updates:
-
-- **Minimum interval:** 30 seconds (prevents overloading the device)
-- **Recommended interval:** 5 minutes (default)
-- **Longer intervals:** Save resources but reduce responsiveness
-
-Adjust based on your needs:
-
-- Real-time monitoring: 30-60 seconds
-- Regular updates: 5 minutes
-- Slow-changing values: 15-30 minutes
+Each unit is identified by its serial number, so re-adding an already-configured unit is prevented automatically.
 
 ## Diagnostic Data
 
-The integration provides diagnostic data for troubleshooting:
+To download diagnostic data for troubleshooting:
 
 1. Go to **Settings** → **Devices & Services**
-2. Find "Airfi"
-3. Click on the device
-4. Click **Download Diagnostics**
+2. Find "Airfi" → click on the device
+3. Click **Download Diagnostics**
 
-Diagnostic data includes:
+Diagnostic data includes coordinator statistics, Modbus connection status, device information, and entity states. **Sensitive data (host IP, serial number) is automatically redacted.**
 
-- Connection status
-- Last update timestamp
-- API response data
-- Entity states
-- Error history
+## Network Requirements
 
-**Privacy note:** Diagnostic data may contain sensitive information. Review before sharing.
+The integration communicates with the ventilation unit over your local network:
 
-## Blueprints
+- **Protocol:** Modbus TCP
+- **Port:** 502 (standard Modbus port)
+- **Discovery:** UDP multicast on 239.255.100.200:3000
 
-The integration works with Home Assistant Blueprints for reusable automations:
+Ensure:
 
-### Example Blueprint
-
-```yaml
-blueprint:
-  name: Airfi Alert
-  description: Send notification when sensor exceeds threshold
-  domain: automation
-  input:
-    sensor_entity:
-      name: Sensor
-      selector:
-        entity:
-          domain: sensor
-          integration: airfi
-    threshold:
-      name: Threshold
-      selector:
-        number:
-          min: 0
-          max: 100
-
-trigger:
-  - trigger: numeric_state
-    entity_id: !input sensor_entity
-    above: !input threshold
-
-action:
-  - action: notify.notify
-    data:
-      message: "Sensor exceeded threshold!"
-```
-
-## Configuration Examples
-
-See [EXAMPLES.md](./EXAMPLES.md) for complete automation and dashboard examples.
-
-## Troubleshooting Configuration
-
-### Config Entry Fails to Load
-
-If the integration fails to load after configuration:
-
-1. Check Home Assistant logs for errors
-2. Verify connection details are correct
-3. Test connectivity from Home Assistant to the device
-4. Try removing and re-adding the integration
-
-### Options Don't Save
-
-If configuration changes aren't persisted:
-
-1. Check for validation errors in the UI
-2. Ensure values are within allowed ranges
-3. Review logs for detailed error messages
-4. Try restarting Home Assistant
+- Home Assistant and the ventilation unit are on the same network (or routable)
+- Port 502 is not blocked by firewalls
+- UDP multicast is allowed if using automatic discovery
 
 ## Related Documentation
 
-- [Getting Started](./GETTING_STARTED.md) - Installation and initial setup
-- [Examples](./EXAMPLES.md) - Automation and dashboard examples
-- [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues) - Report problems
+- [Getting Started](./GETTING_STARTED.md) — Installation, setup, and removal
+- [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues) — Report problems
