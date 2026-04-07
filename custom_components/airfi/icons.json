@@ -1,0 +1,27 @@
+{
+  "entity": {
+    "fan": {
+      "default": "mdi:fan",
+      "state": {
+        "off": "mdi:fan-off"
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "default": "mdi:thermometer-chevron-up"
+      },
+      "extract_air_temperature": {
+        "default": "mdi:thermometer-chevron-down"
+      },
+      "outdoor_air_temperature": {
+        "default": "mdi:sun-thermometer"
+      },
+      "supply_air_temperature": {
+        "default": "mdi:home-thermometer"
+      },
+      "relative_humidity": {
+        "default": "mdi:water-percent"
+      }
+    }
+  }
+}

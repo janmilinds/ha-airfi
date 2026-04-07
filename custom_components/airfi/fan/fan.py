@@ -17,7 +17,6 @@ ENTITY_DESCRIPTIONS: tuple[FanEntityDescription, ...] = (
     FanEntityDescription(
         key="fan",
         translation_key="fan",
-        icon="mdi:fan",
     ),
 )
 
@@ -59,15 +58,6 @@ class AirfiFan(FanEntity, AirfiEntity):
             return None
         device_speed = registers[index]
         return ranged_value_to_percentage(SPEED_RANGE, device_speed)
-
-    @property
-    def icon(self) -> str:
-        """Return icon based on on/off state."""
-        if self.is_on is True:
-            return "mdi:fan"
-        if self.is_on is False:
-            return "mdi:fan-off"
-        return "mdi:fan"
 
     async def async_turn_on(
         self,
