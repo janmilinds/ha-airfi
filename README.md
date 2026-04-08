@@ -21,7 +21,7 @@ Home Assistant custom integration for controlling Airfi air handling units over 
   - Exhaust air
   - Supply air
 - Relative humidity sensor
-- Diagnostic sensors: firmware version, modbus map version, connectivity (disabled by default)
+- Diagnostic sensors: firmware version, modbus register version, connectivity (disabled by default)
 - Reconfigure flow for host updates without removing the integration
 - Automatic IP recovery after device IP changes (serial-based rediscovery)
 - Repairs flow for unreachable devices (guided host update + connection validation)
@@ -115,7 +115,7 @@ Options flow currently provides:
 ### Diagnostic Sensors (Disabled by Default)
 
 - Firmware version
-- Modbus map version
+- Modbus register version
 
 ## Services
 

@@ -55,7 +55,7 @@
 - [ ] `dynamic-devices` — N/A: `integration_type: device`, single device per entry
 - [x] `entity-category` — Diagnostic entities use `EntityCategory.DIAGNOSTIC`, primary entities have none
 - [x] `entity-device-class` — temperature, humidity, connectivity device classes used
-- [x] `entity-disabled-by-default` — 3 diagnostic entities disabled by default (connectivity, firmware, modbus map)
+- [x] `entity-disabled-by-default` — 3 diagnostic entities disabled by default (connectivity, firmware, modbus register)
 - [x] `entity-translations` — All entities use `translation_key`, translations in en/fi/pl/sv
 - [x] `exception-translations` — ConfigEntryNotReady and UpdateFailed use translation_domain/translation_key
 - [x] `icon-translations` — icons.json with per-entity icons, fan state-based icons

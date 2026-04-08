@@ -88,7 +88,7 @@ These entities are disabled by default and can be enabled in entity settings if 
 |--------|------|----------|-------------|
 | **Device connection** | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
 | **Firmware version** | sensor | diagnostic | Current firmware version of the unit |
-| **Modbus map version** | sensor | diagnostic | Modbus register map version |
+| **Modbus register version** | sensor | diagnostic | Modbus register map version |
 
 The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
 
@@ -140,7 +140,7 @@ Ensure:
 
 ## Supported Devices
 
-The integration supports all Airfi ventilation unit models with Modbus map version 1.5.0 or newer. Supported models (L = left, R = right variant):
+The integration supports all Airfi ventilation unit models with Modbus register version 1.5.0 or newer. Supported models (L = left, R = right variant):
 
 | Model Family | Variants |
 |-------------|----------|
