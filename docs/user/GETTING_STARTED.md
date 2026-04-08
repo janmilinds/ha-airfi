@@ -155,7 +155,7 @@ After setup, you can adjust the polling interval:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find **Airfi** and click **Configure**
-3. Set **Update interval** (5–60 seconds, default 30)
+3. Set **Update interval** (5–60 seconds, default 10)
 
 See [CONFIGURATION.md](./CONFIGURATION.md) for full details.
 

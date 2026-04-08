@@ -101,7 +101,7 @@ If you don't need certain entities:
 3. Click the settings icon (⚙)
 4. Toggle **Enable entity** off
 
-Disabled entities stop polling and don't consume resources.
+Disabled entities are hidden from normal use and stop updating as entities in Home Assistant.
 
 ## Multiple Devices
 
