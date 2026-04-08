@@ -71,7 +71,7 @@ class AirfiApiClient:
         self._port = port
         self._timeout_seconds = timeout_seconds
         self._firmware_version: str | None = None
-        self._modbus_map_version: str | None = None
+        self._modbus_register_version: str | None = None
         self._input_register_length: int | None = None
         self._holding_register_length: int | None = None
 
@@ -83,7 +83,7 @@ class AirfiApiClient:
         """Read device lookup registers (firmware and modbus map version).
 
         Returns:
-            List of lookup register values [unknown, firmware_version, modbus_map_version].
+            List of lookup register values [unknown, firmware_version, modbus_register_version].
 
         Raises:
             AirfiApiClientConnectionError: If unable to reach the device.
@@ -95,13 +95,13 @@ class AirfiApiClient:
         self,
         *,
         firmware_version: str,
-        modbus_map_version: str,
+        modbus_register_version: str,
         input_register_length: int,
         holding_register_length: int,
     ) -> None:
         """Set cached register profile resolved at setup time."""
         self._firmware_version = firmware_version
-        self._modbus_map_version = modbus_map_version
+        self._modbus_register_version = modbus_register_version
         self._input_register_length = input_register_length
         self._holding_register_length = holding_register_length
 
@@ -113,7 +113,7 @@ class AirfiApiClient:
         """Initialize register profile once if coordinator did not preconfigure it."""
         if (
             self._firmware_version is not None
-            and self._modbus_map_version is not None
+            and self._modbus_register_version is not None
             and self._input_register_length is not None
             and self._holding_register_length is not None
         ):
@@ -125,7 +125,7 @@ class AirfiApiClient:
         input_length, holding_length = _register_lengths(modbus_map_raw)
         self.set_register_profile(
             firmware_version=version_string(firmware_raw),
-            modbus_map_version=version_string(modbus_map_raw),
+            modbus_register_version=version_string(modbus_map_raw),
             input_register_length=input_length,
             holding_register_length=holding_length,
         )
@@ -159,7 +159,7 @@ class AirfiApiClient:
 
         return {
             "firmware_version": self._firmware_version or "0.0.0",
-            "modbus_map_version": self._modbus_map_version or "0.0.0",
+            "modbus_register_version": self._modbus_register_version or "0.0.0",
             "holding_registers": holding_registers,
             "input_registers": input_registers,
             "lookup_registers": [],

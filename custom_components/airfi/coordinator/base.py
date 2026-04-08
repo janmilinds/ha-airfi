@@ -135,7 +135,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
             self.config_entry.runtime_data.client.set_register_profile(
                 firmware_version=self.feature_manager.firmware_version,
-                modbus_map_version=self.feature_manager.modbus_map_version,
+                modbus_register_version=self.feature_manager.modbus_register_version,
                 input_register_length=self.input_registers,
                 holding_register_length=self.holding_registers,
             )

@@ -128,8 +128,8 @@
       "firmware_version": {
         "name": "Firmware version"
       },
-      "modbus_map_version": {
-        "name": "Modbus map version"
+      "modbus_register_version": {
+        "name": "Modbus register version"
       },
       "outdoor_air_temperature": {
         "name": "Outdoor air"

@@ -12,7 +12,7 @@ from homeassistant.const import EntityCategory
 
 def _build_coordinator(
     firmware_version: str | None = "3.8.1",
-    modbus_map_version: str | None = "2.7.0",
+    modbus_register_version: str | None = "2.7.0",
 ) -> MagicMock:
     """Build a coordinator mock suitable for Airfi diagnostic entities."""
     config_entry = MagicMock()
@@ -24,8 +24,8 @@ def _build_coordinator(
     data: dict[str, str] = {}
     if firmware_version is not None:
         data["firmware_version"] = firmware_version
-    if modbus_map_version is not None:
-        data["modbus_map_version"] = modbus_map_version
+    if modbus_register_version is not None:
+        data["modbus_register_version"] = modbus_register_version
 
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
@@ -48,10 +48,10 @@ def test_firmware_version_sensor_reads_coordinator_data() -> None:
 
 
 @pytest.mark.unit
-def test_modbus_map_version_sensor_reads_coordinator_data() -> None:
+def test_modbus_register_version_sensor_reads_coordinator_data() -> None:
     """Test modbus map version sensor reads value from coordinator data."""
-    coordinator = _build_coordinator(modbus_map_version="2.7.0")
-    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_map_version"))
+    coordinator = _build_coordinator(modbus_register_version="2.7.0")
+    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
 
     assert sensor.native_value == "2.7.0"
 
@@ -67,11 +67,11 @@ def test_firmware_version_sensor_returns_none_when_missing() -> None:
 
 
 @pytest.mark.unit
-def test_modbus_map_version_sensor_returns_none_when_missing() -> None:
+def test_modbus_register_version_sensor_returns_none_when_missing() -> None:
     """Test modbus map version sensor returns None when key absent from data."""
     coordinator = _build_coordinator()
     coordinator.data = {}
-    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_map_version"))
+    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
 
     assert sensor.native_value is None
 
@@ -103,9 +103,9 @@ def test_firmware_sensor_unique_id() -> None:
 def test_modbus_map_sensor_unique_id() -> None:
     """Test modbus map version sensor has the expected unique ID."""
     coordinator = _build_coordinator()
-    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_map_version"))
+    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
 
-    assert sensor.unique_id == "entry-1_modbus_map_version"
+    assert sensor.unique_id == "entry-1_modbus_register_version"
 
 
 @pytest.mark.unit
@@ -118,7 +118,7 @@ def test_diagnostic_entity_descriptions_count() -> None:
 def test_diagnostic_entity_description_keys() -> None:
     """Test that entity description keys match the expected values."""
     keys = {desc.key for desc in ENTITY_DESCRIPTIONS}
-    assert keys == {"firmware_version", "modbus_map_version"}
+    assert keys == {"firmware_version", "modbus_register_version"}
 
 
 @pytest.mark.unit

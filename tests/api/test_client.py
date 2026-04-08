@@ -101,7 +101,7 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
     client = AirfiApiClient(host="192.168.1.10", port=502)
     client.set_register_profile(
         firmware_version="3.8.1",
-        modbus_map_version="3.0.0",
+        modbus_register_version="3.0.0",
         input_register_length=42,
         holding_register_length=59,
     )
@@ -122,7 +122,7 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
         call(start_address=1, length=42, register_type="input"),
     ]
     assert result["firmware_version"] == "3.8.1"
-    assert result["modbus_map_version"] == "3.0.0"
+    assert result["modbus_register_version"] == "3.0.0"
     assert result["lookup_registers"] == []
 
 
@@ -148,9 +148,9 @@ async def test_async_get_data_builds_register_profile_once() -> None:
 
     lookup_mock.assert_awaited_once()
     assert first_result["firmware_version"] == "3.8.1"
-    assert first_result["modbus_map_version"] == "3.0.0"
+    assert first_result["modbus_register_version"] == "3.0.0"
     assert second_result["firmware_version"] == "3.8.1"
-    assert second_result["modbus_map_version"] == "3.0.0"
+    assert second_result["modbus_register_version"] == "3.0.0"
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ async def test_ensure_register_profile_skips_when_cached() -> None:
     client = AirfiApiClient(host="192.168.1.10", port=502)
     client.set_register_profile(
         firmware_version="3.8.1",
-        modbus_map_version="3.0.0",
+        modbus_register_version="3.0.0",
         input_register_length=42,
         holding_register_length=59,
     )
@@ -376,7 +376,7 @@ async def test_ensure_register_profile_fetches_when_not_cached() -> None:
         await client._async_ensure_register_profile()  # noqa: SLF001
 
     assert client._firmware_version == "2.7.0"  # noqa: SLF001
-    assert client._modbus_map_version == "2.7.0"  # noqa: SLF001
+    assert client._modbus_register_version == "2.7.0"  # noqa: SLF001
     assert client._input_register_length == 42  # noqa: SLF001
     assert client._holding_register_length == 59  # noqa: SLF001
 

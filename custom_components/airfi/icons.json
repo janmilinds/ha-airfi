@@ -35,7 +35,7 @@
           "unavailable": "mdi:information-outline-off"
         }
       },
-      "modbus_map_version": {
+      "modbus_register_version": {
         "default": "mdi:table",
         "state": {
           "unavailable": "mdi:table-off"

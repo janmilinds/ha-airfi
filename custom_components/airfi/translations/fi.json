@@ -128,8 +128,8 @@
       "firmware_version": {
         "name": "Ohjelmistoversio"
       },
-      "modbus_map_version": {
-        "name": "Modbus-karttaversio"
+      "modbus_register_version": {
+        "name": "Modbus-rekisteriversio"
       },
       "outdoor_air_temperature": {
         "name": "Ulkoilma"

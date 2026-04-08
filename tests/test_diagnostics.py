@@ -33,7 +33,7 @@ def _build_config_entry_with_runtime_data(hass) -> MockConfigEntry:
     coordinator.update_interval = 10
     coordinator.data = {
         "firmware_version": "3.8.1",
-        "modbus_map_version": "3.0.0",
+        "modbus_register_version": "3.0.0",
         "input_registers": [0] * 42,
         "holding_registers": [0] * 59,
     }
@@ -115,7 +115,7 @@ async def test_diagnostics_includes_data_sample(hass) -> None:
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["data_sample"]["firmware_version"] == "3.8.1"
-    assert result["data_sample"]["modbus_map_version"] == "3.0.0"
+    assert result["data_sample"]["modbus_register_version"] == "3.0.0"
     assert result["data_sample"]["input_register_count"] == 42
     assert result["data_sample"]["holding_register_count"] == 59
 

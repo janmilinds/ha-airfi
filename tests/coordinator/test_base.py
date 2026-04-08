@@ -52,7 +52,7 @@ async def test_async_setup_uses_serial_number_and_caches_profile(hass, config_en
         patch.object(coordinator.feature_manager, "get_register_lengths", return_value=(42, 59)),
     ):
         coordinator.feature_manager.firmware_version = "3.8.1"
-        coordinator.feature_manager.modbus_map_version = "3.0.0"
+        coordinator.feature_manager.modbus_register_version = "3.0.0"
         setup_method = AirfiDataUpdateCoordinator.__dict__["async_initial_setup"].__get__(
             coordinator,
             AirfiDataUpdateCoordinator,
@@ -62,7 +62,7 @@ async def test_async_setup_uses_serial_number_and_caches_profile(hass, config_en
     initialize_mock.assert_called_once_with("Airfi AIRFI-12345", [0, 381, 300])
     client.set_register_profile.assert_called_once_with(
         firmware_version="3.8.1",
-        modbus_map_version="3.0.0",
+        modbus_register_version="3.0.0",
         input_register_length=42,
         holding_register_length=59,
     )
@@ -172,7 +172,7 @@ async def test_async_update_data_recovers_after_device_ip_change_once_recovery_t
             AirfiApiClientConnectionError("timeout"),
             {
                 "firmware_version": "3.8.1",
-                "modbus_map_version": "3.0.0",
+                "modbus_register_version": "3.0.0",
                 "holding_registers": [],
                 "input_registers": [],
                 "lookup_registers": [],
@@ -352,7 +352,7 @@ async def test_async_setup_rediscovers_on_connection_error(hass, config_entry, m
         patch.object(coordinator.feature_manager, "get_register_lengths", return_value=(42, 59)),
     ):
         coordinator.feature_manager.firmware_version = "3.8.1"
-        coordinator.feature_manager.modbus_map_version = "3.0.0"
+        coordinator.feature_manager.modbus_register_version = "3.0.0"
         await _call_setup(coordinator)
 
     assert client.async_get_lookup_registers.await_count == 2
@@ -459,7 +459,7 @@ async def test_async_update_data_success_restores_connection(hass, config_entry,
     client.async_get_data = AsyncMock(
         return_value={
             "firmware_version": "3.8.1",
-            "modbus_map_version": "3.0.0",
+            "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
             "lookup_registers": [],

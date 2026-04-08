@@ -19,8 +19,8 @@ ENTITY_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     SensorEntityDescription(
-        key="modbus_map_version",
-        translation_key="modbus_map_version",
+        key="modbus_register_version",
+        translation_key="modbus_register_version",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),

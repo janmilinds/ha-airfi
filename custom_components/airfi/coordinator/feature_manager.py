@@ -35,7 +35,7 @@ class AirfiFeatureManager:
     def __init__(self) -> None:
         """Initialize the feature manager."""
         self.firmware_version = ""
-        self.modbus_map_version = ""
+        self.modbus_register_version = ""
         self.hw_version = ""
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
@@ -62,7 +62,7 @@ class AirfiFeatureManager:
         # registers[1] = firmware version, registers[2] = modbus map version
         self.hw_version = version_string(lookup_registers[0])
         self.firmware_version = version_string(lookup_registers[1])
-        self.modbus_map_version = version_string(lookup_registers[2])
+        self.modbus_register_version = version_string(lookup_registers[2])
 
         self._validate_firmware_version()
         self._log_device_info(device_name)
@@ -79,7 +79,7 @@ class AirfiFeatureManager:
             key=lambda x: version.parse(x[0]),
             reverse=True,
         ):
-            if version.parse(self.modbus_map_version) >= version.parse(map_version_str):
+            if version.parse(self.modbus_register_version) >= version.parse(map_version_str):
                 LOGGER.debug(
                     "Setting input register length to %d and holding register length to %d",
                     input_len,
@@ -120,7 +120,7 @@ class AirfiFeatureManager:
             raise ValueError(msg)
 
         # Check minimum Modbus version
-        if version.parse(self.modbus_map_version) < version.parse(self.MIN_MODBUS_VERSION):
+        if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
             msg = f"Device firmware version {self.firmware_version} is unsupported. Please upgrade to a newer version."
             LOGGER.error(msg)
             raise ValueError(msg)
@@ -135,7 +135,7 @@ class AirfiFeatureManager:
         headline = f"----- {device_name} -----"
         LOGGER.info(headline)
         LOGGER.info("  Firmware version: %s", self.firmware_version)
-        LOGGER.info("  Modbus map version: %s", self.modbus_map_version)
+        LOGGER.info("  Modbus map version: %s", self.modbus_register_version)
         LOGGER.info("-" * len(headline))
 
 

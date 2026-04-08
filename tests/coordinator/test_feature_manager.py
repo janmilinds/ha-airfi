@@ -16,7 +16,7 @@ def test_feature_manager_initializes_supported_device() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 300])
 
     assert manager.firmware_version == "3.8.1"
-    assert manager.modbus_map_version == "3.0.0"
+    assert manager.modbus_register_version == "3.0.0"
     assert manager.get_register_lengths() == (42, 59)
 
 
@@ -56,7 +56,7 @@ def test_feature_manager_fallback_register_lengths() -> None:
     """
     manager = AirfiFeatureManager()
     # Bypass validation by setting version directly
-    manager.modbus_map_version = "0.0.1"
+    manager.modbus_register_version = "0.0.1"
     assert manager.get_register_lengths() == (31, 12)
 
 
