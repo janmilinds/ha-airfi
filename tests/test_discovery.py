@@ -39,11 +39,9 @@ def test_get_model_name_unknown_returns_unknown() -> None:
 
 
 @pytest.mark.unit
-def test_get_model_name_negative_wraps_around() -> None:
-    """Test that model_id=0 wraps via negative index in Python."""
-    # (0-1)//2 = -1 → accesses last model entry (Python negative indexing)
-    result = get_model_name(0)
-    assert "Model" in result
+def test_get_model_name_zero_returns_unknown() -> None:
+    """Test that model_id=0 returns 'Unknown' (invalid; rejected by _parse_packet)."""
+    assert get_model_name(0) == "Unknown"
 
 
 # ---------------------------------------------------------------------------

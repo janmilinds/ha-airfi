@@ -22,6 +22,8 @@ LOGGER = logging.getLogger(__name__)
 
 def get_model_name(model_id: int) -> str:
     """Return human-readable model name (e.g., 'Model 60 L', 'Model 100 R')."""
+    if model_id < 1:
+        return "Unknown"
     try:
         index = (model_id - 1) // 2
         base_name = AIRFI_MODELS[index]
