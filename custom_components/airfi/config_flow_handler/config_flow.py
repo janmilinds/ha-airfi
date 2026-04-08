@@ -31,7 +31,7 @@ from custom_components.airfi.const import (
     DOMAIN,
     LOGGER,
 )
-from custom_components.airfi.utils.discovery import AirfiDiscoveryService
+from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
@@ -60,9 +60,9 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow handler."""
         super().__init__()
-        self.discovered_devices: list = []
-        self.selected_device: Any | None = None
-        self.discovery_task: asyncio.Task[list] | None = None
+        self.discovered_devices: list[AirfiDiscoveredDevice] = []
+        self.selected_device: AirfiDiscoveredDevice | None = None
+        self.discovery_task: asyncio.Task[list[AirfiDiscoveredDevice]] | None = None
         self._discovery_accumulate: bool = False
 
     @staticmethod

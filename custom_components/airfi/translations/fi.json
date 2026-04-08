@@ -74,6 +74,12 @@
     }
   },
   "exceptions": {
+    "device_unreachable": {
+      "message": "Laitteeseen ei saatu yhteyttä osoitteessa {host}."
+    },
+    "setup_firmware_error": {
+      "message": "Laitteen ohjelmistoversion tarkistus epäonnistui: {error}"
+    },
     "update_failed": {
       "message": "Laitteen tietojen päivitys epäonnistui."
     },
@@ -118,6 +124,12 @@
       },
       "extract_air_temperature": {
         "name": "Poistoilma"
+      },
+      "firmware_version": {
+        "name": "Ohjelmistoversio"
+      },
+      "modbus_register_version": {
+        "name": "Modbus-rekisteriversio"
       },
       "outdoor_air_temperature": {
         "name": "Ulkoilma"

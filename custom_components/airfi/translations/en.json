@@ -74,6 +74,12 @@
     }
   },
   "exceptions": {
+    "device_unreachable": {
+      "message": "Unable to connect to device at {host}."
+    },
+    "setup_firmware_error": {
+      "message": "Device firmware validation failed: {error}"
+    },
     "update_failed": {
       "message": "Failed to update data from the device."
     },
@@ -118,6 +124,12 @@
       },
       "extract_air_temperature": {
         "name": "Extract air"
+      },
+      "firmware_version": {
+        "name": "Firmware version"
+      },
+      "modbus_register_version": {
+        "name": "Modbus register version"
       },
       "outdoor_air_temperature": {
         "name": "Outdoor air"

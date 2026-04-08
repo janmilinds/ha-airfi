@@ -8,6 +8,8 @@ from typing import Any
 
 from pymodbus.client import ModbusTcpClient
 
+from custom_components.airfi.utils import version_string, version_tuple
+
 _LOGGER = logging.getLogger(__name__)
 _MODBUS_DUMP_LOGGER = logging.getLogger("custom_components.airfi.modbus")
 
@@ -45,28 +47,9 @@ class AirfiApiClientModbusError(AirfiApiClientError):
     """
 
 
-def _as_version_tuple(value: int) -> tuple[int, int, int]:
-    """Convert register value to semantic version tuple.
-
-    Example: 270 -> (2, 7, 0)
-    """
-    digits = str(max(0, value))
-    if len(digits) >= 3:
-        return int(digits[0]), int(digits[1]), int(digits[2])
-    if len(digits) == 2:
-        return int(digits[0]), int(digits[1]), 0
-    return int(digits[0]), 0, 0
-
-
-def _as_version_string(value: int) -> str:
-    """Convert register value to version string."""
-    version = _as_version_tuple(value)
-    return f"{version[0]}.{version[1]}.{version[2]}"
-
-
 def _register_lengths(map_version_raw: int) -> tuple[int, int]:
     """Return input/holding register lengths based on modbus map version."""
-    map_version = _as_version_tuple(map_version_raw)
+    map_version = version_tuple(map_version_raw)
     for min_version, lengths in REGISTER_LENGTHS_BY_MAP_VERSION:
         if map_version >= min_version:
             return lengths
@@ -88,7 +71,7 @@ class AirfiApiClient:
         self._port = port
         self._timeout_seconds = timeout_seconds
         self._firmware_version: str | None = None
-        self._modbus_map_version: str | None = None
+        self._modbus_register_version: str | None = None
         self._input_register_length: int | None = None
         self._holding_register_length: int | None = None
 
@@ -100,7 +83,7 @@ class AirfiApiClient:
         """Read device lookup registers (firmware and modbus map version).
 
         Returns:
-            List of lookup register values [unknown, firmware_version, modbus_map_version].
+            List of lookup register values [unknown, firmware_version, modbus_register_version].
 
         Raises:
             AirfiApiClientConnectionError: If unable to reach the device.
@@ -112,13 +95,13 @@ class AirfiApiClient:
         self,
         *,
         firmware_version: str,
-        modbus_map_version: str,
+        modbus_register_version: str,
         input_register_length: int,
         holding_register_length: int,
     ) -> None:
         """Set cached register profile resolved at setup time."""
         self._firmware_version = firmware_version
-        self._modbus_map_version = modbus_map_version
+        self._modbus_register_version = modbus_register_version
         self._input_register_length = input_register_length
         self._holding_register_length = holding_register_length
 
@@ -130,7 +113,7 @@ class AirfiApiClient:
         """Initialize register profile once if coordinator did not preconfigure it."""
         if (
             self._firmware_version is not None
-            and self._modbus_map_version is not None
+            and self._modbus_register_version is not None
             and self._input_register_length is not None
             and self._holding_register_length is not None
         ):
@@ -141,8 +124,8 @@ class AirfiApiClient:
         modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
         input_length, holding_length = _register_lengths(modbus_map_raw)
         self.set_register_profile(
-            firmware_version=_as_version_string(firmware_raw),
-            modbus_map_version=_as_version_string(modbus_map_raw),
+            firmware_version=version_string(firmware_raw),
+            modbus_register_version=version_string(modbus_map_raw),
             input_register_length=input_length,
             holding_register_length=holding_length,
         )
@@ -176,7 +159,7 @@ class AirfiApiClient:
 
         return {
             "firmware_version": self._firmware_version or "0.0.0",
-            "modbus_map_version": self._modbus_map_version or "0.0.0",
+            "modbus_register_version": self._modbus_register_version or "0.0.0",
             "holding_registers": holding_registers,
             "input_registers": input_registers,
             "lookup_registers": [],

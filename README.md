@@ -21,7 +21,7 @@ Home Assistant custom integration for controlling Airfi air handling units over 
   - Exhaust air
   - Supply air
 - Relative humidity sensor
-- Connectivity diagnostic binary sensor
+- Diagnostic sensors: firmware version, modbus register version, connectivity (disabled by default)
 - Reconfigure flow for host updates without removing the integration
 - Automatic IP recovery after device IP changes (serial-based rediscovery)
 - Repairs flow for unreachable devices (guided host update + connection validation)
@@ -110,7 +110,12 @@ Options flow currently provides:
 
 ### Binary Sensors
 
-- API connectivity (diagnostic)
+- Device connection (diagnostic, disabled by default)
+
+### Diagnostic Sensors (Disabled by Default)
+
+- Firmware version
+- Modbus register version
 
 ## Services
 
@@ -162,11 +167,15 @@ logger:
     custom_components.airfi: debug
 ```
 
+## Documentation
+
+- [Getting Started](docs/user/GETTING_STARTED.md) — Installation, setup, and first steps
+- [Configuration Reference](docs/user/CONFIGURATION.md) — All options, entities, and supported devices
+
 ## Development
 
 - Project guidelines: [AGENTS.md](AGENTS.md)
 - Architecture notes: [docs/development/ARCHITECTURE.md](docs/development/ARCHITECTURE.md)
-- User docs: [docs/user/GETTING_STARTED.md](docs/user/GETTING_STARTED.md)
 
 ## License
 

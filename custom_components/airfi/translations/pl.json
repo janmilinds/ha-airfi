@@ -74,6 +74,12 @@
     }
   },
   "exceptions": {
+    "device_unreachable": {
+      "message": "Nie udało się połączyć z urządzeniem pod adresem {host}."
+    },
+    "setup_firmware_error": {
+      "message": "Walidacja oprogramowania urządzenia nie powiodła się: {error}"
+    },
     "update_failed": {
       "message": "Nie udało się zaktualizować danych z urządzenia."
     },
@@ -118,6 +124,12 @@
       },
       "extract_air_temperature": {
         "name": "Powietrze wyciągane"
+      },
+      "firmware_version": {
+        "name": "Wersja oprogramowania"
+      },
+      "modbus_register_version": {
+        "name": "Wersja rejestru Modbus"
       },
       "outdoor_air_temperature": {
         "name": "Powietrze zewnętrzne"

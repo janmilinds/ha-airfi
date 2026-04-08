@@ -1,249 +1,191 @@
 # Configuration Reference
 
-This document describes all configuration options and settings available in the Airfi custom integration.
+All configuration options for the Airfi ventilation unit integration.
 
-## Integration Configuration
+## Initial Setup
 
-### Initial Setup Options
+The integration is configured entirely through the Home Assistant UI — no YAML configuration is needed.
 
-These options are configured during initial setup via the Home Assistant UI.
+### Connection Settings (Config Entry)
 
-#### Connection Settings
+These values are set during initial setup and stored in the config entry:
 
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| **Host** | string | Yes | - | Hostname or IP address of the device/service |
-| **Port** | integer | No | 8080 | Connection port |
-| **API Key** | string | Yes* | - | Authentication key or token |
-| **Use SSL** | boolean | No | false | Enable HTTPS connection |
+| Option | Type | Source | Description |
+|--------|------|--------|-------------|
+| **Host** | string | Auto-discovered or manual | IP address of the ventilation unit |
+| **Serial Number** | string | Auto-discovered or manual | Unique device identifier (used as unique ID) |
+| **Model Name** | string | Auto-discovered or manual | Device model (e.g., "Airfi 100 L") |
 
-*Required if the device/service requires authentication.
+- **Port** is always 502 (Modbus TCP standard) and not configurable
+- **No authentication** — Modbus TCP does not use credentials
+- **No SSL** — communication is local-network Modbus TCP
 
-#### Update Settings
+When using **automatic discovery**, all three fields are populated from the device's UDP announcement. When using **manual setup**, you must enter all three fields yourself: host IP, serial number (from the device label), and model (selected from a dropdown).
 
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| **Update Interval** | integer (seconds) | No | 300 | How often to poll for updates (minimum: 30 seconds) |
-| **Name** | string | No | "Device" | Friendly name for the integration instance |
+### Reconfigure
 
-### Options Flow (Reconfiguration)
+To change the device IP address after setup:
 
-After initial setup, you can modify settings:
+1. Go to **Settings** → **Devices & Services**
+2. Find "Airfi"
+3. Click the three-dot menu (⋮) → **Reconfigure**
+4. Enter the new IP address
+5. Click **Submit**
+
+This is useful when the ventilation unit gets a new IP address (e.g., DHCP lease change). Consider assigning a static IP or DHCP reservation to avoid this.
+
+## Options (Runtime Settings)
+
+After initial setup, you can modify runtime options:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find "Airfi"
 3. Click **Configure**
-4. Modify settings
-5. Click **Submit**
 
-**Available options:**
+| Option | Type | Range | Default | Description |
+|--------|------|-------|---------|-------------|
+| **Update interval** | integer (seconds) | 5–60 | 10 | How often to poll the device for updates |
 
-- Update interval
-- Name/identifier
-- Connection timeout
-- Additional features (device-specific)
+### Choosing an Update Interval
 
-## Entity Configuration
+The integration polls the ventilation unit via Modbus TCP at the configured interval:
 
-### Entity Customization
+- **5 seconds** — Near real-time monitoring, higher network usage
+- **10 seconds** (default) — Good balance for most setups
+- **30–60 seconds** — Lower resource usage, suitable for slow-changing values
 
-Customize entities via the UI or `configuration.yaml`:
+Modbus TCP is lightweight, so even 5-second polling is fine for local network use. Increase the interval only if you notice issues with multiple Modbus devices sharing the same unit.
 
-#### Via Home Assistant UI
+## Entities
 
-1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find and click the entity
-3. Click the settings icon
-4. Modify:
-   - Entity ID
-   - Name
-   - Icon
-   - Device class (for applicable entities)
-   - Area assignment
+The integration creates one device with the following entities:
 
-#### Via configuration.yaml
+### Fan
 
-```yaml
-homeassistant:
-  customize:
-    sensor.device_name_sensor:
-      friendly_name: "Custom Sensor Name"
-      icon: mdi:custom-icon
-      unit_of_measurement: "units"
-```
+| Entity | Description | Features |
+|--------|-------------|----------|
+| **Ventilation** | Main ventilation fan control | 5 speed presets (1–5), on/off |
+
+Fan speed presets map directly to the ventilation unit's speed settings (1 = lowest, 5 = highest). Turning the fan off sets speed to 0; turning it on restores the previous speed or defaults to speed 1.
+
+### Sensors
+
+| Entity | Device Class | Unit | State Class | Description |
+|--------|-------------|------|-------------|-------------|
+| **Supply air temperature** | temperature | °C | measurement | Air temperature after heat exchanger |
+| **Extract air temperature** | temperature | °C | measurement | Air drawn from rooms |
+| **Outdoor air temperature** | temperature | °C | measurement | Outside air intake |
+| **Exhaust air temperature** | temperature | °C | measurement | Air exhausted outside |
+| **Humidity** | humidity | % | measurement | Relative humidity |
+
+All sensors report `measurement` state class, making them suitable for long-term statistics in Home Assistant.
+
+### Diagnostic Entities (Disabled by Default)
+
+These entities are disabled by default and can be enabled in entity settings if needed:
+
+| Entity | Type | Category | Description |
+|--------|------|----------|-------------|
+| **Device connection** | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
+| **Firmware version** | sensor | diagnostic | Current firmware version of the unit |
+| **Modbus register version** | sensor | diagnostic | Modbus register map version |
+
+The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
 
 ### Disabling Entities
 
 If you don't need certain entities:
 
 1. Go to **Settings** → **Devices & Services** → **Entities**
-2. Find the entity
-3. Click it, then click **Settings** icon
+2. Find and click the entity
+3. Click the settings icon (⚙)
 4. Toggle **Enable entity** off
 
-Disabled entities won't update or consume resources.
+Disabled entities are hidden from normal use and stop updating as entities in Home Assistant.
 
-## Services
+## Multiple Devices
 
-The integration provides the following services:
-
-### `airfi.example_service`
-
-Execute an example service action on the device.
-
-**Service data:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `entity_id` | string or list | No | Target entity/entities (if omitted, targets all) |
-| `parameter` | string | Yes | Service-specific parameter |
-| `value` | integer | No | Numeric value for the action |
-
-**Example:**
-
-```yaml
-service: airfi.example_service
-target:
-  entity_id: switch.device_name_switch
-data:
-  parameter: "setting_name"
-  value: 42
-```
-
-### Using Services in Automations
-
-```yaml
-automation:
-  - alias: "Call service at sunset"
-    trigger:
-      - trigger: sun
-        event: sunset
-    action:
-      - action: airfi.example_service
-        target:
-          entity_id: switch.device_name_switch
-        data:
-          parameter: "mode"
-          value: 1
-```
-
-## Advanced Configuration
-
-### Multiple Instances
-
-You can add multiple instances of this integration for different devices:
+You can add multiple Airfi ventilation units — each gets its own config entry:
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
 3. Search for "Airfi"
-4. Configure with different connection details
+4. The discovery scan will find any new units on the network
 
-Each instance creates separate entities with unique entity IDs.
-
-### Network Configuration
-
-If the device is on a different network or behind a firewall:
-
-- Ensure ports are open (default: 8080)
-- Configure port forwarding if needed
-- Consider VPN for remote access
-- Some devices may require static IP addresses
-
-### Polling Behavior
-
-The integration uses polling to fetch updates:
-
-- **Minimum interval:** 30 seconds (prevents overloading the device)
-- **Recommended interval:** 5 minutes (default)
-- **Longer intervals:** Save resources but reduce responsiveness
-
-Adjust based on your needs:
-
-- Real-time monitoring: 30-60 seconds
-- Regular updates: 5 minutes
-- Slow-changing values: 15-30 minutes
+Each unit is identified by its serial number, so re-adding an already-configured unit is prevented automatically.
 
 ## Diagnostic Data
 
-The integration provides diagnostic data for troubleshooting:
+To download diagnostic data for troubleshooting:
 
 1. Go to **Settings** → **Devices & Services**
-2. Find "Airfi"
-3. Click on the device
-4. Click **Download Diagnostics**
+2. Find "Airfi" → click on the device
+3. Click **Download Diagnostics**
 
-Diagnostic data includes:
+Diagnostic data includes coordinator statistics, Modbus connection status, device information, and entity states. **Sensitive data (host IP, serial number) is automatically redacted.**
 
-- Connection status
-- Last update timestamp
-- API response data
-- Entity states
-- Error history
+## Network Requirements
 
-**Privacy note:** Diagnostic data may contain sensitive information. Review before sharing.
+The integration communicates with the ventilation unit over your local network:
 
-## Blueprints
+- **Protocol:** Modbus TCP
+- **Port:** 502 (standard Modbus port)
+- **Discovery:** UDP multicast on 239.255.100.200:3000
 
-The integration works with Home Assistant Blueprints for reusable automations:
+Ensure:
 
-### Example Blueprint
+- Home Assistant and the ventilation unit are on the same network (or routable)
+- Port 502 is not blocked by firewalls
+- UDP multicast is allowed if using automatic discovery
 
-```yaml
-blueprint:
-  name: Airfi Alert
-  description: Send notification when sensor exceeds threshold
-  domain: automation
-  input:
-    sensor_entity:
-      name: Sensor
-      selector:
-        entity:
-          domain: sensor
-          integration: airfi
-    threshold:
-      name: Threshold
-      selector:
-        number:
-          min: 0
-          max: 100
+## Supported Devices
 
-trigger:
-  - trigger: numeric_state
-    entity_id: !input sensor_entity
-    above: !input threshold
+The integration supports all Airfi ventilation unit models with Modbus register version 1.5.0 or newer. Supported models (L = left, R = right variant):
 
-action:
-  - action: notify.notify
-    data:
-      message: "Sensor exceeded threshold!"
-```
+| Model Family | Variants |
+|-------------|----------|
+| **60** | 60 L, 60 R |
+| **100** | 100 L, 100 R |
+| **130** | 130 L, 130 R |
+| **150** | 150 L, 150 R |
+| **250 Electric** | 250 L Electric, 250 R Electric |
+| **250 Water** | 250 L Water, 250 R Water |
+| **350 Electric** | 350 L Electric, 350 R Electric |
+| **350 Water** | 350 L Water, 350 R Water |
+| **C5 Electric** | C5 L Electric, C5 R Electric |
+| **C5 Water** | C5 L Water, C5 R Water |
+| **53 mini** | 53 mini L, 53 mini R |
+| **53 miniENT** | 53 miniENT L, 53 miniENT R |
+| **60 ENT** | 60 ENT L, 60 ENT R |
+| **130 ENT** | 130 ENT L, 130 ENT R |
+| **150 ENT** | 150 ENT L, 150 ENT R |
+| **250 ENT Electric** | 250 ENT L Electric, 250 ENT R Electric |
+| **250 ENT Water** | 250 ENT L Water, 250 ENT R Water |
+| **350 ENT Electric** | 350 ENT L Electric, 350 ENT R Electric |
+| **350 ENT Water** | 350 ENT L Water, 350 ENT R Water |
 
-## Configuration Examples
+**Firmware note:** Firmware version 3.2.0 is known to have issues and is explicitly unsupported. Update to a newer firmware version if you encounter compatibility problems.
 
-See [EXAMPLES.md](./EXAMPLES.md) for complete automation and dashboard examples.
+## Data Update Mechanism
 
-## Troubleshooting Configuration
+The integration polls the ventilation unit via Modbus TCP at the configured update interval (default: 10 seconds). Each poll cycle reads:
 
-### Config Entry Fails to Load
+- **Input registers** — Sensor values (temperatures, humidity, device status)
+- **Holding registers** — Configuration state (fan speed, operating mode)
 
-If the integration fails to load after configuration:
+All entity states are updated together in a single coordinator cycle. The poll is synchronous Modbus TCP executed in an executor thread to avoid blocking the Home Assistant event loop.
 
-1. Check Home Assistant logs for errors
-2. Verify connection details are correct
-3. Test connectivity from Home Assistant to the device
-4. Try removing and re-adding the integration
+**Recovery behavior:** If the device becomes unreachable for more than 90 seconds, the integration attempts to rediscover the device via UDP multicast (the device may have changed IP). If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
 
-### Options Don't Save
+## Known Limitations
 
-If configuration changes aren't persisted:
-
-1. Check for validation errors in the UI
-2. Ensure values are within allowed ranges
-3. Review logs for detailed error messages
-4. Try restarting Home Assistant
+- **Single device per config entry** — Each ventilation unit requires its own config entry (multiple units are supported, but each is added separately).
+- **No write-back for all registers** — Currently only fan speed and at-home/away mode can be controlled. Other unit settings must be configured via the unit's own interface.
+- **Local network only** — Modbus TCP requires direct network access; remote access needs a VPN or similar solution.
+- **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. Very short polling intervals (5 seconds) with an unstable connection may cause brief delays.
+- **No authentication** — Modbus TCP has no built-in security. Ensure the ventilation unit is on a trusted network.
 
 ## Related Documentation
 
-- [Getting Started](./GETTING_STARTED.md) - Installation and initial setup
-- [Examples](./EXAMPLES.md) - Automation and dashboard examples
-- [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues) - Report problems
+- [Getting Started](./GETTING_STARTED.md) — Installation, setup, and removal
+- [GitHub Issues](https://github.com/janmilinds/ha-airfi/issues) — Report problems

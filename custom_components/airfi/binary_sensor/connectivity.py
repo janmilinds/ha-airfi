@@ -21,7 +21,7 @@ ENTITY_DESCRIPTIONS = (
         translation_key="api_connectivity",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:api",
+        entity_registry_enabled_default=False,
     ),
 )
 

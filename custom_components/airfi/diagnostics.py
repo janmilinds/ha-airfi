@@ -114,7 +114,7 @@ async def async_get_config_entry_diagnostics(
             # Include sample data but sanitize sensitive info
             data_sample = {
                 "firmware_version": coordinator.data.get("firmware_version"),
-                "modbus_map_version": coordinator.data.get("modbus_map_version"),
+                "modbus_register_version": coordinator.data.get("modbus_register_version"),
                 "input_register_count": len(coordinator.data.get("input_registers", [])),
                 "holding_register_count": len(coordinator.data.get("holding_registers", [])),
             }

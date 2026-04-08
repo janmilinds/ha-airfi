@@ -9,6 +9,7 @@ from __future__ import annotations
 from packaging import version
 
 from custom_components.airfi.const import LOGGER
+from custom_components.airfi.utils import version_string
 
 
 class AirfiFeatureManager:
@@ -34,7 +35,7 @@ class AirfiFeatureManager:
     def __init__(self) -> None:
         """Initialize the feature manager."""
         self.firmware_version = ""
-        self.modbus_map_version = ""
+        self.modbus_register_version = ""
         self.hw_version = ""
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
@@ -59,9 +60,9 @@ class AirfiFeatureManager:
 
         # registers[0] = hardware version (3x00001)
         # registers[1] = firmware version, registers[2] = modbus map version
-        self.hw_version = self._version_string(lookup_registers[0])
-        self.firmware_version = self._version_string(lookup_registers[1])
-        self.modbus_map_version = self._version_string(lookup_registers[2])
+        self.hw_version = version_string(lookup_registers[0])
+        self.firmware_version = version_string(lookup_registers[1])
+        self.modbus_register_version = version_string(lookup_registers[2])
 
         self._validate_firmware_version()
         self._log_device_info(device_name)
@@ -78,7 +79,7 @@ class AirfiFeatureManager:
             key=lambda x: version.parse(x[0]),
             reverse=True,
         ):
-            if version.parse(self.modbus_map_version) >= version.parse(map_version_str):
+            if version.parse(self.modbus_register_version) >= version.parse(map_version_str):
                 LOGGER.debug(
                     "Setting input register length to %d and holding register length to %d",
                     input_len,
@@ -119,7 +120,7 @@ class AirfiFeatureManager:
             raise ValueError(msg)
 
         # Check minimum Modbus version
-        if version.parse(self.modbus_map_version) < version.parse(self.MIN_MODBUS_VERSION):
+        if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
             msg = f"Device firmware version {self.firmware_version} is unsupported. Please upgrade to a newer version."
             LOGGER.error(msg)
             raise ValueError(msg)
@@ -134,28 +135,8 @@ class AirfiFeatureManager:
         headline = f"----- {device_name} -----"
         LOGGER.info(headline)
         LOGGER.info("  Firmware version: %s", self.firmware_version)
-        LOGGER.info("  Modbus map version: %s", self.modbus_map_version)
+        LOGGER.info("  Modbus map version: %s", self.modbus_register_version)
         LOGGER.info("-" * len(headline))
-
-    @staticmethod
-    def _version_string(register_value: int) -> str:
-        """Convert register value to version string.
-
-        Example: 270 -> "2.7.0"
-
-        Args:
-            register_value: The register value to convert.
-
-        Returns:
-            Version string (e.g., "2.7.0").
-
-        """
-        digits = str(max(0, register_value))
-        if len(digits) >= 3:
-            return f"{digits[0]}.{digits[1]}.{digits[2]}"
-        if len(digits) == 2:
-            return f"{digits[0]}.{digits[1]}.0"
-        return f"{digits[0]}.0.0"
 
 
 __all__ = ["AirfiFeatureManager"]

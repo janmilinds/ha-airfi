@@ -1,0 +1,64 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "api_connectivity": {
+        "default": "mdi:network-off",
+        "state": {
+          "on": "mdi:check-network"
+        }
+      }
+    },
+    "fan": {
+      "fan": {
+        "default": "mdi:fan-off",
+        "state": {
+          "on": "mdi:fan"
+        }
+      }
+    },
+    "sensor": {
+      "exhaust_air_temperature": {
+        "default": "mdi:thermometer-chevron-up",
+        "state": {
+          "unavailable": "mdi:thermometer-off"
+        }
+      },
+      "extract_air_temperature": {
+        "default": "mdi:thermometer-chevron-down",
+        "state": {
+          "unavailable": "mdi:thermometer-off"
+        }
+      },
+      "firmware_version": {
+        "default": "mdi:information-outline",
+        "state": {
+          "unavailable": "mdi:information-outline-off"
+        }
+      },
+      "modbus_register_version": {
+        "default": "mdi:table",
+        "state": {
+          "unavailable": "mdi:table-off"
+        }
+      },
+      "outdoor_air_temperature": {
+        "default": "mdi:sun-thermometer",
+        "state": {
+          "unavailable": "mdi:thermometer-off"
+        }
+      },
+      "supply_air_temperature": {
+        "default": "mdi:home-thermometer",
+        "state": {
+          "unavailable": "mdi:thermometer-off"
+        }
+      },
+      "relative_humidity": {
+        "default": "mdi:water-percent",
+        "state": {
+          "unavailable": "mdi:water-off"
+        }
+      }
+    }
+  }
+}
