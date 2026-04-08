@@ -270,7 +270,7 @@ async def test_async_receive_delegates_to_loop() -> None:
     service.sock = MagicMock()
 
     expected = (b"data", ("1.2.3.4", 5000))
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     with patch.object(loop, "sock_recvfrom", new=AsyncMock(return_value=expected)):
         result = await service._async_receive()  # noqa: SLF001
