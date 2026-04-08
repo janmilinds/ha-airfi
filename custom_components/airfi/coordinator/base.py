@@ -114,11 +114,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                     lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
                 except AirfiApiClientError as retry_exception:
                     raise ConfigEntryNotReady(
+                        translation_domain=DOMAIN,
                         translation_key="device_unreachable",
                         translation_placeholders={"host": self.config_entry.data.get(CONF_HOST, "unknown")},
                     ) from retry_exception
             else:
                 raise ConfigEntryNotReady(
+                    translation_domain=DOMAIN,
                     translation_key="device_unreachable",
                     translation_placeholders={"host": self.config_entry.data.get(CONF_HOST, "unknown")},
                 ) from exception
@@ -142,6 +144,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except ValueError as exception:
             raise ConfigEntryNotReady(
+                translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
                 translation_placeholders={"error": str(exception)},
             ) from exception
