@@ -106,7 +106,6 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         translation_key).
         """
         device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
-        host = self.config_entry.data.get(CONF_HOST, "unknown")
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
         except AirfiApiClientError as exception:
@@ -116,12 +115,12 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                 except AirfiApiClientError as retry_exception:
                     raise ConfigEntryNotReady(
                         translation_key="device_unreachable",
-                        translation_placeholders={"host": str(host)},
+                        translation_placeholders={"host": self.config_entry.data.get(CONF_HOST, "unknown")},
                     ) from retry_exception
             else:
                 raise ConfigEntryNotReady(
                     translation_key="device_unreachable",
-                    translation_placeholders={"host": str(host)},
+                    translation_placeholders={"host": self.config_entry.data.get(CONF_HOST, "unknown")},
                 ) from exception
         try:
             # Initialize feature manager and validate firmware
