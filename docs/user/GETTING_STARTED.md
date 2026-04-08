@@ -86,7 +86,9 @@ A device entry representing your Airfi ventilation unit with:
 | **Exhaust air temperature** | `sensor` | Temperature of air exhausted outdoors (°C) |
 | **Supply air temperature** | `sensor` | Temperature of air supplied to the building (°C) |
 | **Relative humidity** | `sensor` | Indoor relative humidity (%) |
-| **API connectivity** | `binary_sensor` | Whether the unit is reachable (diagnostic) |
+| **Device connection** | `binary_sensor` | Whether the unit is reachable (diagnostic, disabled by default) |
+| **Firmware version** | `sensor` | Current firmware version (diagnostic, disabled by default) |
+| **Modbus register version** | `sensor` | Modbus register map version (diagnostic, disabled by default) |
 
 All temperature and humidity sensors support **long-term statistics** in Home Assistant.
 
