@@ -36,6 +36,7 @@ PLATFORMS: list[Platform] = [
     Platform.FAN,
     Platform.NUMBER,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 # This integration is configured via config entries only

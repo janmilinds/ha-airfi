@@ -145,6 +145,17 @@
       "supply_air_temperature": {
         "name": "Tuloilma"
       }
+    },
+    "switch": {
+      "fireplace_function": {
+        "name": "Takkatoiminto"
+      },
+      "sauna_function": {
+        "name": "Saunatoiminto"
+      },
+      "boosted_cooling": {
+        "name": "Tehostettu viilennys"
+      }
     }
   }
 }

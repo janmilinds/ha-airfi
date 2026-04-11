@@ -52,6 +52,9 @@ custom_components/airfi/
 │   ├── __init__.py          # Platform setup
 │   ├── humidity.py          # Humidity sensor entity
 │   └── temperature.py       # Temperature sensor entities (4 types)
+├── switch/                  # Switch platform (feature-gated)
+│   ├── __init__.py          # Platform setup (filters by feature flags)
+│   └── functions.py         # Special function switches (sauna, fireplace, boost)
 ├── translations/            # Localization files
 │   ├── en.json              # English
 │   ├── fi.json              # Finnish
@@ -62,7 +65,8 @@ custom_components/airfi/
     ├── discovery.py         # UDP multicast device discovery
     ├── error_mapping.py     # Modbus error code mapping
     ├── fan.py               # Fan speed conversion helpers
-    └── number.py            # Number register address constants
+    ├── number.py            # Number register address constants
+    └── switch.py            # Switch register address constants
 ```
 
 ## Core Components
@@ -182,9 +186,9 @@ Platform entities inherit from both:
     ┌────┼───────────────────────┐
     │    │               │       │
     ▼    ▼               ▼       ▼
-┌──────┐┌──────────┐┌──────────────┐┌────────┐
-│ Fan  ││ Sensors  ││Binary Sensor ││ Number │ ← Read from coordinator
-└──────┘└──────────┘└──────────────┘└────────┘
+┌──────┐┌──────────┐┌──────────────┐┌─────────────────┐
+│ Fan  ││ Sensors  ││Binary Sensor ││ Number / Switch │ ← Read from coordinator
+└──────┘└──────────┘└──────────────┘└─────────────────┘
 ```
 
 ## AI Agent Instructions

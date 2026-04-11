@@ -145,6 +145,17 @@
       "supply_air_temperature": {
         "name": "Supply air"
       }
+    },
+    "switch": {
+      "fireplace_function": {
+        "name": "Fireplace function"
+      },
+      "sauna_function": {
+        "name": "Sauna function"
+      },
+      "boosted_cooling": {
+        "name": "Boosted cooling"
+      }
     }
   }
 }

@@ -80,6 +80,9 @@ def test_feature_flags_all_false_before_initialize() -> None:
     """Test that all feature flags are False before initialize() is called."""
     manager = AirfiFeatureManager()
 
+    assert manager.has_feature("fireplace_function") is False
+    assert manager.has_feature("sauna_function") is False
+    assert manager.has_feature("boosted_cooling") is False
     assert manager.has_feature("minimum_temperature_set") is False
 
 
@@ -99,6 +102,9 @@ def test_feature_flags_modbus_270_all_enabled() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 270])
 
     assert manager.has_feature("minimum_temperature_set") is True
+    assert manager.has_feature("fireplace_function") is True
+    assert manager.has_feature("sauna_function") is True
+    assert manager.has_feature("boosted_cooling") is True
 
 
 @pytest.mark.unit
@@ -108,6 +114,9 @@ def test_feature_flags_modbus_250_all_enabled() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 250])
 
     assert manager.has_feature("minimum_temperature_set") is True
+    assert manager.has_feature("fireplace_function") is True
+    assert manager.has_feature("sauna_function") is True
+    assert manager.has_feature("boosted_cooling") is True
 
 
 @pytest.mark.unit
@@ -117,6 +126,9 @@ def test_feature_flags_modbus_210_only_minimum_temperature() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 210])
 
     assert manager.has_feature("minimum_temperature_set") is True
+    assert manager.has_feature("fireplace_function") is False
+    assert manager.has_feature("sauna_function") is False
+    assert manager.has_feature("boosted_cooling") is False
 
 
 @pytest.mark.unit
@@ -126,6 +138,9 @@ def test_feature_flags_modbus_200_none_enabled() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 200])
 
     assert manager.has_feature("minimum_temperature_set") is False
+    assert manager.has_feature("fireplace_function") is False
+    assert manager.has_feature("sauna_function") is False
+    assert manager.has_feature("boosted_cooling") is False
 
 
 @pytest.mark.unit
@@ -135,3 +150,6 @@ def test_feature_flags_modbus_150_none_enabled() -> None:
     manager.initialize("Airfi AIRFI-12345", [0, 381, 150])
 
     assert manager.has_feature("minimum_temperature_set") is False
+    assert manager.has_feature("fireplace_function") is False
+    assert manager.has_feature("sauna_function") is False
+    assert manager.has_feature("boosted_cooling") is False

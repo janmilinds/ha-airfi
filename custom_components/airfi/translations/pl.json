@@ -145,6 +145,17 @@
       "supply_air_temperature": {
         "name": "Powietrze nawiewane"
       }
+    },
+    "switch": {
+      "fireplace_function": {
+        "name": "Funkcja kominka"
+      },
+      "sauna_function": {
+        "name": "Funkcja sauny"
+      },
+      "boosted_cooling": {
+        "name": "Wzmocnione chłodzenie"
+      }
     }
   }
 }
