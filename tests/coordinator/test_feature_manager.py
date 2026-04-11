@@ -151,3 +151,5 @@ def test_feature_flags_modbus_150_none_enabled() -> None:
 
     assert manager.has_feature("minimum_temperature_set") is False
     assert manager.has_feature("fireplace_function") is False
+    assert manager.has_feature("sauna_function") is False
+    assert manager.has_feature("boosted_cooling") is False
