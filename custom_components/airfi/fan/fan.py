@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi.entity import AirfiEntity
 from custom_components.airfi.utils.fan import HOLDING_REGISTER_FAN_ACTIVE, HOLDING_REGISTER_FAN_SPEED
 from homeassistant.components.fan import FanEntity, FanEntityDescription, FanEntityFeature
 from homeassistant.util.percentage import percentage_to_ranged_value, ranged_value_to_percentage
+
+if TYPE_CHECKING:
+    from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 
 # Speed range for percentage calculations: device supports 1-5, map to 20-100%
 SPEED_RANGE = (1, 5)
