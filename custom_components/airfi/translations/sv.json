@@ -148,13 +148,13 @@
     },
     "switch": {
       "fireplace_function": {
-        "name": "Spisfunktion"
+        "name": "Braständningsfunktion"
       },
       "sauna_function": {
         "name": "Bastufunktion"
       },
       "boosted_cooling": {
-        "name": "Förstärkt kylning"
+        "name": "Förbättrad kylning"
       }
     }
   }
