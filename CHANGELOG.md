@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.4] - 2026-04-11
+
+### Added
+
+- Supply air temperature setting
+- Function switches for fireplace, sauna and boosted cooling functions (if supported by device firmware)
+- Mock AHU device for development and testing purposes, simulating Modbus TCP communication and dynamic sensor values.
+
+### Fixed
+
+- Fan state UI bouncing when turning fan on/off; added optimistic state handling to update HA state immediately.
+
+---
+**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.3...v1.0.0-beta.4
+
 ## [1.0.0-beta.3] - 2026-04-08
 
 ### Added
