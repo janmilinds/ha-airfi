@@ -118,6 +118,11 @@
         "name": "Ventilation"
       }
     },
+    "number": {
+      "supply_air_temperature_setting": {
+        "name": "Supply air temperature"
+      }
+    },
     "sensor": {
       "exhaust_air_temperature": {
         "name": "Exhaust air"

@@ -68,6 +68,14 @@ The integration creates one device with the following entities:
 
 Fan speed presets map directly to the ventilation unit's speed settings (1 = lowest, 5 = highest). Turning the fan off sets speed to 0; turning it on restores the previous speed or defaults to speed 1.
 
+### Controls
+
+| Entity | Type | Range | Description |
+|--------|------|-------|-------------|
+| **Supply air temperature setting** | number | 13–25 °C | Target supply air temperature |
+
+The supply air temperature setting controls the target temperature for air delivered into the rooms. When the device supports minimum temperature parity (Modbus map version ≥ 2.1.0), the minimum temperature setting is also updated automatically to keep both values in sync.
+
 ### Sensors
 
 | Entity | Device Class | Unit | State Class | Description |

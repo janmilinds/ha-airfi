@@ -118,6 +118,11 @@
         "name": "Ilmanvaihto"
       }
     },
+    "number": {
+      "supply_air_temperature_setting": {
+        "name": "Tuloilman lämpötila"
+      }
+    },
     "sensor": {
       "exhaust_air_temperature": {
         "name": "Jäteilma"

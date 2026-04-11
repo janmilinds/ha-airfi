@@ -118,6 +118,11 @@
         "name": "Wentylacja"
       }
     },
+    "number": {
+      "supply_air_temperature_setting": {
+        "name": "Temperatura nawiewu"
+      }
+    },
     "sensor": {
       "exhaust_air_temperature": {
         "name": "Powietrze wywiewane"

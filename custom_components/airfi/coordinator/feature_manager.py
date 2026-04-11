@@ -1,7 +1,7 @@
 """Feature manager for Airfi device detection and validation.
 
 This module provides firmware validation, register length mapping, and device
-capability detection.
+capability detection based on the Modbus map version.
 """
 
 from __future__ import annotations
@@ -32,11 +32,17 @@ class AirfiFeatureManager:
         "1.5.0": (31, 12),
     }
 
+    # Feature flags gated by minimum Modbus map version
+    _FEATURE_VERSION_MAP: dict[str, str] = {
+        "minimum_temperature_set": "2.1.0",
+    }
+
     def __init__(self) -> None:
         """Initialize the feature manager."""
         self.firmware_version = ""
         self.modbus_register_version = ""
         self.hw_version = ""
+        self._feature_flags: dict[str, bool] = dict.fromkeys(self._FEATURE_VERSION_MAP, False)
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
         """Initialize and validate device based on lookup registers.
@@ -65,6 +71,7 @@ class AirfiFeatureManager:
         self.modbus_register_version = version_string(lookup_registers[2])
 
         self._validate_firmware_version()
+        self._set_feature_flags()
         self._log_device_info(device_name)
 
     def get_register_lengths(self) -> tuple[int, int]:
@@ -137,6 +144,22 @@ class AirfiFeatureManager:
         LOGGER.info("  Firmware version: %s", self.firmware_version)
         LOGGER.info("  Modbus map version: %s", self.modbus_register_version)
         LOGGER.info("-" * len(headline))
+        LOGGER.debug("  Feature flags: %s", self._feature_flags)
+
+    def has_feature(self, feature: str) -> bool:
+        """Check whether the device supports a given feature.
+
+        Args:
+            feature: Feature flag key (e.g. ``"fireplace_function"``).
+
+        """
+        return self._feature_flags.get(feature, False)
+
+    def _set_feature_flags(self) -> None:
+        """Set feature flags based on the Modbus map version."""
+        parsed = version.parse(self.modbus_register_version)
+        for feature, min_ver in self._FEATURE_VERSION_MAP.items():
+            self._feature_flags[feature] = parsed >= version.parse(min_ver)
 
 
 __all__ = ["AirfiFeatureManager"]

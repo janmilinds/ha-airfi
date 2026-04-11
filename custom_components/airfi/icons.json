@@ -16,6 +16,11 @@
         }
       }
     },
+    "number": {
+      "supply_air_temperature_setting": {
+        "default": "mdi:home-thermometer"
+      }
+    },
     "sensor": {
       "exhaust_air_temperature": {
         "default": "mdi:thermometer-chevron-up",
