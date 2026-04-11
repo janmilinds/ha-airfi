@@ -220,13 +220,13 @@ async def test_optimistic_state_set_and_cleared() -> None:
 
     # After turn_on, optimistic state should be set and visible via is_on
     await entity.async_turn_on()
-    assert entity._optimistic_state is True
+    assert entity._optimistic_state is True  # noqa: SLF001
     assert entity.is_on is True
     entity.async_write_ha_state.assert_called()
 
     # Simulate coordinator update which should clear optimistic state
-    entity._handle_coordinator_update()
-    assert entity._optimistic_state is None
+    entity._handle_coordinator_update()  # noqa: SLF001
+    assert entity._optimistic_state is None  # noqa: SLF001
 
 
 @pytest.mark.unit
