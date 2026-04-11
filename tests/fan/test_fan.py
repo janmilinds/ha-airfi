@@ -20,12 +20,21 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
+    coordinator.async_request_refresh = AsyncMock()
     coordinator.data = {
         "holding_registers": holding_registers,
         "model": "Airfi",
         "firmware_version": "3.8.1",
     }
     return coordinator
+
+
+def _build_fan(holding_registers: list[int]) -> AirfiFan:
+    """Build a fan entity with mocked async_write_ha_state for optimistic updates."""
+    coordinator = _build_coordinator(holding_registers)
+    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity.async_write_ha_state = MagicMock()
+    return entity
 
 
 @pytest.mark.unit
@@ -89,23 +98,21 @@ def test_fan_percentage_returns_none_when_register_missing() -> None:
 @pytest.mark.unit
 async def test_fan_turn_on_writes_0_to_register_12() -> None:
     """Test that turning on writes 0 to register 12 (at-home)."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
     await entity.async_turn_on()
 
-    coordinator.async_set_holding_register.assert_awaited_once_with(12, 0)
+    entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 0)
 
 
 @pytest.mark.unit
 async def test_fan_turn_off_writes_1_to_register_12() -> None:
     """Test that turning off writes 1 to register 12 (away)."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     await entity.async_turn_off()
 
-    coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
+    entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
 
 
 @pytest.mark.unit
@@ -118,12 +125,11 @@ async def test_fan_set_percentage_writes_device_speed(
     expected_device_speed: int,
 ) -> None:
     """Test that set_percentage converts percentage to device speed and writes to register 1."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     await entity.async_set_percentage(percentage)
 
-    calls = coordinator.async_set_holding_register.call_args_list
+    calls = entity.coordinator.async_set_holding_register.call_args_list
     assert len(calls) == 2
     # First call: ensure on (register 12 = 0)
     assert calls[0][0] == (12, 0)
@@ -134,23 +140,21 @@ async def test_fan_set_percentage_writes_device_speed(
 @pytest.mark.unit
 async def test_fan_set_percentage_0_turns_off() -> None:
     """Test that set_percentage(0) calls turn_off."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     await entity.async_set_percentage(0)
 
-    coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
+    entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
 
 
 @pytest.mark.unit
 async def test_fan_turn_on_with_percentage() -> None:
     """Test that turn_on with percentage also sets the speed."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
     await entity.async_turn_on(percentage=60)
 
-    calls = coordinator.async_set_holding_register.call_args_list
+    calls = entity.coordinator.async_set_holding_register.call_args_list
     assert len(calls) == 3
     # First call: turn on (register 12 = 0)
     assert calls[0][0] == (12, 0)
@@ -163,12 +167,11 @@ async def test_fan_turn_on_with_percentage() -> None:
 @pytest.mark.unit
 async def test_fan_set_percentage_turns_on_if_off() -> None:
     """Test that set_percentage turns on the fan if it's currently off."""
-    coordinator = _build_coordinator([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    entity = AirfiFan(coordinator, ENTITY_DESCRIPTIONS[0])
+    entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
     await entity.async_set_percentage(60)
 
-    calls = coordinator.async_set_holding_register.call_args_list
+    calls = entity.coordinator.async_set_holding_register.call_args_list
     assert len(calls) == 2
     # First call: ensure on (register 12 = 0)
     assert calls[0][0] == (12, 0)
