@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi.entity import AirfiEntity
 from custom_components.airfi.utils.switch import (
     HOLDING_REGISTER_BOOSTED_COOLING,
@@ -13,6 +12,9 @@ from custom_components.airfi.utils.switch import (
     HOLDING_REGISTER_SAUNA_FUNCTION,
 )
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+
+if TYPE_CHECKING:
+    from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
