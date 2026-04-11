@@ -121,6 +121,6 @@ def test_entity_description_constraints() -> None:
     """Test that the entity description has correct min/max/step/mode."""
     desc = ENTITY_DESCRIPTIONS[0]
     assert desc.key == "supply_air_temperature_setting"
-    assert desc.native_min_value == 10.0
-    assert desc.native_max_value == 21.0
+    assert desc.native_min_value == 13.0
+    assert desc.native_max_value == 25.0
     assert desc.native_step == 1.0
