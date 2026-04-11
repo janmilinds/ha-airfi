@@ -11,6 +11,7 @@ from custom_components.airfi.data import AirfiData
 from custom_components.airfi.fan import async_setup_entry as fan_setup
 from custom_components.airfi.number import async_setup_entry as number_setup
 from custom_components.airfi.sensor import async_setup_entry as sensor_setup
+from custom_components.airfi.switch import async_setup_entry as switch_setup
 
 
 def _make_entry(hass, *, features: dict[str, bool] | None = None) -> MagicMock:
@@ -65,3 +66,28 @@ async def test_number_setup_entry_adds_entities(hass) -> None:
     added = []
     await number_setup(hass, entry, added.extend)
     assert len(added) >= 1
+
+
+@pytest.mark.unit
+async def test_switch_setup_entry_adds_entities_when_features_available(hass) -> None:
+    """Test that switch platform adds entities when features are supported."""
+    entry = _make_entry(
+        hass,
+        features={
+            "fireplace_function": True,
+            "sauna_function": True,
+            "boosted_cooling": True,
+        },
+    )
+    added = []
+    await switch_setup(hass, entry, added.extend)
+    assert len(added) == 3
+
+
+@pytest.mark.unit
+async def test_switch_setup_entry_adds_no_entities_when_features_unavailable(hass) -> None:
+    """Test that switch platform adds no entities when features are not supported."""
+    entry = _make_entry(hass, features={})
+    added = []
+    await switch_setup(hass, entry, added.extend)
+    assert len(added) == 0

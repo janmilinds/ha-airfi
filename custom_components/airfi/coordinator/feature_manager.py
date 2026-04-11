@@ -35,6 +35,9 @@ class AirfiFeatureManager:
     # Feature flags gated by minimum Modbus map version
     _FEATURE_VERSION_MAP: dict[str, str] = {
         "minimum_temperature_set": "2.1.0",
+        "fireplace_function": "2.5.0",
+        "boosted_cooling": "2.5.0",
+        "sauna_function": "2.5.0",
     }
 
     def __init__(self) -> None:

@@ -64,6 +64,26 @@
           "unavailable": "mdi:water-off"
         }
       }
+    },
+    "switch": {
+      "fireplace_function": {
+        "default": "mdi:fireplace-off",
+        "state": {
+          "on": "mdi:fireplace"
+        }
+      },
+      "sauna_function": {
+        "default": "mdi:radiator-off",
+        "state": {
+          "on": "mdi:radiator"
+        }
+      },
+      "boosted_cooling": {
+        "default": "mdi:fan-off",
+        "state": {
+          "on": "mdi:fan-plus"
+        }
+      }
     }
   }
 }

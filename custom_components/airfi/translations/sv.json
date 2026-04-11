@@ -145,6 +145,17 @@
       "supply_air_temperature": {
         "name": "Tilluft"
       }
+    },
+    "switch": {
+      "fireplace_function": {
+        "name": "Spisfunktion"
+      },
+      "sauna_function": {
+        "name": "Bastufunktion"
+      },
+      "boosted_cooling": {
+        "name": "Förstärkt kylning"
+      }
     }
   }
 }

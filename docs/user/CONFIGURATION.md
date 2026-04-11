@@ -100,6 +100,25 @@ These entities are disabled by default and can be enabled in entity settings if 
 
 The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
 
+### Special Function Switches (Disabled by Default, Feature-Gated)
+
+These switches are only available when the device's Modbus register map version supports them (≥ 2.5.0). They are disabled by default and must be manually enabled:
+
+| Entity | Feature Flag | Description |
+|--------|-------------|-------------|
+| **Fireplace function** | `fireplace_function` | When activated, overpressure is maintained for 30 min. |
+| **Sauna function** | `sauna_function` | When activated, prevents ventilation increase for 30 min when unit detects increase in humidity. |
+| **Boosted cooling** | `boosted_cooling` | When activated, the unit monitors temperatures and boosts air volumes as needed depending on conditions. Useful especially during summer time to draw in cool outside air during nighttime. |
+
+To enable a switch:
+
+1. Go to **Settings** → **Devices & Services** → **Entities**
+2. Find the switch entity (it may be hidden — use the filter)
+3. Click the settings icon (⚙)
+4. Toggle **Enable entity** on
+
+**Note:** If the switches don't appear at all, your unit's firmware may not support these features. Check the Modbus register version diagnostic sensor — it needs to be 2.5.0 or newer.
+
 ### Disabling Entities
 
 If you don't need certain entities:
