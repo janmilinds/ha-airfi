@@ -45,6 +45,9 @@ custom_components/airfi/
 ├── fan/                     # Fan platform
 │   ├── __init__.py          # Platform setup
 │   └── fan.py               # Ventilation fan entity (5-speed)
+├── number/                  # Number platform
+│   ├── __init__.py          # Platform setup
+│   └── temperature.py       # Supply air temperature setting entity
 ├── sensor/                  # Sensor platform
 │   ├── __init__.py          # Platform setup
 │   ├── humidity.py          # Humidity sensor entity
@@ -58,7 +61,8 @@ custom_components/airfi/
     ├── __init__.py
     ├── discovery.py         # UDP multicast device discovery
     ├── error_mapping.py     # Modbus error code mapping
-    └── fan.py               # Fan speed conversion helpers
+    ├── fan.py               # Fan speed conversion helpers
+    └── number.py            # Number register address constants
 ```
 
 ## Core Components
@@ -75,7 +79,7 @@ and distributes updates to all entities. It is organized as a package with separ
 - `base.py` - Main coordinator class (`AirfiDataUpdateCoordinator`)
 - `data_processing.py` - Data validation, transformation, and caching utilities
 - `error_handling.py` - Error recovery strategies and retry logic
-- `feature_manager.py` - Feature flags based on firmware version
+- `feature_manager.py` - Feature flags based on firmware version and Modbus map version
 
 **Core functionality:**
 
@@ -85,6 +89,7 @@ and distributes updates to all entities. It is organized as a package with separ
 - Automatic retry on transient failures
 - Data validation and transformation before distribution
 - Device recovery via UDP rediscovery when unreachable
+- Feature flag system gating entity availability by Modbus map version
 
 **Key class:** `AirfiDataUpdateCoordinator` (exported from `coordinator/__init__.py`)
 
@@ -174,12 +179,12 @@ Platform entities inherit from both:
     │  Data   │ ← Stored in coordinator.data
     └────┬────┘
          │
-    ┌────┼───────────────┐
-    │    │               │
-    ▼    ▼               ▼
-┌──────┐┌──────────┐┌──────────────┐
-│ Fan  ││ Sensors  ││Binary Sensor │ ← Read from coordinator
-└──────┘└──────────┘└──────────────┘
+    ┌────┼───────────────────────┐
+    │    │               │       │
+    ▼    ▼               ▼       ▼
+┌──────┐┌──────────┐┌──────────────┐┌────────┐
+│ Fan  ││ Sensors  ││Binary Sensor ││ Number │ ← Read from coordinator
+└──────┘└──────────┘└──────────────┘└────────┘
 ```
 
 ## AI Agent Instructions
