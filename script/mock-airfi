@@ -344,7 +344,7 @@ async def simulate_sensor_drift(
                 store.setValues(4, 23, [new_hum])
 
         except Exception:  # noqa: BLE001
-            pass
+            LOGGER.warning("Sensor drift update failed", exc_info=True)
 
         with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(stop_event.wait(), timeout=5.0)
