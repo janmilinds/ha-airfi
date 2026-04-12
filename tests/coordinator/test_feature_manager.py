@@ -153,3 +153,35 @@ def test_feature_flags_modbus_150_none_enabled() -> None:
     assert manager.has_feature("fireplace_function") is False
     assert manager.has_feature("sauna_function") is False
     assert manager.has_feature("boosted_cooling") is False
+
+
+# ——— is_configuration_unsupported tests ———
+
+
+@pytest.mark.unit
+def test_is_configuration_unsupported_blocklisted_firmware() -> None:
+    """Test that blocklisted firmware is detected as unsupported."""
+    manager = AirfiFeatureManager()
+    assert manager.is_configuration_unsupported("3.2.0", "3.0.0") is True
+
+
+@pytest.mark.unit
+def test_is_configuration_unsupported_old_modbus_version() -> None:
+    """Test that a too-old Modbus version is detected as unsupported."""
+    manager = AirfiFeatureManager()
+    assert manager.is_configuration_unsupported("3.8.0", "1.0.0") is True
+
+
+@pytest.mark.unit
+def test_is_configuration_unsupported_supported_combination() -> None:
+    """Test that a supported firmware + modbus combination passes."""
+    manager = AirfiFeatureManager()
+    assert manager.is_configuration_unsupported("3.8.0", "3.0.0") is False
+
+
+@pytest.mark.unit
+def test_is_configuration_unsupported_empty_modbus_version() -> None:
+    """Test that an empty modbus version only checks firmware blocklist."""
+    manager = AirfiFeatureManager()
+    assert manager.is_configuration_unsupported("3.8.0", "") is False
+    assert manager.is_configuration_unsupported("3.2.0", "") is True

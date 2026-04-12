@@ -110,8 +110,8 @@ async def test_async_setup_entry_raises_on_first_refresh_failure(hass, entry) ->
             new=AsyncMock(side_effect=ConfigEntryNotReady()),
         ),
         patch("custom_components.airfi.async_get_loaded_integration", return_value=MagicMock()),
+        pytest.raises(ConfigEntryNotReady) as exc,
     ):
-        with pytest.raises(ConfigEntryNotReady) as exc:
-            await async_setup_entry(hass, entry)
+        await async_setup_entry(hass, entry)
 
     assert getattr(exc.value, "translation_key", None) == "first_refresh_failed"

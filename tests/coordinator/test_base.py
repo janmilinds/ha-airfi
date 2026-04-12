@@ -563,7 +563,7 @@ async def test_async_check_firmware_via_lookup_ignores_lookup_failure(hass, conf
     client.async_get_lookup_registers = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
     # Should not raise and should not create an issue
-    await coordinator._async_check_firmware_via_lookup()
+    await coordinator._async_check_firmware_via_lookup()  # noqa: SLF001
 
     issue_reg = ir.async_get(hass)
     expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
@@ -575,7 +575,7 @@ async def test_check_runtime_firmware_no_fw_noop(hass, config_entry, mock_integr
     """Test that _check_runtime_firmware returns early when firmware is empty."""
     coordinator, _ = _make_coordinator(hass, config_entry, mock_integration)
 
-    coordinator._check_runtime_firmware({})
+    coordinator._check_runtime_firmware({})  # noqa: SLF001
 
     issue_reg = ir.async_get(hass)
     expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
@@ -708,7 +708,7 @@ async def test_runtime_firmware_creates_issue_when_unsupported(hass, config_entr
         }
     )
 
-    with patch.object(coordinator.feature_manager, "is_firmware_unsupported", return_value=True):
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
         result = await _call_update(coordinator)
 
     assert result["firmware_version"] == "3.2.0"
@@ -748,7 +748,7 @@ async def test_runtime_firmware_clears_issue_when_supported(hass, config_entry, 
         }
     )
 
-    with patch.object(coordinator.feature_manager, "is_firmware_unsupported", return_value=False):
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False):
         result = await _call_update(coordinator)
 
     assert result["firmware_version"] == "3.8.1"
@@ -772,7 +772,7 @@ async def test_runtime_firmware_does_not_duplicate_issue(hass, config_entry, moc
         }
     )
 
-    with patch.object(coordinator.feature_manager, "is_firmware_unsupported", return_value=True):
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
         await _call_update(coordinator)
         await _call_update(coordinator)
 
@@ -797,7 +797,7 @@ async def test_runtime_firmware_no_issue_when_supported(hass, config_entry, mock
         }
     )
 
-    with patch.object(coordinator.feature_manager, "is_firmware_unsupported", return_value=False):
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False):
         await _call_update(coordinator)
 
     issue_reg = ir.async_get(hass)
@@ -807,7 +807,7 @@ async def test_runtime_firmware_no_issue_when_supported(hass, config_entry, mock
 
 @pytest.mark.unit
 async def test_setup_firmware_validation_creates_issue(hass, config_entry, mock_integration) -> None:
-    """Test that async_initial_setup creates firmware issue when feature_manager raises ValueError."""
+    """Test that async_initial_setup creates firmware issue when unsupported firmware raises ValueError."""
     config_entry.add_to_hass(hass)
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(return_value=[0, 320, 300])
@@ -815,6 +815,7 @@ async def test_setup_firmware_validation_creates_issue(hass, config_entry, mock_
 
     with (
         patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("unsupported fw")),
+        patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
         pytest.raises(ConfigEntryNotReady),
     ):
         await _call_setup(coordinator)
@@ -860,8 +861,133 @@ async def test_firmware_issue_cleared_after_restart_with_supported_firmware(
         }
     )
 
-    with patch.object(coordinator.feature_manager, "is_firmware_unsupported", return_value=False):
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False):
         await _call_update(coordinator)
 
     issue_reg = ir.async_get(hass)
     assert issue_reg.async_get_issue(DOMAIN, issue_id) is None
+
+
+@pytest.mark.unit
+async def test_setup_insufficient_registers_does_not_create_firmware_issue(
+    hass, config_entry, mock_integration
+) -> None:
+    """Test that a ValueError from insufficient registers does not create a firmware issue.
+
+    initialize() can raise ValueError for non-firmware reasons (e.g. fewer than
+    3 lookup registers). Only genuinely unsupported firmware should generate
+    the repairs issue.
+    """
+    config_entry.add_to_hass(hass)
+    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
+    client.async_get_lookup_registers = AsyncMock(return_value=[0])
+    coordinator.feature_manager.firmware_version = ""
+
+    with (
+        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("insufficient registers")),
+        patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False),
+        pytest.raises(ConfigEntryNotReady),
+    ):
+        await _call_setup(coordinator)
+
+    issue_reg = ir.async_get(hass)
+    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    assert issue_reg.async_get_issue(DOMAIN, expected_id) is None
+
+
+@pytest.mark.unit
+async def test_setup_old_modbus_version_creates_issue(hass, config_entry, mock_integration) -> None:
+    """Test that async_initial_setup creates repairs issue when modbus version is too old.
+
+    This covers the case where firmware is not blocklisted but the modbus map
+    version is below the minimum, which also makes the device unsupported.
+    """
+    config_entry.add_to_hass(hass)
+    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
+    client.async_get_lookup_registers = AsyncMock(return_value=[0, 150, 140])
+    coordinator.feature_manager.firmware_version = "1.5.0"
+    coordinator.feature_manager.modbus_register_version = "1.4.0"
+
+    with (
+        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("below minimum")),
+        patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
+        pytest.raises(ConfigEntryNotReady),
+    ):
+        await _call_setup(coordinator)
+
+    issue_reg = ir.async_get(hass)
+    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    issue = issue_reg.async_get_issue(DOMAIN, expected_id)
+    assert issue is not None
+    assert issue.severity == ir.IssueSeverity.ERROR
+
+
+@pytest.mark.unit
+async def test_runtime_old_modbus_version_creates_issue(hass, config_entry, mock_integration) -> None:
+    """Test that a runtime downgrade to too-old Modbus version creates a firmware issue."""
+    config_entry.add_to_hass(hass)
+    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
+    client.async_get_data = AsyncMock(
+        return_value={
+            "firmware_version": "3.8.0",
+            "modbus_register_version": "1.0.0",
+            "holding_registers": [],
+            "input_registers": [],
+            "lookup_registers": [],
+            "model": "Airfi",
+        }
+    )
+
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
+        await _call_update(coordinator)
+
+    issue_reg = ir.async_get(hass)
+    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    assert issue_reg.async_get_issue(DOMAIN, expected_id) is not None
+
+
+@pytest.mark.unit
+async def test_firmware_issue_updated_when_version_changes(hass, config_entry, mock_integration) -> None:
+    """Test that the issue is updated with new firmware version when still unsupported."""
+    config_entry.add_to_hass(hass)
+    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
+
+    # First poll with unsupported 3.2.0
+    client.async_get_data = AsyncMock(
+        return_value={
+            "firmware_version": "3.2.0",
+            "modbus_register_version": "3.0.0",
+            "holding_registers": [],
+            "input_registers": [],
+            "lookup_registers": [],
+            "model": "Airfi",
+        }
+    )
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
+        await _call_update(coordinator)
+
+    issue_reg = ir.async_get(hass)
+    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    issue = issue_reg.async_get_issue(DOMAIN, expected_id)
+    assert issue is not None
+    assert issue.translation_placeholders is not None
+    assert issue.translation_placeholders["firmware_version"] == "3.2.0"
+
+    # Second poll with different unsupported version
+    client.async_get_data = AsyncMock(
+        return_value={
+            "firmware_version": "3.3.0",
+            "modbus_register_version": "3.0.0",
+            "holding_registers": [],
+            "input_registers": [],
+            "lookup_registers": [],
+            "model": "Airfi",
+        }
+    )
+    with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
+        await _call_update(coordinator)
+
+    issue = issue_reg.async_get_issue(DOMAIN, expected_id)
+    assert issue is not None
+    assert issue.translation_placeholders is not None
+    assert issue.translation_placeholders["firmware_version"] == "3.3.0"
