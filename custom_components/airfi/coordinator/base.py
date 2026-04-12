@@ -90,7 +90,6 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         self._connection_lost_at: float | None = None
         self._recovery_state: RecoveryState = RecoveryState.IDLE
         self._issue_raised: bool = False
-        self._firmware_issue_raised: bool = False
 
     @property
     def _device_unreachable_issue_id(self) -> str:
@@ -277,10 +276,10 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             firmware_version: The firmware version to show in the issue. Falls back
                 to the feature_manager cached value when not provided (setup-time path).
         """
-        if self._firmware_issue_raised:
-            return
-        self._firmware_issue_raised = True
         fw = firmware_version or self.feature_manager.firmware_version or "unknown"
+        issue_reg = ir.async_get(self.hass)
+        if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
+            return
         LOGGER.warning(
             "Raising unsupported firmware repairs issue (firmware=%s)",
             fw,
@@ -326,10 +325,11 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             return
         if self.feature_manager.is_firmware_unsupported(fw):
             self._raise_unsupported_firmware_issue(fw)
-        elif self._firmware_issue_raised:
-            self._firmware_issue_raised = False
-            ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
-            LOGGER.info("Firmware %s is now supported, cleared repairs issue", fw)
+        else:
+            issue_reg = ir.async_get(self.hass)
+            if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
+                ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
+                LOGGER.info("Firmware %s is now supported, cleared repairs issue", fw)
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.
