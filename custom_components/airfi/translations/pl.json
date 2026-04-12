@@ -108,7 +108,7 @@
     },
     "unsupported_firmware": {
       "title": "{name} ma nieobsługiwaną wersję firmware ({firmware_version})",
-      "description": "Wersja firmware urządzenia {firmware_version} nie jest kompatybilna z tą integracją. Zaktualizuj lub obniż wersję firmware urządzenia do obsługiwanej wersji."
+      "description": "Wersja firmware urządzenia {firmware_version} nie jest kompatybilna z tą integracją. Zaktualizuj lub obniż wersję firmware urządzenia do obsługiwanej wersji.\n\nAby uzyskać więcej informacji na temat aktualizacji firmware urządzenia, zapoznaj się z pomocą techniczną Airfi: https://airfi.fi/pl/wsparcie/"
     }
   },
   "entity": {

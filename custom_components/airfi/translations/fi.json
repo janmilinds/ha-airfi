@@ -107,8 +107,8 @@
       }
     },
     "unsupported_firmware": {
-      "title": "{name}: firmware-versio ({firmware_version}) ei ole tuettu",
-      "description": "Laitteen firmware-versio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen firmware tuettuun versioon."
+      "title": "{name}: laiteohjelmistoversio ({firmware_version}) ei ole tuettu",
+      "description": "Laitteen laiteohjelmistoversio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen laiteohjelmistoversio tuettuun versioon.\n\nLisätietoja laitteen ohjelmiston päivityksestä saat Airfin tuki-osiosta: https://airfi.fi/tuki/"
     }
   },
   "entity": {
@@ -135,7 +135,7 @@
         "name": "Poistoilma"
       },
       "firmware_version": {
-        "name": "Ohjelmistoversio"
+        "name": "Laiteohjelmistoversio"
       },
       "modbus_register_version": {
         "name": "Modbus-rekisteriversio"
