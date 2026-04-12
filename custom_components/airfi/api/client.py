@@ -165,9 +165,15 @@ class AirfiApiClient:
             version_string(input_registers[1]) if len(input_registers) > 1 else self._firmware_version or "0.0.0"
         )
 
+        # Read modbus_register_version live from input register 3 (index 2)
+        # so that runtime modbus map changes are detected.
+        live_modbus_register_version = (
+            version_string(input_registers[2]) if len(input_registers) > 2 else self._modbus_register_version or "0.0.0"
+        )
+
         return {
             "firmware_version": live_firmware_version,
-            "modbus_register_version": self._modbus_register_version or "0.0.0",
+            "modbus_register_version": live_modbus_register_version,
             "holding_registers": holding_registers,
             "input_registers": input_registers,
             "lookup_registers": [],
