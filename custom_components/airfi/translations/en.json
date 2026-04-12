@@ -111,7 +111,7 @@
     },
     "unsupported_firmware": {
       "title": "{name} has unsupported firmware ({firmware_version})",
-      "description": "The device firmware version {firmware_version} is not compatible with this integration. Please update or downgrade the device firmware to a supported version.\n\nFor more information on updating your device firmware, please refer to [Airfi support]({support_url}) (**airfi.fi/en** → **Support** → **Software update**)."
+      "description": "The device firmware version {firmware_version} is not compatible with this integration. Please update or downgrade the device firmware to a supported version.\n\nFor more information on updating your device firmware, please refer to support section on [Airfi website]({airfi_url}) (**airfi.fi/en** → **Support** → **Software update**)."
     }
   },
   "entity": {
