@@ -85,6 +85,9 @@
     },
     "update_failed_rediscovery": {
       "message": "Urządzenie zostało ponownie wykryte, ale odświeżenie danych nadal nie powiodło się."
+    },
+    "first_refresh_failed": {
+      "message": "Nie udało się załadować początkowych danych z urządzenia pod adresem {host}."
     }
   },
   "issues": {

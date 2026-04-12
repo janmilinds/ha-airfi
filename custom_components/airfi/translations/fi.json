@@ -85,6 +85,9 @@
     },
     "update_failed_rediscovery": {
       "message": "Laite löydettiin uudelleen, mutta tietojen päivitys epäonnistui edelleen."
+    },
+    "first_refresh_failed": {
+      "message": "Alkutietojen lataaminen laitteelta osoitteessa {host} epäonnistui."
     }
   },
   "issues": {

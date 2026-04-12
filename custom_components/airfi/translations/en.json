@@ -85,6 +85,9 @@
     },
     "update_failed_rediscovery": {
       "message": "Device was rediscovered but data refresh still failed."
+    },
+    "first_refresh_failed": {
+      "message": "Could not load initial data from the device at {host}."
     }
   },
   "issues": {

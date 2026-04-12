@@ -85,6 +85,9 @@
     },
     "update_failed_rediscovery": {
       "message": "Enheten upptäcktes igen, men datauppdateringen misslyckades fortfarande."
+    },
+    "first_refresh_failed": {
+      "message": "Kunde inte ladda initiala data från enheten på {host}."
     }
   },
   "issues": {

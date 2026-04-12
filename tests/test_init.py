@@ -14,6 +14,7 @@ import custom_components.airfi.config_flow
 import custom_components.airfi.config_flow_handler.handler  # noqa: F401
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from homeassistant.const import CONF_HOST
+from homeassistant.exceptions import ConfigEntryNotReady
 
 
 @pytest.fixture
@@ -94,3 +95,23 @@ async def test_async_reload_entry_calls_reload(hass, entry) -> None:
         await async_reload_entry(hass, entry)
 
     reload_mock.assert_awaited_once_with(entry.entry_id)
+
+
+@pytest.mark.unit
+async def test_async_setup_entry_raises_on_first_refresh_failure(hass, entry) -> None:
+    """Test that async_setup_entry raises ConfigEntryNotReady when first refresh fails."""
+    with (
+        patch(
+            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            new=AsyncMock(),
+        ),
+        patch(
+            "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
+            new=AsyncMock(side_effect=ConfigEntryNotReady()),
+        ),
+        patch("custom_components.airfi.async_get_loaded_integration", return_value=MagicMock()),
+    ):
+        with pytest.raises(ConfigEntryNotReady) as exc:
+            await async_setup_entry(hass, entry)
+
+    assert getattr(exc.value, "translation_key", None) == "first_refresh_failed"
