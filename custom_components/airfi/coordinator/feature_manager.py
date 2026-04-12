@@ -123,30 +123,24 @@ class AirfiFeatureManager:
         # Check for unsupported firmware versions
         if self.firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
             msg = f"Firmware version {self.firmware_version} is in the unsupported list"
-            LOGGER.error(
-                "Air handling unit firmware version %s is unsupported. Please downgrade or upgrade to another version.",
-                self.firmware_version,
-            )
             raise ValueError(msg)
 
         # Check minimum Modbus version
         if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
             msg = f"Modbus map version {self.modbus_register_version} is below minimum {self.MIN_MODBUS_VERSION}"
-            LOGGER.error(
-                "Device Modbus map version %s is below the minimum supported version %s. "
-                "Please upgrade the device firmware.",
-                self.modbus_register_version,
-                self.MIN_MODBUS_VERSION,
-            )
             raise ValueError(msg)
 
-    def is_firmware_unsupported(self, firmware_version: str) -> bool:
-        """Check whether a firmware version is in the unsupported list.
+    def is_configuration_unsupported(self, firmware_version: str, modbus_register_version: str) -> bool:
+        """Check whether firmware or modbus version is unsupported.
 
-        Can be called at any time (e.g. during coordinator updates) to detect
-        firmware changes at runtime.
+        Combines the firmware blocklist check with the minimum Modbus version
+        check so runtime validation catches both cases.
         """
-        return firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS
+        if firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
+            return True
+        if modbus_register_version and version.parse(modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
+            return True
+        return False
 
     def _log_device_info(self, device_name: str) -> None:
         """Log device information and versions.
