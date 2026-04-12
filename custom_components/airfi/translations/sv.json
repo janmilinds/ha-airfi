@@ -78,13 +78,16 @@
       "message": "Det gick inte att ansluta till enheten på {host}."
     },
     "setup_firmware_error": {
-      "message": "Validering av enhetens firmware misslyckades: {error}"
+      "message": "Enhetens firmwareversion {firmware_version} stöds inte av denna integration."
     },
     "update_failed": {
       "message": "Misslyckades med att uppdatera data från enheten."
     },
     "update_failed_rediscovery": {
       "message": "Enheten upptäcktes igen, men datauppdateringen misslyckades fortfarande."
+    },
+    "first_refresh_failed": {
+      "message": "Kunde inte ladda initiala data från enheten på {host}."
     }
   },
   "issues": {
@@ -105,6 +108,10 @@
           }
         }
       }
+    },
+    "unsupported_firmware": {
+      "title": "{name} har firmware som inte stöds ({firmware_version})",
+      "description": "Enhetens firmwareversion {firmware_version} är inte kompatibel med denna integration. Uppdatera eller nedgradera enhetens firmware till en version som stöds.\n\nFör mer information om hur du uppdaterar enhetens firmware, se stödsektionen på [Airfi-webbplatsen]({airfi_url}) (**airfi.fi/sv** → **Stöd** → **Programuppdatering**)."
     }
   },
   "entity": {

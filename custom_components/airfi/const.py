@@ -38,6 +38,7 @@ RECOVERY_ISSUE_SECONDS = 600
 
 # Repairs issue identifiers
 ISSUE_DEVICE_UNREACHABLE = "device_unreachable"
+ISSUE_UNSUPPORTED_FIRMWARE = "unsupported_firmware"
 
 # Device models (byte 11 parsing: index = (model_id - 1) // 2, variant = L if odd else R)
 # Variant placeholder {} is replaced with L/R based on model_id parity

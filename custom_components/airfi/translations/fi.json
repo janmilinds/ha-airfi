@@ -78,13 +78,16 @@
       "message": "Laitteeseen ei saatu yhteyttä osoitteessa {host}."
     },
     "setup_firmware_error": {
-      "message": "Laitteen ohjelmistoversion tarkistus epäonnistui: {error}"
+      "message": "Laitteen firmware-versio {firmware_version} ei ole yhteensopiva tämän integraation kanssa."
     },
     "update_failed": {
       "message": "Laitteen tietojen päivitys epäonnistui."
     },
     "update_failed_rediscovery": {
       "message": "Laite löydettiin uudelleen, mutta tietojen päivitys epäonnistui edelleen."
+    },
+    "first_refresh_failed": {
+      "message": "Alkutietojen lataaminen laitteelta osoitteessa {host} epäonnistui."
     }
   },
   "issues": {
@@ -105,6 +108,10 @@
           }
         }
       }
+    },
+    "unsupported_firmware": {
+      "title": "{name}: laiteohjelmistoversio ({firmware_version}) ei ole tuettu",
+      "description": "Laitteen laiteohjelmistoversio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen laiteohjelmistoversio tuettuun versioon.\n\nLisätietoja laitteen ohjelmiston päivityksestä saat [Airfi-sivuston]({airfi_url}) tuki-osiosta (**airfi.fi** → **Tuki** → **Ohjelmistopäivitys**)."
     }
   },
   "entity": {
@@ -131,7 +138,7 @@
         "name": "Poistoilma"
       },
       "firmware_version": {
-        "name": "Ohjelmistoversio"
+        "name": "Laiteohjelmistoversio"
       },
       "modbus_register_version": {
         "name": "Modbus-rekisteriversio"

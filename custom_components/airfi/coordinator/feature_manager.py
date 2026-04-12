@@ -122,18 +122,25 @@ class AirfiFeatureManager:
         """
         # Check for unsupported firmware versions
         if self.firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
-            msg = (
-                f"Air handling unit firmware version {self.firmware_version} is unsupported. "
-                "Please downgrade or upgrade to another version."
-            )
-            LOGGER.error(msg)
+            msg = f"Firmware version {self.firmware_version} is in the unsupported list"
             raise ValueError(msg)
 
         # Check minimum Modbus version
         if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
-            msg = f"Device firmware version {self.firmware_version} is unsupported. Please upgrade to a newer version."
-            LOGGER.error(msg)
+            msg = f"Modbus map version {self.modbus_register_version} is below minimum {self.MIN_MODBUS_VERSION}"
             raise ValueError(msg)
+
+    def is_configuration_unsupported(self, firmware_version: str, modbus_register_version: str) -> bool:
+        """Check whether firmware or modbus version is unsupported.
+
+        Combines the firmware blocklist check with the minimum Modbus version
+        check so runtime validation catches both cases.
+        """
+        if firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
+            return True
+        if modbus_register_version and version.parse(modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
+            return True
+        return False
 
     def _log_device_info(self, device_name: str) -> None:
         """Log device information and versions.

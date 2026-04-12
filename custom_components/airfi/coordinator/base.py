@@ -29,6 +29,7 @@ from custom_components.airfi.const import (
     DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
     DOMAIN,
     ISSUE_DEVICE_UNREACHABLE,
+    ISSUE_UNSUPPORTED_FIRMWARE,
     LOGGER,
     RECOVERY_ISSUE_SECONDS,
     RECOVERY_TRIGGER_SECONDS,
@@ -40,6 +41,7 @@ from custom_components.airfi.coordinator.error_handling import (
     should_try_rediscovery,
 )
 from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi.utils import version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -94,6 +96,11 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         """Return the issue ID for unreachable-device repairs for this entry."""
         return f"{ISSUE_DEVICE_UNREACHABLE}_{self.config_entry.entry_id}"
 
+    @property
+    def _unsupported_firmware_issue_id(self) -> str:
+        """Return the issue ID for unsupported-firmware repairs for this entry."""
+        return f"{ISSUE_UNSUPPORTED_FIRMWARE}_{self.config_entry.entry_id}"
+
     async def async_initial_setup(self) -> None:
         """
         Perform the initial one-time device handshake.
@@ -143,10 +150,17 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except ValueError as exception:
+            if self.feature_manager.is_configuration_unsupported(
+                self.feature_manager.firmware_version,
+                self.feature_manager.modbus_register_version,
+            ):
+                self._raise_unsupported_firmware_issue()
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
-                translation_placeholders={"error": str(exception)},
+                translation_placeholders={
+                    "firmware_version": self.feature_manager.firmware_version or "unknown",
+                },
             ) from exception
 
     async def _async_update_data(self) -> Any:
@@ -165,7 +179,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
             self._async_on_connection_restored()
-            return to_coordinator_payload(parse_device_data(raw_data))
+            payload = to_coordinator_payload(parse_device_data(raw_data))
+            self._check_runtime_firmware(payload)
         except AirfiApiClientError as exception:
             if should_try_rediscovery(exception):
                 self._async_on_connection_lost()
@@ -173,7 +188,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                     try:
                         raw_data = await self.config_entry.runtime_data.client.async_get_data()
                         self._async_on_connection_restored()
-                        return to_coordinator_payload(parse_device_data(raw_data))
+                        recovery_payload = to_coordinator_payload(parse_device_data(raw_data))
+                        self._check_runtime_firmware(recovery_payload)
                     except AirfiApiClientError as retry_exception:
                         if should_try_rediscovery(retry_exception):
                             log_connection_failure(retry_exception, "post-rediscovery fetch")
@@ -183,15 +199,24 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                             translation_domain="airfi",
                             translation_key="update_failed_rediscovery",
                         ) from retry_exception
+                    else:
+                        return recovery_payload
 
             if should_try_rediscovery(exception):
                 log_connection_failure(exception, "data fetch")
             else:
+                # Modbus read failed. Try a lightweight lookup (addr 1-3) to detect
+                # firmware changes that may explain the failure — e.g. fw 3.2.0 has
+                # a hidden register at addr 10 that makes full reads fail, but the
+                # 3-register lookup always succeeds and still reports the fw version.
+                await self._async_check_firmware_via_lookup()
                 log_modbus_failure(exception, "data fetch")
             raise UpdateFailed(
                 translation_domain="airfi",
                 translation_key="update_failed",
             ) from exception
+        else:
+            return payload
 
     def _async_on_connection_lost(self) -> None:
         """Handle a connection loss event and trigger recovery if thresholds are met."""
@@ -244,6 +269,75 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         if self._issue_raised:
             self._issue_raised = False
             ir.async_delete_issue(self.hass, DOMAIN, self._device_unreachable_issue_id)
+
+    def _raise_unsupported_firmware_issue(self, firmware_version: str | None = None) -> None:
+        """Create a non-fixable repairs issue for unsupported firmware.
+
+        The issue has ``is_fixable=False`` because the user must update the
+        device firmware externally — there is nothing HA can do automatically.
+
+        Args:
+            firmware_version: The firmware version to show in the issue. Falls back
+                to the feature_manager cached value when not provided (setup-time path).
+        """
+        fw = firmware_version or self.feature_manager.firmware_version or "unknown"
+        issue_reg = ir.async_get(self.hass)
+        existing = issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id)
+        if existing is not None:
+            # Already raised — only recreate if firmware version changed
+            if existing.translation_placeholders and existing.translation_placeholders.get("firmware_version") == fw:
+                return
+            ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
+            LOGGER.info("Updating unsupported firmware repairs issue (firmware=%s)", fw)
+        else:
+            LOGGER.warning("Raising unsupported firmware repairs issue (firmware=%s)", fw)
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            self._unsupported_firmware_issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=ISSUE_UNSUPPORTED_FIRMWARE,
+            translation_placeholders={
+                "name": self.config_entry.title,
+                "firmware_version": fw,
+                "airfi_url": "https://airfi.fi",
+            },
+        )
+
+    async def _async_check_firmware_via_lookup(self) -> None:
+        """Check firmware via a minimal lookup read (addr 1-3) when a full poll failed.
+
+        addr 1-3 is always readable regardless of per-firmware register restrictions.
+        Silently ignored if the lookup itself fails.
+        """
+        try:
+            lookup = await self.config_entry.runtime_data.client.async_get_lookup_registers()
+        except AirfiApiClientError:
+            return
+        if len(lookup) > 1:
+            fw = version_string(lookup[1])
+            modbus_ver = version_string(lookup[2]) if len(lookup) > 2 else ""
+            self._check_runtime_firmware({"firmware_version": fw, "modbus_register_version": modbus_ver})
+
+    def _check_runtime_firmware(self, payload: dict[str, Any]) -> None:
+        """Check firmware version from coordinator data at runtime.
+
+        If the device reports an unsupported firmware version during normal
+        polling, a non-fixable repairs issue is raised. If a previously
+        unsupported firmware is now acceptable (e.g. user upgraded), the
+        issue is cleared.
+        """
+        fw = payload.get("firmware_version", "")
+        if not fw:
+            return
+        if self.feature_manager.is_configuration_unsupported(fw, payload.get("modbus_register_version", "")):
+            self._raise_unsupported_firmware_issue(fw)
+        else:
+            issue_reg = ir.async_get(self.hass)
+            if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
+                ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
+                LOGGER.info("Firmware %s is now supported, cleared repairs issue", fw)
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.

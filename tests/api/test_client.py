@@ -111,7 +111,8 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
         patch.object(
             client,
             "_async_read_registers",
-            new=AsyncMock(side_effect=[[1] * 59, [2] * 42]),
+            # input_registers[1]=381 → fw "3.8.1", input_registers[2]=300 → modbus "3.0.0"
+            new=AsyncMock(side_effect=[[1] * 59, [0, 381, 300] + [0] * 39]),
         ) as read_mock,
     ):
         result = await client.async_get_data()
@@ -140,7 +141,15 @@ async def test_async_get_data_builds_register_profile_once() -> None:
         patch.object(
             client,
             "_async_read_registers",
-            new=AsyncMock(side_effect=[[1] * 59, [2] * 42, [3] * 59, [4] * 42]),
+            # input_registers[1]=381 → fw "3.8.1", input_registers[2]=300 → modbus "3.0.0"
+            new=AsyncMock(
+                side_effect=[
+                    [1] * 59,
+                    [0, 381, 300] + [0] * 39,
+                    [3] * 59,
+                    [0, 381, 300] + [0] * 39,
+                ]
+            ),
         ),
     ):
         first_result = await client.async_get_data()
@@ -151,6 +160,32 @@ async def test_async_get_data_builds_register_profile_once() -> None:
     assert first_result["modbus_register_version"] == "3.0.0"
     assert second_result["firmware_version"] == "3.8.1"
     assert second_result["modbus_register_version"] == "3.0.0"
+
+
+@pytest.mark.unit
+async def test_async_get_data_reads_modbus_version_live() -> None:
+    """Test that modbus_register_version is read live from input_registers[2].
+
+    Even though the cached profile says "3.0.0", the live register value
+    should take precedence so runtime changes are detected.
+    """
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+    client.set_register_profile(
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+        input_register_length=42,
+        holding_register_length=59,
+    )
+
+    with patch.object(
+        client,
+        "_async_read_registers",
+        # input_registers[2]=270 → modbus "2.7.0" (changed at runtime)
+        new=AsyncMock(side_effect=[[1] * 59, [0, 381, 270] + [0] * 39]),
+    ):
+        result = await client.async_get_data()
+
+    assert result["modbus_register_version"] == "2.7.0"
 
 
 # ---------------------------------------------------------------------------
