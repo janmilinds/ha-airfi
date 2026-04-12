@@ -69,6 +69,7 @@ from packaging import version as pkg_version
 sys.path.insert(0, str(Path(__file__).parent / ".."))
 
 from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock, ModbusServerContext
+from pymodbus.datastore.store import ExcCodes
 from pymodbus.server import ModbusTcpServer
 
 from custom_components.airfi.const import AIRFI_MODELS
@@ -86,24 +87,31 @@ class Fw320InputBlock(ModbusSequentialDataBlock):
     Firmware 3.2.0 has a hidden register at address 10 (1-based). Any bulk
     read request whose range includes address 10 returns a Modbus error,
     breaking multi-register reads that span across it.
+
+    In pymodbus 3.x, ``ModbusDeviceContext`` adds +1 to the protocol address
+    before calling ``getValues``, so protocol address 10 becomes internal
+    address 11.  We override ``getValues`` (not ``validate``, which is never
+    called in pymodbus 3.x) to intercept the read.
     """
 
     HIDDEN_ADDRESS = 10  # 1-based protocol address
 
-    def validate(self, address: int, count: int = 1) -> bool:
-        """Return False when the read range crosses the hidden register."""
-        # pymodbus calls validate() before getValues(); returning False
-        # causes the server to respond with an IllegalAddress error frame.
+    def getValues(self, address: int, count: int = 1) -> list[int] | list[bool] | ExcCodes:
+        """Return ILLEGAL_ADDRESS when the read range crosses the hidden register."""
+        # ModbusDeviceContext adds +1 to the protocol address before calling
+        # getValues, so hidden protocol addr 10 → internal addr 11.
+        hidden_internal = self.HIDDEN_ADDRESS + 1
         end_address = address + count - 1
-        if address <= self.HIDDEN_ADDRESS <= end_address:
+        if address <= hidden_internal <= end_address:
             LOGGER.debug(
-                "FW 3.2.0 simulation: rejecting read [%d..%d] (hidden reg %d)",
-                address,
-                end_address,
+                "FW 3.2.0 simulation: rejecting read [%d..%d] (hidden reg %d, internal %d)",
+                address - 1,
+                end_address - 1,
                 self.HIDDEN_ADDRESS,
+                hidden_internal,
             )
-            return False
-        return super().validate(address, count)
+            return ExcCodes.ILLEGAL_ADDRESS
+        return super().getValues(address, count)
 
 
 # Discovery constants (must match integration)
