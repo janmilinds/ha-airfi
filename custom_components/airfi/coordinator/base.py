@@ -150,7 +150,11 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except ValueError as exception:
-            self._raise_unsupported_firmware_issue()
+            if self.feature_manager.is_configuration_unsupported(
+                self.feature_manager.firmware_version,
+                self.feature_manager.modbus_register_version,
+            ):
+                self._raise_unsupported_firmware_issue()
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
@@ -278,8 +282,10 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         """
         fw = firmware_version or self.feature_manager.firmware_version or "unknown"
         issue_reg = ir.async_get(self.hass)
-        if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
-            return
+        existing = issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id)
+        if existing is not None:
+            # Update placeholders in case firmware version changed while still unsupported
+            ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
         LOGGER.warning(
             "Raising unsupported firmware repairs issue (firmware=%s)",
             fw,
@@ -310,7 +316,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             return
         if len(lookup) > 1:
             fw = version_string(lookup[1])
-            self._check_runtime_firmware({"firmware_version": fw})
+            modbus_ver = version_string(lookup[2]) if len(lookup) > 2 else ""
+            self._check_runtime_firmware({"firmware_version": fw, "modbus_register_version": modbus_ver})
 
     def _check_runtime_firmware(self, payload: dict[str, Any]) -> None:
         """Check firmware version from coordinator data at runtime.
@@ -323,7 +330,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         fw = payload.get("firmware_version", "")
         if not fw:
             return
-        if self.feature_manager.is_firmware_unsupported(fw):
+        if self.feature_manager.is_configuration_unsupported(fw, payload.get("modbus_register_version", "")):
             self._raise_unsupported_firmware_issue(fw)
         else:
             issue_reg = ir.async_get(self.hass)
