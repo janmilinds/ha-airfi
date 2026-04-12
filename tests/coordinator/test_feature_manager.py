@@ -34,7 +34,7 @@ def test_feature_manager_rejects_too_old_modbus_map() -> None:
     """Test that a too old Modbus map version is rejected."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(ValueError, match="Please upgrade"):
+    with pytest.raises(ValueError, match="below minimum"):
         manager.initialize("Airfi AIRFI-12345", [0, 140, 140])
 
 

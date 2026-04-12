@@ -78,7 +78,7 @@
       "message": "Laitteeseen ei saatu yhteyttä osoitteessa {host}."
     },
     "setup_firmware_error": {
-      "message": "Laitteen ohjelmistoversion tarkistus epäonnistui: {error}"
+      "message": "Laitteen firmware-versio {firmware_version} ei ole yhteensopiva tämän integraation kanssa."
     },
     "update_failed": {
       "message": "Laitteen tietojen päivitys epäonnistui."
@@ -105,6 +105,10 @@
           }
         }
       }
+    },
+    "unsupported_firmware": {
+      "title": "{name}: firmware-versio ({firmware_version}) ei ole tuettu",
+      "description": "Laitteen firmware-versio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen firmware tuettuun versioon."
     }
   },
   "entity": {

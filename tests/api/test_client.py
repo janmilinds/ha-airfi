@@ -111,7 +111,8 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
         patch.object(
             client,
             "_async_read_registers",
-            new=AsyncMock(side_effect=[[1] * 59, [2] * 42]),
+            # input_registers[1] must be 381 so version_string(381) == "3.8.1"
+            new=AsyncMock(side_effect=[[1] * 59, [0, 381] + [0] * 40]),
         ) as read_mock,
     ):
         result = await client.async_get_data()
@@ -140,7 +141,15 @@ async def test_async_get_data_builds_register_profile_once() -> None:
         patch.object(
             client,
             "_async_read_registers",
-            new=AsyncMock(side_effect=[[1] * 59, [2] * 42, [3] * 59, [4] * 42]),
+            # input_registers[1] must be 381 so version_string(381) == "3.8.1"
+            new=AsyncMock(
+                side_effect=[
+                    [1] * 59,
+                    [0, 381] + [0] * 40,
+                    [3] * 59,
+                    [0, 381] + [0] * 40,
+                ]
+            ),
         ),
     ):
         first_result = await client.async_get_data()

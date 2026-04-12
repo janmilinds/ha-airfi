@@ -78,7 +78,7 @@
       "message": "Unable to connect to device at {host}."
     },
     "setup_firmware_error": {
-      "message": "Device firmware validation failed: {error}"
+      "message": "Device firmware version {firmware_version} is not supported by this integration."
     },
     "update_failed": {
       "message": "Failed to update data from the device."
@@ -105,6 +105,10 @@
           }
         }
       }
+    },
+    "unsupported_firmware": {
+      "title": "{name} has unsupported firmware ({firmware_version})",
+      "description": "The device firmware version {firmware_version} is not compatible with this integration. Please update or downgrade the device firmware to a supported version."
     }
   },
   "entity": {

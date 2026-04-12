@@ -78,7 +78,7 @@
       "message": "Nie udało się połączyć z urządzeniem pod adresem {host}."
     },
     "setup_firmware_error": {
-      "message": "Walidacja oprogramowania urządzenia nie powiodła się: {error}"
+      "message": "Wersja firmware urządzenia {firmware_version} nie jest obsługiwana przez tę integrację."
     },
     "update_failed": {
       "message": "Nie udało się zaktualizować danych z urządzenia."
@@ -105,6 +105,10 @@
           }
         }
       }
+    },
+    "unsupported_firmware": {
+      "title": "{name} ma nieobsługiwaną wersję firmware ({firmware_version})",
+      "description": "Wersja firmware urządzenia {firmware_version} nie jest kompatybilna z tą integracją. Zaktualizuj lub obniż wersję firmware urządzenia do obsługiwanej wersji."
     }
   },
   "entity": {

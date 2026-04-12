@@ -234,6 +234,7 @@ async def test_async_update_data_does_not_rediscover_on_modbus_error(hass, confi
     """
     client = MagicMock()
     client.async_get_data = AsyncMock(side_effect=AirfiApiClientModbusError("bad response"))
+    client.async_get_lookup_registers = AsyncMock(return_value=[0, 381, 300])
 
     coordinator = AirfiDataUpdateCoordinator(
         hass=hass,
