@@ -111,7 +111,7 @@
     },
     "unsupported_firmware": {
       "title": "{name}: laiteohjelmistoversio ({firmware_version}) ei ole tuettu",
-      "description": "Laitteen laiteohjelmistoversio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen laiteohjelmistoversio tuettuun versioon.\n\nLisätietoja laitteen ohjelmiston päivityksestä saat Airfin tuki-osiosta: https://airfi.fi/tuki/"
+      "description": "Laitteen laiteohjelmistoversio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen laiteohjelmistoversio tuettuun versioon.\n\nLisätietoja laitteen ohjelmiston päivityksestä saat [Airfin tuki-osiosta]({support_url}) (**airfi.fi** → **Tuki** → **Ohjelmistopäivitys**)."
     }
   },
   "entity": {

@@ -296,6 +296,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             translation_placeholders={
                 "name": self.config_entry.title,
                 "firmware_version": fw,
+                "support_url": "https://airfi.fi/en/support/",
             },
         )
 

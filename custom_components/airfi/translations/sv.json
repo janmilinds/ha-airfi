@@ -111,7 +111,7 @@
     },
     "unsupported_firmware": {
       "title": "{name} har firmware som inte stöds ({firmware_version})",
-      "description": "Enhetens firmwareversion {firmware_version} är inte kompatibel med denna integration. Uppdatera eller nedgradera enhetens firmware till en version som stöds.\n\nFör mer information om hur du uppdaterar enhetens firmware, se Airfi support: https://airfi.fi/sv/stod/"
+      "description": "Enhetens firmwareversion {firmware_version} är inte kompatibel med denna integration. Uppdatera eller nedgradera enhetens firmware till en version som stöds.\n\nFör mer information om hur du uppdaterar enhetens firmware, se [Airfi stöd]({support_url}) (**airfi.fi/sv** → **Stöd** → **Programuppdatering**)."
     }
   },
   "entity": {
