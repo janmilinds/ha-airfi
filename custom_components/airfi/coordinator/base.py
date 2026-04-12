@@ -284,12 +284,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         issue_reg = ir.async_get(self.hass)
         existing = issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id)
         if existing is not None:
-            # Update placeholders in case firmware version changed while still unsupported
+            # Already raised — only recreate if firmware version changed
+            if existing.translation_placeholders and existing.translation_placeholders.get("firmware_version") == fw:
+                return
             ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
-        LOGGER.warning(
-            "Raising unsupported firmware repairs issue (firmware=%s)",
-            fw,
-        )
+            LOGGER.info("Updating unsupported firmware repairs issue (firmware=%s)", fw)
+        else:
+            LOGGER.warning("Raising unsupported firmware repairs issue (firmware=%s)", fw)
         ir.async_create_issue(
             self.hass,
             DOMAIN,
