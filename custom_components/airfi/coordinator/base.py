@@ -151,7 +151,6 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except ValueError as exception:
-            LOGGER.error("Firmware validation failed: %s", exception)
             self._raise_unsupported_firmware_issue()
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
