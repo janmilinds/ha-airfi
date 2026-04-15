@@ -12,7 +12,8 @@
       "fan": {
         "default": "mdi:fan-off",
         "state": {
-          "on": "mdi:fan"
+          "on": "mdi:fan",
+          "off": "mdi:briefcase"
         }
       }
     },
@@ -37,7 +38,7 @@
       "firmware_version": {
         "default": "mdi:information-outline",
         "state": {
-          "unavailable": "mdi:information-outline-off"
+          "unavailable": "mdi:information-off-outline"
         }
       },
       "modbus_register_version": {
@@ -73,16 +74,10 @@
         }
       },
       "sauna_function": {
-        "default": "mdi:radiator-off",
-        "state": {
-          "on": "mdi:radiator"
-        }
+        "default": "mdi:heat-wave"
       },
       "boosted_cooling": {
-        "default": "mdi:fan-off",
-        "state": {
-          "on": "mdi:fan-plus"
-        }
+        "default": "mdi:fan-plus"
       }
     }
   }
