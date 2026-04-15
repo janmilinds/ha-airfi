@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.airfi.number.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureNumber
+from homeassistant.const import UnitOfTemperature
 
 
 def _build_coordinator(
@@ -33,10 +34,40 @@ def _build_coordinator(
     coordinator.feature_manager = feature_manager
     coordinator.data = {
         "holding_registers": holding_registers,
+        "input_registers": [],
         "model": "Airfi",
         "firmware_version": "3.8.1",
     }
     return coordinator
+
+
+@pytest.mark.unit
+def test_native_unit_and_supply_air_temperature_attribute() -> None:
+    """Number entity exposes Celsius unit and supply-air measurement attribute."""
+    # HR5 = 200 => setpoint 20.0
+    # Input register 8 = 206 => measured 20.6
+    input_registers = [0, 0, 0, 0, 0, 0, 0, 206]
+    coordinator = _build_coordinator([0, 0, 0, 0, 200])
+    coordinator.data["input_registers"] = input_registers
+
+    entity = AirfiTemperatureNumber(coordinator, ENTITY_DESCRIPTIONS[0])
+
+    assert entity.native_unit_of_measurement == UnitOfTemperature.CELSIUS
+
+    attrs = entity.extra_state_attributes
+    assert "supply_air_temperature" in attrs
+    assert attrs["supply_air_temperature"] == 20.6
+
+
+@pytest.mark.unit
+def test_extra_state_attributes_no_input_registers() -> None:
+    """Test that extra_state_attributes returns empty dict when input registers are missing."""
+    coordinator = _build_coordinator([0, 0, 0, 0, 200])
+    coordinator.data["input_registers"] = []  # No input registers
+
+    entity = AirfiTemperatureNumber(coordinator, ENTITY_DESCRIPTIONS[0])
+
+    assert entity.extra_state_attributes == {}
 
 
 @pytest.mark.unit

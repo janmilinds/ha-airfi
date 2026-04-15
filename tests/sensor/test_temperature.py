@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi.sensor.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureSensor, convert_temperature
+from custom_components.airfi.sensor.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureSensor
+from custom_components.airfi.utils.temperature import convert_temperature
 
 
 def _build_coordinator(input_registers: list[int]) -> MagicMock:
