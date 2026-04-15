@@ -8,6 +8,7 @@ from custom_components.airfi.utils.number import (
     HOLDING_REGISTER_TARGET_TEMPERATURE,
 )
 from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription, NumberMode
+from homeassistant.const import UnitOfTemperature
 
 ENTITY_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
@@ -55,3 +56,8 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
             )
 
         await self.coordinator.async_request_refresh()
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        """Return the unit of measurement for the number (°C)."""
+        return UnitOfTemperature.CELSIUS
