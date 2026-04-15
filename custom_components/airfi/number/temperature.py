@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from custom_components.airfi.entity import AirfiEntity
+from custom_components.airfi.sensor.temperature import INPUT_REGISTER_SUPPLY_AIR_TEMP, convert_temperature
 from custom_components.airfi.utils.number import (
     HOLDING_REGISTER_MINIMUM_TEMPERATURE,
     HOLDING_REGISTER_TARGET_TEMPERATURE,
@@ -61,3 +62,21 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
     def native_unit_of_measurement(self) -> str | None:
         """Return the unit of measurement for the number (°C)."""
         return UnitOfTemperature.CELSIUS
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float | str | None]:
+        """Return additional attributes including current measured supply-air temperature.
+
+        Some Lovelace components read `supply_air_temperature` from entity attributes
+        to show the measured temperature alongside a setpoint control.
+        """
+        input_registers: list[int] = self.coordinator.data.get("input_registers", [])
+        index = INPUT_REGISTER_SUPPLY_AIR_TEMP - 1
+        if index >= len(input_registers):
+            return {}
+
+        value = convert_temperature(input_registers[index])
+
+        return {
+            "supply_air_temperature": value,
+        }
