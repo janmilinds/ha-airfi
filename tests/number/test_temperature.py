@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.airfi.number.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureNumber
-from custom_components.airfi.sensor.temperature import convert_temperature
 from homeassistant.const import UnitOfTemperature
 
 
@@ -57,7 +56,7 @@ def test_native_unit_and_supply_air_temperature_attribute() -> None:
 
     attrs = entity.extra_state_attributes
     assert "supply_air_temperature" in attrs
-    assert attrs["supply_air_temperature"] == convert_temperature(input_registers[7])
+    assert attrs["supply_air_temperature"] == 20.6
 
 
 @pytest.mark.unit

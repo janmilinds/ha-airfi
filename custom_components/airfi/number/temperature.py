@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from custom_components.airfi.entity import AirfiEntity
-from custom_components.airfi.sensor.temperature import INPUT_REGISTER_SUPPLY_AIR_TEMP, convert_temperature
 from custom_components.airfi.utils.number import (
     HOLDING_REGISTER_MINIMUM_TEMPERATURE,
     HOLDING_REGISTER_TARGET_TEMPERATURE,
 )
+from custom_components.airfi.utils.temperature import INPUT_REGISTER_SUPPLY_AIR_TEMP, convert_temperature
 from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription, NumberMode
 from homeassistant.const import UnitOfTemperature
+
+if TYPE_CHECKING:
+    from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 
 ENTITY_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
         key="supply_air_temperature_setting",
         translation_key="supply_air_temperature_setting",
         device_class=NumberDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         native_min_value=13.0,
         native_max_value=25.0,
         native_step=1.0,
@@ -34,6 +40,14 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
     also writes holding register 50 (4x00050) with the raw °C value so the two
     settings stay in parity.
     """
+
+    def __init__(
+        self,
+        coordinator: AirfiDataUpdateCoordinator,
+        entity_description: NumberEntityDescription,
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, entity_description)
 
     @property
     def native_value(self) -> float | None:
@@ -57,11 +71,6 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
             )
 
         await self.coordinator.async_request_refresh()
-
-    @property
-    def native_unit_of_measurement(self) -> str | None:
-        """Return the unit of measurement for the number (°C)."""
-        return UnitOfTemperature.CELSIUS
 
     @property
     def extra_state_attributes(self) -> dict[str, float | str | None]:
