@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi.const import PARALLEL_UPDATES as PARALLEL_UPDATES
 from homeassistant.components.binary_sensor import BinarySensorEntityDescription
 
 from .connectivity import ENTITY_DESCRIPTIONS as CONNECTIVITY_DESCRIPTIONS, AirfiConnectivitySensor
+
+# Read-only platform — no limit on concurrent entity updates
+PARALLEL_UPDATES = 0
 
 if TYPE_CHECKING:
     from custom_components.airfi.data import AirfiConfigEntry
