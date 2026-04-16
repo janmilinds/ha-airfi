@@ -265,7 +265,7 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with asyncio.timeout(10):
+            async with asyncio.timeout(self._timeout_seconds):
                 return await asyncio.to_thread(_read_all)
         except TimeoutError as exception:
             msg = f"Timeout while reading Modbus registers: {exception}"
