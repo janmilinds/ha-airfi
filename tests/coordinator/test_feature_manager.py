@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi.coordinator.feature_manager import (
+    AirfiFeatureManager,
+    InvalidDeviceDataError,
+    UnsupportedFirmwareError,
+)
 from custom_components.airfi.utils import version_string
 
 
@@ -25,7 +29,7 @@ def test_feature_manager_rejects_unsupported_firmware() -> None:
     """Test that firmware version 3.2.0 is rejected."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(ValueError, match="unsupported"):
+    with pytest.raises(UnsupportedFirmwareError, match="unsupported"):
         manager.initialize("Airfi AIRFI-12345", [0, 320, 300])
 
 
@@ -34,7 +38,7 @@ def test_feature_manager_rejects_too_old_modbus_map() -> None:
     """Test that a too old Modbus map version is rejected."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(ValueError, match="below minimum"):
+    with pytest.raises(UnsupportedFirmwareError, match="below minimum"):
         manager.initialize("Airfi AIRFI-12345", [0, 140, 140])
 
 
@@ -43,7 +47,7 @@ def test_feature_manager_rejects_short_lookup_payload() -> None:
     """Test that incomplete lookup data fails validation."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(ValueError, match="Failed to retrieve data"):
+    with pytest.raises(InvalidDeviceDataError, match="Failed to retrieve data"):
         manager.initialize("Airfi AIRFI-12345", [0, 381])
 
 

@@ -18,6 +18,11 @@ from custom_components.airfi.const import (
 )
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi.coordinator.base import RecoveryState
+from custom_components.airfi.coordinator.feature_manager import (
+    AirfiDeviceError,
+    InvalidDeviceDataError,
+    UnsupportedFirmwareError,
+)
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
 from homeassistant.const import CONF_HOST
@@ -386,7 +391,7 @@ async def test_async_setup_feature_manager_validation_error(hass, config_entry, 
     client.async_get_lookup_registers = AsyncMock(return_value=[0, 381, 300])
 
     with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("bad firmware")),
+        patch.object(coordinator.feature_manager, "initialize", side_effect=AirfiDeviceError("bad firmware")),
         pytest.raises(ConfigEntryNotReady),
     ):
         await _call_setup(coordinator)
@@ -807,14 +812,14 @@ async def test_runtime_firmware_no_issue_when_supported(hass, config_entry, mock
 
 @pytest.mark.unit
 async def test_setup_firmware_validation_creates_issue(hass, config_entry, mock_integration) -> None:
-    """Test that async_initial_setup creates firmware issue when unsupported firmware raises ValueError."""
+    """Test that async_initial_setup creates firmware issue when unsupported firmware raises UnsupportedFirmwareError."""
     config_entry.add_to_hass(hass)
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(return_value=[0, 320, 300])
     coordinator.feature_manager.firmware_version = "3.2.0"
 
     with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("unsupported fw")),
+        patch.object(coordinator.feature_manager, "initialize", side_effect=UnsupportedFirmwareError("unsupported fw")),
         patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
         pytest.raises(ConfigEntryNotReady),
     ):
@@ -872,9 +877,9 @@ async def test_firmware_issue_cleared_after_restart_with_supported_firmware(
 async def test_setup_insufficient_registers_does_not_create_firmware_issue(
     hass, config_entry, mock_integration
 ) -> None:
-    """Test that a ValueError from insufficient registers does not create a firmware issue.
+    """Test that an InvalidDeviceDataError from insufficient registers does not create a firmware issue.
 
-    initialize() can raise ValueError for non-firmware reasons (e.g. fewer than
+    initialize() can raise InvalidDeviceDataError for non-firmware reasons (e.g. fewer than
     3 lookup registers). Only genuinely unsupported firmware should generate
     the repairs issue.
     """
@@ -884,7 +889,9 @@ async def test_setup_insufficient_registers_does_not_create_firmware_issue(
     coordinator.feature_manager.firmware_version = ""
 
     with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("insufficient registers")),
+        patch.object(
+            coordinator.feature_manager, "initialize", side_effect=InvalidDeviceDataError("insufficient registers")
+        ),
         patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False),
         pytest.raises(ConfigEntryNotReady),
     ):
@@ -909,7 +916,7 @@ async def test_setup_old_modbus_version_creates_issue(hass, config_entry, mock_i
     coordinator.feature_manager.modbus_register_version = "1.4.0"
 
     with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=ValueError("below minimum")),
+        patch.object(coordinator.feature_manager, "initialize", side_effect=UnsupportedFirmwareError("below minimum")),
         patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
         pytest.raises(ConfigEntryNotReady),
     ):

@@ -40,7 +40,11 @@ from custom_components.airfi.coordinator.error_handling import (
     log_modbus_failure,
     should_try_rediscovery,
 )
-from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi.coordinator.feature_manager import (
+    AirfiDeviceError,
+    AirfiFeatureManager,
+    UnsupportedFirmwareError,
+)
 from custom_components.airfi.utils import version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
@@ -149,12 +153,16 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             )
 
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
-        except ValueError as exception:
-            if self.feature_manager.is_configuration_unsupported(
-                self.feature_manager.firmware_version,
-                self.feature_manager.modbus_register_version,
-            ):
-                self._raise_unsupported_firmware_issue()
+        except UnsupportedFirmwareError as exception:
+            self._raise_unsupported_firmware_issue()
+            raise ConfigEntryNotReady(
+                translation_domain=DOMAIN,
+                translation_key="setup_firmware_error",
+                translation_placeholders={
+                    "firmware_version": self.feature_manager.firmware_version or "unknown",
+                },
+            ) from exception
+        except AirfiDeviceError as exception:
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
