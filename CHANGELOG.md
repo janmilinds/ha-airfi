@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc.2] - 2026-04-16
+
+### Changed
+
+- All device data is now read in a single connection per update cycle, and state changes no longer trigger an additional immediate read — reduces network load on the device and improves update reliability
+- Sensor and binary sensor entities now update in parallel, improving how quickly Home Assistant reflects the latest device state
+- **Breaking:** Renamed `device_connectivity` binary sensor (was `api_connectivity`) — update any automations or dashboards using `binary_sensor.<name>_api_connectivity` to `binary_sensor.<name>_device_connectivity`
+- When device discovery cannot open a network socket (e.g. the port is already in use), you now see a clear error instead of a generic "No devices found" message
+- Setup now shows separate error messages for unsupported firmware versus unreadable device data
+
+### Fixed
+
+- Fan and switch states shown in Home Assistant could get stuck after a manual change and not reflect actual device state; state is now confirmed on every scheduled update
+- Version number from device registers could fail to parse with certain values — now handled gracefully
+- A port conflict during automatic device IP recovery could crash the integration instead of gracefully skipping rediscovery
+
+### Removed
+
+- Diagnostics snapshot contained leftover placeholder fields and a duplicate host entry
+
+---
+**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
 ## [1.0.0-rc.1] - 2026-04-15
 
 ### Added
