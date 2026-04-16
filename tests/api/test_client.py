@@ -317,6 +317,162 @@ async def test_read_registers_chunks_large_reads() -> None:
 
 
 # ---------------------------------------------------------------------------
+# _async_read_all_registers (single-connection batched reads)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+async def test_read_all_registers_success() -> None:
+    """Test that _async_read_all_registers reads holding and input in one connection."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+
+        holding_resp = MagicMock()
+        holding_resp.isError.return_value = False
+        holding_resp.registers = list(range(12))
+
+        input_resp = MagicMock()
+        input_resp.isError.return_value = False
+        input_resp.registers = list(range(10))
+
+        mock_instance.read_holding_registers.return_value = holding_resp
+        mock_instance.read_input_registers.return_value = input_resp
+
+        holding, inputs = await client._async_read_all_registers(  # noqa: SLF001
+            input_length=10, holding_length=12
+        )
+
+    assert holding == list(range(12))
+    assert inputs == list(range(10))
+    mock_instance.close.assert_called_once()
+
+
+@pytest.mark.unit
+async def test_read_all_registers_connection_failure() -> None:
+    """Test that connection failure raises AirfiApiClientConnectionError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = False
+
+        with pytest.raises(AirfiApiClientConnectionError, match="Unable to connect"):
+            await client._async_read_all_registers(  # noqa: SLF001
+                input_length=10, holding_length=12
+            )
+
+
+@pytest.mark.unit
+async def test_read_all_registers_modbus_error() -> None:
+    """Test that Modbus error in holding read raises AirfiApiClientModbusError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+
+        error_resp = MagicMock()
+        error_resp.isError.return_value = True
+        mock_instance.read_holding_registers.return_value = error_resp
+
+        with pytest.raises(AirfiApiClientModbusError, match="Modbus read error"):
+            await client._async_read_all_registers(  # noqa: SLF001
+                input_length=10, holding_length=12
+            )
+
+
+@pytest.mark.unit
+async def test_read_all_registers_unexpected_response_length() -> None:
+    """Test that mismatched register count in input read raises AirfiApiClientModbusError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+
+        holding_resp = MagicMock()
+        holding_resp.isError.return_value = False
+        holding_resp.registers = list(range(12))
+        mock_instance.read_holding_registers.return_value = holding_resp
+
+        bad_input_resp = MagicMock()
+        bad_input_resp.isError.return_value = False
+        bad_input_resp.registers = [1, 2]  # Expected 10
+        mock_instance.read_input_registers.return_value = bad_input_resp
+
+        with pytest.raises(AirfiApiClientModbusError, match="Unexpected Modbus response length"):
+            await client._async_read_all_registers(  # noqa: SLF001
+                input_length=10, holding_length=12
+            )
+
+
+@pytest.mark.unit
+async def test_read_all_registers_timeout() -> None:
+    """Test that timeout raises AirfiApiClientConnectionError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with (
+        patch("asyncio.to_thread", new=AsyncMock(side_effect=TimeoutError("timed out"))),
+        pytest.raises(AirfiApiClientConnectionError, match="Timeout"),
+    ):
+        await client._async_read_all_registers(  # noqa: SLF001
+            input_length=10, holding_length=12
+        )
+
+
+@pytest.mark.unit
+async def test_read_all_registers_unexpected_exception() -> None:
+    """Test that unexpected exceptions are wrapped in AirfiApiClientError."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.side_effect = RuntimeError("unexpected")
+
+        with pytest.raises(AirfiApiClientError, match="Unexpected Modbus read failure"):
+            await client._async_read_all_registers(  # noqa: SLF001
+                input_length=10, holding_length=12
+            )
+
+
+@pytest.mark.unit
+async def test_read_all_registers_chunks_large_reads() -> None:
+    """Test that reads larger than MODBUS_READ_LIMIT are properly chunked."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
+        mock_instance = MockTcpClient.return_value
+        mock_instance.connect.return_value = True
+
+        # 42 input registers → 2 chunks (30 + 12)
+        input_resp_1 = MagicMock()
+        input_resp_1.isError.return_value = False
+        input_resp_1.registers = list(range(30))
+        input_resp_2 = MagicMock()
+        input_resp_2.isError.return_value = False
+        input_resp_2.registers = list(range(12))
+
+        # 12 holding registers → 1 chunk
+        holding_resp = MagicMock()
+        holding_resp.isError.return_value = False
+        holding_resp.registers = list(range(12))
+
+        mock_instance.read_holding_registers.return_value = holding_resp
+        mock_instance.read_input_registers.side_effect = [input_resp_1, input_resp_2]
+
+        holding, inputs = await client._async_read_all_registers(  # noqa: SLF001
+            input_length=42, holding_length=12
+        )
+
+    assert len(inputs) == 42
+    assert len(holding) == 12
+    assert mock_instance.read_input_registers.call_count == 2
+
+
+# ---------------------------------------------------------------------------
 # async_write_holding_register
 # ---------------------------------------------------------------------------
 
