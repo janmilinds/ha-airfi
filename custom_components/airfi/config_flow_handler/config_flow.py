@@ -105,7 +105,13 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self.discovery_task.done():
             if (exception := self.discovery_task.exception()) is not None:
-                LOGGER.error("Discovery scan failed: %s", exception)
+                if isinstance(exception, OSError):
+                    LOGGER.debug(
+                        "Discovery scan failed due to a local socket or bind issue: %s; showing fallback error step",
+                        exception,
+                    )
+                else:
+                    LOGGER.error("Discovery scan failed: %s", exception)
                 next_step = "fallback_error" if isinstance(exception, OSError) else "fallback"
                 return self.async_show_progress_done(next_step_id=next_step)
 
