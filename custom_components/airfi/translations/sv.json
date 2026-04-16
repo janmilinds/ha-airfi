@@ -92,8 +92,7 @@
   },
   "issues": {
     "device_unreachable": {
-      "title": "{name} kan inte nås",
-      "fix_flow": {
+      "title": "{name} kan inte nås",      "description": "Enheten kunde inte n\u00e5s. Om IP-adressen har \u00e4ndrats, anv\u00e4nd knappen Fixa f\u00f6r att uppdatera den.",      "fix_flow": {
         "error": {
           "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen.",
           "cannot_retrieve_data": "Anslutning till enheten lyckades, men nödvändiga data kunde inte läsas."
