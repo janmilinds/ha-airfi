@@ -108,6 +108,20 @@ Options flow currently provides:
 - Supply air temperature
 - Relative humidity
 
+### Number
+
+- Supply air temperature setting (target temperature, 13–25 °C)
+
+### Switches (disabled by default, feature-gated)
+
+Available when the device's Modbus register map version supports them (≥ 2.5.0):
+
+- **Fireplace function** — activates overpressure for 30 minutes
+- **Sauna function** — prevents humidity-triggered ventilation increase for 30 minutes
+- **Boosted cooling** — monitors temperatures and boosts air volumes as needed (useful for drawing in cool outside air during summer nights)
+
+These switches must be manually enabled. See [Configuration Reference](docs/user/CONFIGURATION.md) for details.
+
 ### Binary Sensors
 
 - Device connection (diagnostic, disabled by default)
@@ -154,7 +168,7 @@ a repair issue for the integration. The repair flow lets you:
 ## Troubleshooting
 
 - Confirm device reachable on local network and Modbus TCP port `502`
-- Check entity `API connectivity`
+- Check entity `Device connection`
 - For discovery issues, verify multicast visibility in your network
 - Download diagnostics from Devices & Services for deeper troubleshooting
 

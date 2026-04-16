@@ -177,7 +177,7 @@ If setup fails with connection errors:
 If entities show "Unavailable" or don't update:
 
 1. Check that the ventilation unit is powered on and on the network
-2. Look at the **API connectivity** binary sensor — it shows `off` when the unit is unreachable
+2. Look at the **Device connection** binary sensor — it shows `off` when the unit is unreachable
 3. The integration automatically attempts to rediscover the device if its IP changes (e.g., DHCP lease renewal)
 4. Review logs: **Settings** → **System** → **Logs**
 5. Try reloading the integration
