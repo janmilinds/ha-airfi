@@ -12,6 +12,14 @@
           "manual": "Dodaj urządzenie ręcznie"
         }
       },
+      "fallback_error": {
+        "title": "Wyszukiwanie nie powiodło się",
+        "description": "Nie można uruchomić wyszukiwania urządzeń, ponieważ port sieciowy jest niedostępny (port może być używany przez inny proces). Możesz spróbować ponownie lub dodać urządzenie ręcznie.",
+        "menu_options": {
+          "discovery": "Spróbuj wykrywania ponownie",
+          "manual": "Dodaj urządzenie ręcznie"
+        }
+      },
       "manual": {
         "title": "Konfiguracja ręczna",
         "description": "Jeśli potrzebujesz pomocy przy konfiguracji, zapoznaj się z [dokumentacją]({documentation_url}).",
