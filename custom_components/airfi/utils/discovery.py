@@ -149,6 +149,9 @@ class AirfiDiscoveryService:
         Returns:
             List of discovered devices
 
+        Raises:
+            OSError: If socket creation or binding fails (e.g., due to network issues or permissions).
+
         """
         self.discovered = {}
         last_found_time: float | None = None
