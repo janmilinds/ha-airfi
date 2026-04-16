@@ -9,9 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.airfi import async_reload_entry, async_setup, async_setup_entry, async_unload_entry
 
-# Force coverage of re-export shims
-import custom_components.airfi.config_flow
-import custom_components.airfi.config_flow_handler.handler  # noqa: F401
+# Force coverage of re-export shim
+import custom_components.airfi.config_flow  # noqa: F401
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady
