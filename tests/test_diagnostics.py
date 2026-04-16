@@ -162,8 +162,8 @@ async def test_diagnostics_modbus_info(hass) -> None:
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["modbus"]["transport"] == "modbus_tcp"
-    assert result["modbus"]["host_configured"] is True
     assert result["modbus"]["port"] == 502
+    assert "host_configured" not in result["modbus"]
 
 
 @pytest.mark.unit

@@ -74,7 +74,6 @@ async def async_get_config_entry_diagnostics(
     # Modbus client information (no sensitive data)
     modbus_info = {
         "transport": "modbus_tcp",
-        "host_configured": bool(entry.data.get(CONF_HOST)),
         "port": DEFAULT_MODBUS_PORT,
     }
 
