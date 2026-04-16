@@ -78,7 +78,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
     https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 
     Attributes:
-    config_entry: The config entry for this integration instance.
+        config_entry: The config entry for this integration instance.
     """
 
     config_entry: AirfiConfigEntry
@@ -176,10 +176,10 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
         It is called automatically based on the update_interval.
 
         Returns:
-        Coordinator payload dict with parsed register data.
+            Coordinator payload dict with parsed register data.
 
         Raises:
-        UpdateFailed: If Modbus communication fails after recovery attempts.
+            UpdateFailed: If Modbus communication fails after recovery attempts.
         """
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
