@@ -165,13 +165,14 @@ def test_create_socket_returns_socket() -> None:
 
 @pytest.mark.unit
 async def test_async_scan_socket_creation_failure() -> None:
-    """Test that async_scan returns empty list when socket creation fails."""
+    """Test that async_scan raises OSError when socket creation fails."""
     service = AirfiDiscoveryService()
 
-    with patch.object(service, "_create_socket", side_effect=OSError("bind failed")):
-        result = await service.async_scan(timeout_seconds=1)
-
-    assert result == []
+    with (
+        patch.object(service, "_create_socket", side_effect=OSError("bind failed")),
+        pytest.raises(OSError, match="bind failed"),
+    ):
+        await service.async_scan(timeout_seconds=1)
 
 
 @pytest.mark.unit

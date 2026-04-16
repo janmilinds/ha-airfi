@@ -175,12 +175,27 @@ async def test_user_flow_shows_fallback_when_no_devices(hass) -> None:
 
 
 @pytest.mark.unit
-async def test_user_flow_shows_fallback_when_discovery_fails(hass) -> None:
-    """Test that a failed discovery shows fallback menu."""
+async def test_user_flow_shows_fallback_error_when_socket_fails(hass) -> None:
+    """Test that a socket error in discovery shows the socket error fallback."""
     handler = _make_handler(hass)
 
     done_task: asyncio.Future[list] = hass.loop.create_future()
     done_task.set_exception(OSError("socket error"))
+    handler.discovery_task = done_task
+
+    result = await handler.async_step_user()
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS_DONE
+    assert result["step_id"] == "fallback_error"
+
+
+@pytest.mark.unit
+async def test_user_flow_shows_fallback_when_discovery_fails_non_os_error(hass) -> None:
+    """Test that a non-OSError discovery failure shows the normal fallback."""
+    handler = _make_handler(hass)
+
+    done_task: asyncio.Future[list] = hass.loop.create_future()
+    done_task.set_exception(RuntimeError("unexpected discovery error"))
     handler.discovery_task = done_task
 
     result = await handler.async_step_user()
@@ -201,6 +216,20 @@ async def test_fallback_shows_menu(hass) -> None:
     handler.discovery_task = MagicMock()
 
     result = await handler.async_step_fallback()
+
+    assert result["type"] is FlowResultType.MENU
+    assert "discovery" in result["menu_options"]
+    assert "manual" in result["menu_options"]
+    assert handler.discovery_task is None
+
+
+@pytest.mark.unit
+async def test_fallback_error_shows_menu(hass) -> None:
+    """Test that fallback_error step shows menu with discovery and manual options."""
+    handler = _make_handler(hass)
+    handler.discovery_task = MagicMock()
+
+    result = await handler.async_step_fallback_error()
 
     assert result["type"] is FlowResultType.MENU
     assert "discovery" in result["menu_options"]

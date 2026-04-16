@@ -106,7 +106,8 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if self.discovery_task.done():
             if (exception := self.discovery_task.exception()) is not None:
                 LOGGER.error("Discovery scan failed: %s", exception)
-                return self.async_show_progress_done(next_step_id="fallback")
+                next_step = "fallback_error" if isinstance(exception, OSError) else "fallback"
+                return self.async_show_progress_done(next_step_id=next_step)
 
             if self.discovered_devices:
                 return self.async_show_progress_done(next_step_id="discovery_select")
@@ -159,6 +160,17 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.discovery_task = None
         return self.async_show_menu(
             step_id="fallback",
+            menu_options=["discovery", "manual"],
+        )
+
+    async def async_step_fallback_error(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Show fallback options when discovery failed due to a socket error."""
+        self.discovery_task = None
+        return self.async_show_menu(
+            step_id="fallback_error",
             menu_options=["discovery", "manual"],
         )
 
