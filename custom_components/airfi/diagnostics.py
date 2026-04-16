@@ -18,12 +18,10 @@ if TYPE_CHECKING:
 
     from .data import AirfiConfigEntry
 
-# Fields to redact from diagnostics - CRITICAL for security!
+# Fields to redact from diagnostics
 TO_REDACT = {
     CONF_HOST,
     CONF_SERIAL_NUMBER,
-    "api_key",
-    "token",
 }
 
 
