@@ -96,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Alkutietojen lataaminen laitteelta osoitteessa {host} epäonnistui."
+    },
+    "setup_invalid_device_data": {
+      "message": "Laitteesta ei saatu kelvollista tietoa. Tarkista, että ilmanvaihtokone on päällä ja yhdistetty verkkoon."
     }
   },
   "issues": {

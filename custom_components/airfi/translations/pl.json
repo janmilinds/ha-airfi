@@ -96,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Nie udało się załadować początkowych danych z urządzenia pod adresem {host}."
+    },
+    "setup_invalid_device_data": {
+      "message": "Nie udało się pobrać prawidłowych danych z centrali wentylacyjnej. Sprawdź, czy jest włączona i podłączona do sieci."
     }
   },
   "issues": {

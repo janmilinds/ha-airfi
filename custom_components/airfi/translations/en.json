@@ -96,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Could not load initial data from the device at {host}."
+    },
+    "setup_invalid_device_data": {
+      "message": "Failed to retrieve valid device data from the air handling unit. Check that it is powered on and connected to the network."
     }
   },
   "issues": {

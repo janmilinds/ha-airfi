@@ -386,13 +386,13 @@ async def test_async_setup_rediscovery_succeeds_but_retry_fails(hass, config_ent
 
 @pytest.mark.unit
 async def test_async_setup_feature_manager_validation_error(hass, config_entry, mock_integration) -> None:
-    """Test that async_initial_setup raises ConfigEntryNotReady on feature validation failure."""
+    """Test that async_initial_setup raises ConfigEntryNotReady with device data error key."""
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(return_value=[0, 381, 300])
 
     with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=AirfiDeviceError("bad firmware")),
-        pytest.raises(ConfigEntryNotReady),
+        patch.object(coordinator.feature_manager, "initialize", side_effect=AirfiDeviceError("bad data")),
+        pytest.raises(ConfigEntryNotReady, match="setup_invalid_device_data"),
     ):
         await _call_setup(coordinator)
 
@@ -690,6 +690,21 @@ async def test_recover_host_matches_numeric_serial(hass, config_entry, mock_inte
 
     assert result is True
     client.update_host.assert_called_once_with("192.168.1.99")
+
+
+@pytest.mark.unit
+async def test_recover_host_returns_false_on_oserror(hass, config_entry, mock_integration) -> None:
+    """Test that OSError during discovery scan is treated as rediscovery not available."""
+    coordinator, _ = _make_coordinator(hass, config_entry, mock_integration)
+    coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
+
+    with patch(
+        "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+        new=AsyncMock(side_effect=OSError("Address already in use")),
+    ):
+        result = await coordinator._async_try_recover_host()  # noqa: SLF001
+
+    assert result is False
 
 
 # ---------------------------------------------------------------------------

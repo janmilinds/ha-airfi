@@ -165,10 +165,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
         except AirfiDeviceError as exception:
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
-                translation_key="setup_firmware_error",
-                translation_placeholders={
-                    "firmware_version": self.feature_manager.firmware_version or "unknown",
-                },
+                translation_key="setup_invalid_device_data",
             ) from exception
 
     async def _async_update_data(self) -> AirfiDeviceData:
@@ -391,9 +388,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
 
         self._last_rediscovery_attempt = now
         discovery_service = AirfiDiscoveryService()
-        discovered_devices = await discovery_service.async_scan(
-            timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
-        )
+        try:
+            discovered_devices = await discovery_service.async_scan(
+                timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
+            )
+        except OSError:
+            LOGGER.debug("Discovery unavailable during recovery (port in use)")
+            return False
 
         target_serials = {str(serial)}
         serial_digits = "".join(char for char in str(serial) if char.isdigit())

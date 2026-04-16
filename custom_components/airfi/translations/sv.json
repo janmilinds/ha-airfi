@@ -96,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Kunde inte ladda initiala data från enheten på {host}."
+    },
+    "setup_invalid_device_data": {
+      "message": "Kunde inte hämta giltig enhetsdata från ventilationsaggregatet. Kontrollera att det är påslaget och anslutet till nätverket."
     }
   },
   "issues": {
