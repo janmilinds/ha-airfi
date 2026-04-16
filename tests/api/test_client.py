@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -106,22 +106,19 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
         holding_register_length=59,
     )
 
+    holding = [1] * 59
+    inputs = [0, 381, 300] + [0] * 39
     with (
         patch.object(client, "async_get_lookup_registers", new=AsyncMock()) as lookup_mock,
         patch.object(
             client,
-            "_async_read_registers",
-            # input_registers[1]=381 → fw "3.8.1", input_registers[2]=300 → modbus "3.0.0"
-            new=AsyncMock(side_effect=[[1] * 59, [0, 381, 300] + [0] * 39]),
-        ) as read_mock,
+            "_async_read_all_registers",
+            new=AsyncMock(return_value=(holding, inputs)),
+        ),
     ):
         result = await client.async_get_data()
 
     lookup_mock.assert_not_awaited()
-    assert read_mock.await_args_list == [
-        call(start_address=1, length=59, register_type="holding"),
-        call(start_address=1, length=42, register_type="input"),
-    ]
     assert result["firmware_version"] == "3.8.1"
     assert result["modbus_register_version"] == "3.0.0"
     assert result["lookup_registers"] == []
@@ -132,6 +129,10 @@ async def test_async_get_data_builds_register_profile_once() -> None:
     """Test that lookup registers are read only once when building the cache."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
+    holding_1 = [1] * 59
+    inputs_1 = [0, 381, 300] + [0] * 39
+    holding_2 = [3] * 59
+    inputs_2 = [0, 381, 300] + [0] * 39
     with (
         patch.object(
             client,
@@ -140,14 +141,11 @@ async def test_async_get_data_builds_register_profile_once() -> None:
         ) as lookup_mock,
         patch.object(
             client,
-            "_async_read_registers",
-            # input_registers[1]=381 → fw "3.8.1", input_registers[2]=300 → modbus "3.0.0"
+            "_async_read_all_registers",
             new=AsyncMock(
                 side_effect=[
-                    [1] * 59,
-                    [0, 381, 300] + [0] * 39,
-                    [3] * 59,
-                    [0, 381, 300] + [0] * 39,
+                    (holding_1, inputs_1),
+                    (holding_2, inputs_2),
                 ]
             ),
         ),
@@ -177,11 +175,13 @@ async def test_async_get_data_reads_modbus_version_live() -> None:
         holding_register_length=59,
     )
 
+    holding = [1] * 59
+    # input_registers[2]=270 → modbus "2.7.0" (changed at runtime)
+    inputs = [0, 381, 270] + [0] * 39
     with patch.object(
         client,
-        "_async_read_registers",
-        # input_registers[2]=270 → modbus "2.7.0" (changed at runtime)
-        new=AsyncMock(side_effect=[[1] * 59, [0, 381, 270] + [0] * 39]),
+        "_async_read_all_registers",
+        new=AsyncMock(return_value=(holding, inputs)),
     ):
         result = await client.async_get_data()
 
