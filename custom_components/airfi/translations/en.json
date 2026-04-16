@@ -101,7 +101,6 @@
   "issues": {
     "device_unreachable": {
       "title": "{name} is unreachable",
-      "description": "The device could not be reached. If the IP address has changed, use the Fix button to update it.",
       "fix_flow": {
         "error": {
           "cannot_connect": "Could not connect to the device at this IP address.",

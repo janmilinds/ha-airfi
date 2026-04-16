@@ -100,7 +100,8 @@
   },
   "issues": {
     "device_unreachable": {
-      "title": "{name} jest niedostępne",      "description": "Nie uda\u0142o si\u0119 po\u0142\u0105czy\u0107 z urz\u0105dzeniem. Je\u015bli adres IP si\u0119 zmieni\u0142, u\u017cyj przycisku Napraw, aby go zaktualizowa\u0107.",      "fix_flow": {
+      "title": "{name} jest niedostępne",
+      "fix_flow": {
         "error": {
           "cannot_connect": "Nie udało się połączyć z urządzeniem pod tym adresem IP.",
           "cannot_retrieve_data": "Połączono z urządzeniem, ale nie udało się odczytać wymaganych danych."

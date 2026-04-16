@@ -101,7 +101,6 @@
   "issues": {
     "device_unreachable": {
       "title": "{name} ei ole tavoitettavissa",
-      "description": "Laitteeseen ei saatu yhteytt\u00e4. Jos IP-osoite on muuttunut, p\u00e4ivit\u00e4 se Korjaa-painikkeella.",
       "fix_flow": {
         "error": {
           "cannot_connect": "Laitteeseen ei saatu yhteyttä tällä IP-osoitteella.",
