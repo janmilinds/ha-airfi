@@ -73,7 +73,7 @@ class AirfiTemperatureSensor(SensorEntity, AirfiEntity):
     def native_value(self) -> float | None:
         """Return the current temperature value in Celsius."""
         register_address = REGISTER_ADDRESS_BY_KEY[self.entity_description.key]
-        input_registers = self.coordinator.data.get("input_registers", [])
+        input_registers = self.coordinator.data.input_registers
         register_index = register_address - 1
 
         if register_index >= len(input_registers):

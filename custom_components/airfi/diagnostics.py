@@ -6,6 +6,7 @@ https://developers.home-assistant.io/docs/core/integration_diagnostics
 
 from __future__ import annotations
 
+from dataclasses import fields
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_HOST
@@ -68,7 +69,7 @@ async def async_get_config_entry_diagnostics(
     coordinator_info = {
         "last_update_success": coordinator.last_update_success,
         "update_interval": str(coordinator.update_interval),
-        "data_keys": list(coordinator.data.keys()) if isinstance(coordinator.data, dict) else None,
+        "data_keys": [f.name for f in fields(coordinator.data)] if coordinator.data else None,
     }
 
     # Modbus client information (no sensitive data)
@@ -108,14 +109,12 @@ async def async_get_config_entry_diagnostics(
     # Current data sample (sanitized)
     data_sample = {}
     if coordinator.data:
-        if isinstance(coordinator.data, dict):
-            # Include sample data but sanitize sensitive info
-            data_sample = {
-                "firmware_version": coordinator.data.get("firmware_version"),
-                "modbus_register_version": coordinator.data.get("modbus_register_version"),
-                "input_register_count": len(coordinator.data.get("input_registers", [])),
-                "holding_register_count": len(coordinator.data.get("holding_registers", [])),
-            }
+        data_sample = {
+            "firmware_version": coordinator.data.firmware_version,
+            "modbus_register_version": coordinator.data.modbus_register_version,
+            "input_register_count": len(coordinator.data.input_registers),
+            "holding_register_count": len(coordinator.data.holding_registers),
+        }
 
     return {
         "entry": entry_info,

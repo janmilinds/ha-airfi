@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.sensor.humidity import ENTITY_DESCRIPTIONS, AirfiHumiditySensor
 
 
@@ -19,11 +20,14 @@ def _build_coordinator(input_registers: list[int]) -> MagicMock:
 
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
-    coordinator.data = {
-        "input_registers": input_registers,
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = AirfiDeviceData(
+        input_registers=input_registers,
+        holding_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     return coordinator
 
 

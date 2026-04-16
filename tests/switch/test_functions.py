@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.switch.functions import ENTITY_DESCRIPTIONS, AirfiFunctionSwitch
 
 
@@ -21,11 +22,14 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
     coordinator.async_request_refresh = AsyncMock()
-    coordinator.data = {
-        "holding_registers": holding_registers,
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = AirfiDeviceData(
+        holding_registers=holding_registers,
+        input_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     return coordinator
 
 

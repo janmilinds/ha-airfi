@@ -77,7 +77,7 @@ class AirfiFunctionSwitch(SwitchEntity, AirfiEntity):
         """Return True if the function is active."""
         if self._optimistic_state is not None:
             return self._optimistic_state
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = self.entity_description.register_address - 1
         if index >= len(registers):
             return None

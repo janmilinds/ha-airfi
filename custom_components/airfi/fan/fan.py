@@ -57,7 +57,7 @@ class AirfiFan(FanEntity, AirfiEntity):
         """
         if self._optimistic_is_on is not None:
             return self._optimistic_is_on
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = HOLDING_REGISTER_FAN_ACTIVE - 1
         if index >= len(registers):
             return None
@@ -73,7 +73,7 @@ class AirfiFan(FanEntity, AirfiEntity):
             return self._optimistic_percentage
         if self.is_on is False:
             return 0
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = HOLDING_REGISTER_FAN_SPEED - 1
         if index >= len(registers):
             return None

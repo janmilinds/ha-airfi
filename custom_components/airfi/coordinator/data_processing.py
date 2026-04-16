@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -32,8 +32,3 @@ def parse_device_data(raw_data: dict[str, Any]) -> AirfiDeviceData:
         input_registers=input_registers,
         lookup_registers=lookup_registers,
     )
-
-
-def to_coordinator_payload(data: AirfiDeviceData) -> dict[str, Any]:
-    """Convert typed data to coordinator payload."""
-    return asdict(data)

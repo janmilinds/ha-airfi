@@ -227,7 +227,7 @@ async def test_async_update_data_recovers_after_device_ip_change_once_recovery_t
         config_entry,
         data={**config_entry.data, CONF_HOST: "192.168.1.99"},
     )
-    assert result["firmware_version"] == "3.8.1"
+    assert result.firmware_version == "3.8.1"
 
 
 @pytest.mark.unit
@@ -478,7 +478,7 @@ async def test_async_update_data_success_restores_connection(hass, config_entry,
     coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
 
     result = await _call_update(coordinator)
-    assert result["firmware_version"] == "3.8.1"
+    assert result.firmware_version == "3.8.1"
     assert coordinator._connection_lost_at is None  # noqa: SLF001
     assert coordinator._recovery_state == RecoveryState.IDLE  # noqa: SLF001
 
@@ -716,7 +716,7 @@ async def test_runtime_firmware_creates_issue_when_unsupported(hass, config_entr
     with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
         result = await _call_update(coordinator)
 
-    assert result["firmware_version"] == "3.2.0"
+    assert result.firmware_version == "3.2.0"
     issue_reg = ir.async_get(hass)
     expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
     issue = issue_reg.async_get_issue(DOMAIN, expected_id)
@@ -756,7 +756,7 @@ async def test_runtime_firmware_clears_issue_when_supported(hass, config_entry, 
     with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=False):
         result = await _call_update(coordinator)
 
-    assert result["firmware_version"] == "3.8.1"
+    assert result.firmware_version == "3.8.1"
     issue_reg = ir.async_get(hass)
     assert issue_reg.async_get_issue(DOMAIN, issue_id) is None
 
