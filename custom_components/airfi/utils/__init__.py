@@ -6,14 +6,16 @@ from __future__ import annotations
 def version_tuple(register_value: int) -> tuple[int, int, int]:
     """Convert a Modbus register value to a semantic version tuple.
 
-    Example: 270 -> (2, 7, 0)
+    Airfi encodes versions as up to 3-digit integers where each digit
+    maps to a version component: ``270`` → ``(2, 7, 0)``.  Values with
+    fewer than 3 digits are zero-padded on the right (``15`` → ``(1, 5, 0)``).
+    Only the first 3 digits are used; values ≥ 1000 are truncated.
     """
-    digits = str(max(0, register_value))
-    if len(digits) >= 3:
-        return int(digits[0]), int(digits[1]), int(digits[2])
-    if len(digits) == 2:
-        return int(digits[0]), int(digits[1]), 0
-    return int(digits[0]), 0, 0
+    digits = str(max(0, register_value))[:3]
+    parts = [int(d) for d in digits]
+    while len(parts) < 3:
+        parts.append(0)
+    return parts[0], parts[1], parts[2]
 
 
 def version_string(register_value: int) -> str:

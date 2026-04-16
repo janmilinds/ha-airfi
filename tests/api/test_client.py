@@ -30,6 +30,7 @@ from custom_components.airfi.utils import version_string, version_tuple
         (99, (9, 9, 0)),
         (5, (5, 0, 0)),
         (0, (0, 0, 0)),
+        (1230, (1, 2, 3)),
     ],
 )
 def test_as_version_tuple(value: int, expected: tuple[int, int, int]) -> None:
