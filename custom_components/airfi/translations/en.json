@@ -12,6 +12,14 @@
           "manual": "Add device manually"
         }
       },
+      "fallback_error": {
+        "title": "Discovery failed",
+        "description": "Could not start device discovery because the network socket is unavailable (port may be in use by another process). You can try again or add a device manually.",
+        "menu_options": {
+          "discovery": "Try discovery again",
+          "manual": "Add device manually"
+        }
+      },
       "manual": {
         "title": "Manual setup",
         "description": "If you need help with the configuration, have a look at the [documentation]({documentation_url}).",
@@ -88,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Could not load initial data from the device at {host}."
+    },
+    "setup_invalid_device_data": {
+      "message": "Failed to retrieve valid device data from the air handling unit. Check that it is powered on and connected to the network."
     }
   },
   "issues": {
@@ -116,7 +127,7 @@
   },
   "entity": {
     "binary_sensor": {
-      "api_connectivity": {
+      "device_connectivity": {
         "name": "Device connection"
       }
     },

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.sensor.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureSensor
 from custom_components.airfi.utils.temperature import convert_temperature
 
@@ -20,11 +21,14 @@ def _build_coordinator(input_registers: list[int]) -> MagicMock:
 
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
-    coordinator.data = {
-        "input_registers": input_registers,
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = AirfiDeviceData(
+        input_registers=input_registers,
+        holding_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     return coordinator
 
 
@@ -38,8 +42,9 @@ def _description_for(key: str):
     ("raw_value", "expected"),
     [
         (215, 21.5),
-        (65534, -0.1),
-        (62804, -273.1),
+        (65534, -0.2),
+        (62804, -273.2),
+        (32768, -3276.8),
         (float("nan"), 0.0),
     ],
 )

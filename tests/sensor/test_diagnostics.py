@@ -6,13 +6,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.sensor.diagnostics import ENTITY_DESCRIPTIONS, AirfiDiagnosticSensor
 from homeassistant.const import EntityCategory
 
 
 def _build_coordinator(
-    firmware_version: str | None = "3.8.1",
-    modbus_register_version: str | None = "2.7.0",
+    firmware_version: str = "3.8.1",
+    modbus_register_version: str = "2.7.0",
 ) -> MagicMock:
     """Build a coordinator mock suitable for Airfi diagnostic entities."""
     config_entry = MagicMock()
@@ -21,15 +22,16 @@ def _build_coordinator(
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
 
-    data: dict[str, str] = {}
-    if firmware_version is not None:
-        data["firmware_version"] = firmware_version
-    if modbus_register_version is not None:
-        data["modbus_register_version"] = modbus_register_version
-
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
-    coordinator.data = data
+    coordinator.data = AirfiDeviceData(
+        firmware_version=firmware_version,
+        modbus_register_version=modbus_register_version,
+        model="Airfi",
+        holding_registers=[],
+        input_registers=[],
+        lookup_registers=[],
+    )
     return coordinator
 
 

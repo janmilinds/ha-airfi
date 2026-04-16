@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.fan.fan import ENTITY_DESCRIPTIONS, AirfiFan
 
 
@@ -20,12 +21,14 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
-    coordinator.async_request_refresh = AsyncMock()
-    coordinator.data = {
-        "holding_registers": holding_registers,
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = AirfiDeviceData(
+        holding_registers=holding_registers,
+        input_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     return coordinator
 
 
@@ -103,7 +106,6 @@ async def test_fan_turn_on_writes_0_to_register_12() -> None:
     await entity.async_turn_on()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 0)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     # Optimistic state was written to HA
     entity.async_write_ha_state.assert_called_once()
 
@@ -116,7 +118,6 @@ async def test_fan_turn_off_writes_1_to_register_12() -> None:
     await entity.async_turn_off()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     # Optimistic state was written to HA
     entity.async_write_ha_state.assert_called_once()
 
@@ -143,7 +144,6 @@ async def test_fan_set_percentage_writes_device_speed(
     assert calls[1][0] == (1, expected_device_speed)
     # Optimistic state written and coordinator refresh requested
     entity.async_write_ha_state.assert_called_once()
-    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -154,7 +154,7 @@ async def test_fan_set_percentage_0_turns_off() -> None:
     await entity.async_set_percentage(0)
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
+
     entity.async_write_ha_state.assert_called_once()
 
 
@@ -174,7 +174,6 @@ async def test_fan_turn_on_with_percentage() -> None:
     # Third call: set speed (register 1 = 3)
     assert calls[2][0] == (1, 3)
     entity.async_write_ha_state.assert_called_once()
-    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -191,7 +190,6 @@ async def test_fan_set_percentage_turns_on_if_off() -> None:
     # Second call: set speed (register 1 = 3)
     assert calls[1][0] == (1, 3)
     entity.async_write_ha_state.assert_called_once()
-    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -225,7 +223,14 @@ async def test_fan_percentage_returns_optimistic_and_cleared() -> None:
     assert entity.percentage == 100
 
     # Simulate coordinator delivering the new live register values (speed=5, active=0)
-    entity.coordinator.data["holding_registers"] = [5] + [0] * 10 + [0]
+    entity.coordinator.data = AirfiDeviceData(
+        holding_registers=[5] + [0] * 10 + [0],
+        input_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     # Now clear optimistic state as coordinator would do on update
     entity._handle_coordinator_update()  # noqa: SLF001
     assert entity._optimistic_percentage is None  # noqa: SLF001

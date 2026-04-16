@@ -14,7 +14,6 @@ custom_components/airfi/
 ├── icons.json               # Entity icon definitions and translations
 ├── manifest.json            # Integration metadata
 ├── repairs.py               # Repair flows (device_unreachable)
-├── services.yaml            # Service action definitions (empty, reserved)
 ├── api/                     # Modbus TCP communication
 │   ├── __init__.py          # Exports AirfiApiClient, exceptions
 │   └── client.py            # Modbus TCP client (pymodbus)

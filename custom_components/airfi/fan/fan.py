@@ -57,7 +57,7 @@ class AirfiFan(FanEntity, AirfiEntity):
         """
         if self._optimistic_is_on is not None:
             return self._optimistic_is_on
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = HOLDING_REGISTER_FAN_ACTIVE - 1
         if index >= len(registers):
             return None
@@ -73,7 +73,7 @@ class AirfiFan(FanEntity, AirfiEntity):
             return self._optimistic_percentage
         if self.is_on is False:
             return 0
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = HOLDING_REGISTER_FAN_SPEED - 1
         if index >= len(registers):
             return None
@@ -99,7 +99,6 @@ class AirfiFan(FanEntity, AirfiEntity):
         else:
             self._optimistic_is_on = True
             self.async_write_ha_state()
-            await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off (set away mode, device value 1 to register 12)."""
@@ -107,7 +106,6 @@ class AirfiFan(FanEntity, AirfiEntity):
         self._optimistic_is_on = False
         self._optimistic_percentage = 0
         self.async_write_ha_state()
-        await self.coordinator.async_request_refresh()
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set fan speed percentage (20-100, maps to device 1-5)."""
@@ -122,4 +120,3 @@ class AirfiFan(FanEntity, AirfiEntity):
         self._optimistic_is_on = True
         self._optimistic_percentage = percentage
         self.async_write_ha_state()
-        await self.coordinator.async_request_refresh()

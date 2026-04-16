@@ -6,24 +6,24 @@ https://developers.home-assistant.io/docs/core/integration_diagnostics
 
 from __future__ import annotations
 
+from dataclasses import fields
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.redact import async_redact_data
+
+from .const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .data import AirfiConfigEntry
 
-# Fields to redact from diagnostics - CRITICAL for security!
+# Fields to redact from diagnostics
 TO_REDACT = {
     CONF_HOST,
     CONF_SERIAL_NUMBER,
-    "api_key",
-    "token",
 }
 
 
@@ -69,13 +69,12 @@ async def async_get_config_entry_diagnostics(
     coordinator_info = {
         "last_update_success": coordinator.last_update_success,
         "update_interval": str(coordinator.update_interval),
-        "data_keys": list(coordinator.data.keys()) if isinstance(coordinator.data, dict) else None,
+        "data_keys": [f.name for f in fields(coordinator.data)] if coordinator.data else None,
     }
 
     # Modbus client information (no sensitive data)
     modbus_info = {
         "transport": "modbus_tcp",
-        "host_configured": bool(entry.data.get(CONF_HOST)),
         "port": DEFAULT_MODBUS_PORT,
     }
 
@@ -110,14 +109,12 @@ async def async_get_config_entry_diagnostics(
     # Current data sample (sanitized)
     data_sample = {}
     if coordinator.data:
-        if isinstance(coordinator.data, dict):
-            # Include sample data but sanitize sensitive info
-            data_sample = {
-                "firmware_version": coordinator.data.get("firmware_version"),
-                "modbus_register_version": coordinator.data.get("modbus_register_version"),
-                "input_register_count": len(coordinator.data.get("input_registers", [])),
-                "holding_register_count": len(coordinator.data.get("holding_registers", [])),
-            }
+        data_sample = {
+            "firmware_version": coordinator.data.firmware_version,
+            "modbus_register_version": coordinator.data.modbus_register_version,
+            "input_register_count": len(coordinator.data.input_registers),
+            "holding_register_count": len(coordinator.data.holding_registers),
+        }
 
     return {
         "entry": entry_info,

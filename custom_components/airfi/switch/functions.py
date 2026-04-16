@@ -77,7 +77,7 @@ class AirfiFunctionSwitch(SwitchEntity, AirfiEntity):
         """Return True if the function is active."""
         if self._optimistic_state is not None:
             return self._optimistic_state
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = self.entity_description.register_address - 1
         if index >= len(registers):
             return None
@@ -93,11 +93,9 @@ class AirfiFunctionSwitch(SwitchEntity, AirfiEntity):
         await self.coordinator.async_set_holding_register(self.entity_description.register_address, 1)
         self._optimistic_state = True
         self.async_write_ha_state()
-        await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Deactivate the function."""
         await self.coordinator.async_set_holding_register(self.entity_description.register_address, 0)
         self._optimistic_state = False
         self.async_write_ha_state()
-        await self.coordinator.async_request_refresh()

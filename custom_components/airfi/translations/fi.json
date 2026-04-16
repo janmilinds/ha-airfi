@@ -12,6 +12,14 @@
           "manual": "Lisää laite manuaalisesti"
         }
       },
+      "fallback_error": {
+        "title": "Haku epäonnistui",
+        "description": "Laitehakua ei voitu käynnistää, koska verkkoportti ei ole käytettävissä (portti voi olla toisen prosessin käytössä). Voit yrittää uudelleen tai lisätä laitteen manuaalisesti.",
+        "menu_options": {
+          "discovery": "Yritä etsiä laitteita uudelleen",
+          "manual": "Lisää laite manuaalisesti"
+        }
+      },
       "manual": {
         "title": "Määritys käsin",
         "description": "Jos tarvitset apua määrityksessä, katso [dokumentaatiota]({documentation_url}).",
@@ -88,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Alkutietojen lataaminen laitteelta osoitteessa {host} epäonnistui."
+    },
+    "setup_invalid_device_data": {
+      "message": "Laitteesta ei saatu kelvollista tietoa. Tarkista, että ilmanvaihtokone on päällä ja yhdistetty verkkoon."
     }
   },
   "issues": {
@@ -116,7 +127,7 @@
   },
   "entity": {
     "binary_sensor": {
-      "api_connectivity": {
+      "device_connectivity": {
         "name": "Laitteen yhteys"
       }
     },

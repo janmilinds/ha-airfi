@@ -8,6 +8,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.const import CONF_HOST
@@ -31,12 +32,14 @@ def _build_config_entry_with_runtime_data(hass) -> MockConfigEntry:
     coordinator = MagicMock()
     coordinator.last_update_success = True
     coordinator.update_interval = 10
-    coordinator.data = {
-        "firmware_version": "3.8.1",
-        "modbus_register_version": "3.0.0",
-        "input_registers": [0] * 42,
-        "holding_registers": [0] * 59,
-    }
+    coordinator.data = AirfiDeviceData(
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+        model="Airfi",
+        input_registers=[0] * 42,
+        holding_registers=[0] * 59,
+        lookup_registers=[],
+    )
     coordinator.last_exception = None
 
     integration = MagicMock()
@@ -162,8 +165,8 @@ async def test_diagnostics_modbus_info(hass) -> None:
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["modbus"]["transport"] == "modbus_tcp"
-    assert result["modbus"]["host_configured"] is True
     assert result["modbus"]["port"] == 502
+    assert "host_configured" not in result["modbus"]
 
 
 @pytest.mark.unit

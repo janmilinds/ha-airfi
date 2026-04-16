@@ -12,6 +12,14 @@
           "manual": "Lägg till en enhet manuellt"
         }
       },
+      "fallback_error": {
+        "title": "Sökningen misslyckades",
+        "description": "Det gick inte att starta enhetssökningen eftersom nätverksporten inte är tillgänglig (porten kan användas av en annan process). Du kan försöka igen eller lägga till en enhet manuellt.",
+        "menu_options": {
+          "discovery": "Försök upptäcka enheter igen",
+          "manual": "Lägg till en enhet manuellt"
+        }
+      },
       "manual": {
         "title": "Manuell konfiguration",
         "description": "Om du behöver hjälp med konfigurationen, se [dokumentationen]({documentation_url}).",
@@ -88,6 +96,9 @@
     },
     "first_refresh_failed": {
       "message": "Kunde inte ladda initiala data från enheten på {host}."
+    },
+    "setup_invalid_device_data": {
+      "message": "Kunde inte hämta giltig enhetsdata från ventilationsaggregatet. Kontrollera att det är påslaget och anslutet till nätverket."
     }
   },
   "issues": {
@@ -116,7 +127,7 @@
   },
   "entity": {
     "binary_sensor": {
-      "api_connectivity": {
+      "device_connectivity": {
         "name": "Enhetens anslutning"
       }
     },

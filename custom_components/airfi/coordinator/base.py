@@ -34,13 +34,17 @@ from custom_components.airfi.const import (
     RECOVERY_ISSUE_SECONDS,
     RECOVERY_TRIGGER_SECONDS,
 )
-from custom_components.airfi.coordinator.data_processing import parse_device_data, to_coordinator_payload
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData, parse_device_data
 from custom_components.airfi.coordinator.error_handling import (
     log_connection_failure,
     log_modbus_failure,
     should_try_rediscovery,
 )
-from custom_components.airfi.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi.coordinator.feature_manager import (
+    AirfiDeviceError,
+    AirfiFeatureManager,
+    UnsupportedFirmwareError,
+)
 from custom_components.airfi.utils import version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
@@ -59,7 +63,7 @@ class RecoveryState(Enum):
     RECOVERING = "recovering"
 
 
-class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
+class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
     """
     Class to manage fetching data from the Airfi device.
 
@@ -74,7 +78,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
     https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 
     Attributes:
-    config_entry: The config entry for this integration instance.
+        config_entry: The config entry for this integration instance.
     """
 
     config_entry: AirfiConfigEntry
@@ -149,12 +153,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
             )
 
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
-        except ValueError as exception:
-            if self.feature_manager.is_configuration_unsupported(
-                self.feature_manager.firmware_version,
-                self.feature_manager.modbus_register_version,
-            ):
-                self._raise_unsupported_firmware_issue()
+        except UnsupportedFirmwareError as exception:
+            self._raise_unsupported_firmware_issue()
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
@@ -162,8 +162,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                     "firmware_version": self.feature_manager.firmware_version or "unknown",
                 },
             ) from exception
+        except AirfiDeviceError as exception:
+            raise ConfigEntryNotReady(
+                translation_domain=DOMAIN,
+                translation_key="setup_invalid_device_data",
+            ) from exception
 
-    async def _async_update_data(self) -> Any:
+    async def _async_update_data(self) -> AirfiDeviceData:
         """
         Fetch data from Airfi device via Modbus.
 
@@ -171,16 +176,16 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         It is called automatically based on the update_interval.
 
         Returns:
-        Coordinator payload dict with parsed register data.
+            Coordinator payload dict with parsed register data.
 
         Raises:
-        UpdateFailed: If Modbus communication fails after recovery attempts.
+            UpdateFailed: If Modbus communication fails after recovery attempts.
         """
         try:
             raw_data = await self.config_entry.runtime_data.client.async_get_data()
             self._async_on_connection_restored()
-            payload = to_coordinator_payload(parse_device_data(raw_data))
-            self._check_runtime_firmware(payload)
+            payload = parse_device_data(raw_data)
+            self._check_runtime_firmware(payload.firmware_version, payload.modbus_register_version)
         except AirfiApiClientError as exception:
             if should_try_rediscovery(exception):
                 self._async_on_connection_lost()
@@ -188,8 +193,10 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
                     try:
                         raw_data = await self.config_entry.runtime_data.client.async_get_data()
                         self._async_on_connection_restored()
-                        recovery_payload = to_coordinator_payload(parse_device_data(raw_data))
-                        self._check_runtime_firmware(recovery_payload)
+                        recovery_payload = parse_device_data(raw_data)
+                        self._check_runtime_firmware(
+                            recovery_payload.firmware_version, recovery_payload.modbus_register_version
+                        )
                     except AirfiApiClientError as retry_exception:
                         if should_try_rediscovery(retry_exception):
                             log_connection_failure(retry_exception, "post-rediscovery fetch")
@@ -318,9 +325,9 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         if len(lookup) > 1:
             fw = version_string(lookup[1])
             modbus_ver = version_string(lookup[2]) if len(lookup) > 2 else ""
-            self._check_runtime_firmware({"firmware_version": fw, "modbus_register_version": modbus_ver})
+            self._check_runtime_firmware(fw, modbus_ver)
 
-    def _check_runtime_firmware(self, payload: dict[str, Any]) -> None:
+    def _check_runtime_firmware(self, firmware_version: str, modbus_register_version: str = "") -> None:
         """Check firmware version from coordinator data at runtime.
 
         If the device reports an unsupported firmware version during normal
@@ -328,16 +335,15 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
         unsupported firmware is now acceptable (e.g. user upgraded), the
         issue is cleared.
         """
-        fw = payload.get("firmware_version", "")
-        if not fw:
+        if not firmware_version:
             return
-        if self.feature_manager.is_configuration_unsupported(fw, payload.get("modbus_register_version", "")):
-            self._raise_unsupported_firmware_issue(fw)
+        if self.feature_manager.is_configuration_unsupported(firmware_version, modbus_register_version):
+            self._raise_unsupported_firmware_issue(firmware_version)
         else:
             issue_reg = ir.async_get(self.hass)
             if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
                 ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
-                LOGGER.info("Firmware %s is now supported, cleared repairs issue", fw)
+                LOGGER.info("Firmware %s is now supported, cleared repairs issue", firmware_version)
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.
@@ -382,9 +388,13 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator):
 
         self._last_rediscovery_attempt = now
         discovery_service = AirfiDiscoveryService()
-        discovered_devices = await discovery_service.async_scan(
-            timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
-        )
+        try:
+            discovered_devices = await discovery_service.async_scan(
+                timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
+            )
+        except OSError:
+            LOGGER.debug("Discovery unavailable during recovery (port in use)")
+            return False
 
         target_serials = {str(serial)}
         serial_digits = "".join(char for char in str(serial) if char.isdigit())

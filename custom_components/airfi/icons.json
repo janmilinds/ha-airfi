@@ -1,7 +1,7 @@
 {
   "entity": {
     "binary_sensor": {
-      "api_connectivity": {
+      "device_connectivity": {
         "default": "mdi:network-off",
         "state": {
           "on": "mdi:check-network"

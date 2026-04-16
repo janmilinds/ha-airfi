@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 ENTITY_DESCRIPTIONS = (
     BinarySensorEntityDescription(
-        key="api_connectivity",
-        translation_key="api_connectivity",
+        key="device_connectivity",
+        translation_key="device_connectivity",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -39,7 +39,7 @@ class AirfiConnectivitySensor(BinarySensorEntity, AirfiEntity):
 
     @property
     def is_on(self) -> bool:
-        """Return true if the API connection is established."""
+        """Return true if the device connection is established."""
         # Connection is considered established if coordinator has valid data
         return self.coordinator.last_update_success
 

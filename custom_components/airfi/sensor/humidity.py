@@ -39,7 +39,7 @@ class AirfiHumiditySensor(SensorEntity, AirfiEntity):
     @property
     def native_value(self) -> int | None:
         """Return the current relative humidity in percent."""
-        input_registers = self.coordinator.data.get("input_registers", [])
+        input_registers = self.coordinator.data.input_registers
         register_index = INPUT_REGISTER_RELATIVE_HUMIDITY - 1
 
         if register_index >= len(input_registers):

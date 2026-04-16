@@ -16,5 +16,6 @@ https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-
 from __future__ import annotations
 
 from .base import AirfiDataUpdateCoordinator
+from .data_processing import AirfiDeviceData
 
-__all__ = ["AirfiDataUpdateCoordinator"]
+__all__ = ["AirfiDataUpdateCoordinator", "AirfiDeviceData"]

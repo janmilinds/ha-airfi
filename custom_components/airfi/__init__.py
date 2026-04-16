@@ -98,7 +98,6 @@ async def async_setup_entry(
         name=DOMAIN,
         config_entry=entry,
         update_interval=timedelta(seconds=int(seconds)),
-        always_update=False,  # Only update entities when data actually changes
     )
 
     # Store runtime data

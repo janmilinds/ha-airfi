@@ -7,7 +7,7 @@ as the integration grows.
 
 Package structure:
 -----------------
-- connection.py: Connection validators (e.g., testing API connectivity)
+- connection.py: Connection validators (e.g., testing Device connection)
 
 When validators grow (>300 lines per file), split further:
  - connection/modbus.py, connection/discovery.py

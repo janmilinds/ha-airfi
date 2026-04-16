@@ -149,15 +149,14 @@ class AirfiDiscoveryService:
         Returns:
             List of discovered devices
 
+        Raises:
+            OSError: If socket creation or binding fails (e.g., due to network issues or permissions).
+
         """
         self.discovered = {}
         last_found_time: float | None = None
 
-        try:
-            self.sock = self._create_socket()
-        except OSError as err:
-            LOGGER.error("Failed to create multicast socket: %s", err)
-            return []
+        self.sock = self._create_socket()
 
         try:
             end_time = asyncio.get_event_loop().time() + timeout_seconds

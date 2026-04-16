@@ -12,6 +12,18 @@ from custom_components.airfi.const import LOGGER
 from custom_components.airfi.utils import version_string
 
 
+class AirfiDeviceError(Exception):
+    """Base exception for device validation errors."""
+
+
+class InvalidDeviceDataError(AirfiDeviceError):
+    """Raised when lookup registers contain insufficient or invalid data."""
+
+
+class UnsupportedFirmwareError(AirfiDeviceError):
+    """Raised when the firmware or Modbus map version is unsupported."""
+
+
 class AirfiFeatureManager:
     """Manage device features and validation based on firmware version."""
 
@@ -55,7 +67,8 @@ class AirfiFeatureManager:
             lookup_registers: Input registers 1-3 from device.
 
         Raises:
-            ValueError: If device is not supported or firmware is invalid.
+            InvalidDeviceDataError: If lookup registers are insufficient.
+            UnsupportedFirmwareError: If firmware version is not supported.
 
         """
         if not self._validate_lookup_registers(lookup_registers):
@@ -65,7 +78,7 @@ class AirfiFeatureManager:
                 "powered on and connected to a network. Then restart Home Assistant "
                 "and try again."
             )
-            raise ValueError(msg)
+            raise InvalidDeviceDataError(msg)
 
         # registers[0] = hardware version (3x00001)
         # registers[1] = firmware version, registers[2] = modbus map version
@@ -117,18 +130,18 @@ class AirfiFeatureManager:
         """Validate firmware version is supported.
 
         Raises:
-            ValueError: If firmware version is not supported.
+            UnsupportedFirmwareError: If firmware version is not supported.
 
         """
         # Check for unsupported firmware versions
         if self.firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
             msg = f"Firmware version {self.firmware_version} is in the unsupported list"
-            raise ValueError(msg)
+            raise UnsupportedFirmwareError(msg)
 
         # Check minimum Modbus version
         if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
             msg = f"Modbus map version {self.modbus_register_version} is below minimum {self.MIN_MODBUS_VERSION}"
-            raise ValueError(msg)
+            raise UnsupportedFirmwareError(msg)
 
     def is_configuration_unsupported(self, firmware_version: str, modbus_register_version: str) -> bool:
         """Check whether firmware or modbus version is unsupported.

@@ -131,20 +131,18 @@ class AirfiApiClient:
         )
 
     async def async_get_data(self) -> Any:
-        """Read Airfi device state from Modbus registers."""
+        """Read Airfi device state from Modbus registers.
+
+        Uses a single TCP connection for all register reads within the poll
+        cycle to minimise connection overhead.
+        """
         await self._async_ensure_register_profile()
 
         input_length = self._input_register_length or 0
         holding_length = self._holding_register_length or 0
-        holding_registers = await self._async_read_registers(
-            start_address=1,
-            length=holding_length,
-            register_type="holding",
-        )
-        input_registers = await self._async_read_registers(
-            start_address=1,
-            length=input_length,
-            register_type="input",
+        holding_registers, input_registers = await self._async_read_all_registers(
+            input_length=input_length,
+            holding_length=holding_length,
         )
         _MODBUS_DUMP_LOGGER.debug(
             "Input registers (length=%d): %s",
@@ -242,6 +240,80 @@ class AirfiApiClient:
         except Exception as exception:
             msg = f"Unexpected Modbus read failure: {exception}"
             raise AirfiApiClientError(msg) from exception
+
+    async def _async_read_all_registers(
+        self,
+        *,
+        input_length: int,
+        holding_length: int,
+    ) -> tuple[list[int], list[int]]:
+        """Read all holding and input registers in a single TCP connection.
+
+        This reduces connection overhead from ~4 connections per poll to 1.
+        """
+
+        def _read_all() -> tuple[list[int], list[int]]:
+            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
+            if not client.connect():
+                msg = f"Unable to connect to device at {self._host}:{self._port}"
+                raise AirfiApiClientConnectionError(msg)
+            try:
+                holding = self._read_registers_sync(client, 1, holding_length, "holding")
+                inputs = self._read_registers_sync(client, 1, input_length, "input")
+                return holding, inputs
+            finally:
+                client.close()
+
+        holding_chunks = max(1, (holding_length + MODBUS_READ_LIMIT - 1) // MODBUS_READ_LIMIT)
+        input_chunks = max(1, (input_length + MODBUS_READ_LIMIT - 1) // MODBUS_READ_LIMIT)
+        poll_timeout = (holding_chunks + input_chunks) * self._timeout_seconds
+
+        try:
+            async with asyncio.timeout(poll_timeout):
+                return await asyncio.to_thread(_read_all)
+        except TimeoutError as exception:
+            msg = f"Timeout while reading Modbus registers: {exception}"
+            raise AirfiApiClientConnectionError(msg) from exception
+        except AirfiApiClientError:
+            raise
+        except Exception as exception:
+            msg = f"Unexpected Modbus read failure: {exception}"
+            raise AirfiApiClientError(msg) from exception
+
+    def _read_registers_sync(
+        self,
+        client: ModbusTcpClient,
+        start_address: int,
+        length: int,
+        register_type: str,
+    ) -> list[int]:
+        """Read registers synchronously with chunking on an existing connection."""
+        values: list[int] = []
+        for offset in range(0, length, MODBUS_READ_LIMIT):
+            read_start = start_address + offset
+            read_length = min(MODBUS_READ_LIMIT, length - offset)
+            _LOGGER.debug(
+                "Reading %s registers: start_address=%d, length=%d",
+                register_type,
+                read_start,
+                read_length,
+            )
+            if register_type == "holding":
+                response = self._read_holding_registers(client, read_start, read_length)
+            else:
+                response = self._read_input_registers(client, read_start, read_length)
+
+            if response.isError():
+                msg = f"Modbus read error for {register_type} registers at {read_start}"
+                raise AirfiApiClientModbusError(msg)
+
+            registers = getattr(response, "registers", None)
+            if not isinstance(registers, list) or len(registers) != read_length:
+                msg = f"Unexpected Modbus response length for {register_type} registers at {read_start}"
+                raise AirfiApiClientModbusError(msg)
+
+            values.extend(int(value) for value in registers)
+        return values
 
     async def async_write_holding_register(self, address: int, value: int) -> None:
         """Write a single Airfi holding register over Modbus TCP.

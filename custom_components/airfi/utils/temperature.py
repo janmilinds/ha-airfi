@@ -18,14 +18,16 @@ INPUT_REGISTER_SUPPLY_AIR_TEMP = 8
 
 
 def convert_temperature(value: float) -> float:
-    """Convert an Airfi temperature register value into Celsius."""
+    """Convert an Airfi temperature register value into Celsius.
+
+    Modbus registers are unsigned 16-bit (0–65535).  Negative temperatures
+    are encoded as standard signed int16 values, so values ≥ 32768 represent
+    negative numbers (e.g. 65534 → −2 → −0.2 °C).
+    """
     if not math.isfinite(value):
         return 0.0
 
-    converted = value
+    raw = int(value) & 0xFFFF
+    signed = raw - 0x10000 if raw >= 0x8000 else raw
 
-    # Keep parity with Homebridge conversion for signed 16-bit encoded values.
-    if converted > 62803:
-        converted = value - 65535
-
-    return round(converted / 10.0, 1)
+    return round(signed / 10.0, 1)

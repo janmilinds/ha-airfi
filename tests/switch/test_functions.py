@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.switch.functions import ENTITY_DESCRIPTIONS, AirfiFunctionSwitch
 
 
@@ -20,12 +21,14 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
-    coordinator.async_request_refresh = AsyncMock()
-    coordinator.data = {
-        "holding_registers": holding_registers,
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = AirfiDeviceData(
+        holding_registers=holding_registers,
+        input_registers=[],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
     return coordinator
 
 
@@ -81,7 +84,6 @@ async def test_fireplace_turn_on() -> None:
     await entity.async_turn_on()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(58, 1)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     # Optimistic write should have been performed
     entity.async_write_ha_state.assert_called_once()
 
@@ -94,7 +96,6 @@ async def test_fireplace_turn_off() -> None:
     await entity.async_turn_off()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(58, 0)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     # Optimistic write should have been performed
     entity.async_write_ha_state.assert_called_once()
 
@@ -130,7 +131,6 @@ async def test_sauna_turn_on() -> None:
     await entity.async_turn_on()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(57, 1)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     entity.async_write_ha_state.assert_called_once()
 
 
@@ -142,7 +142,6 @@ async def test_sauna_turn_off() -> None:
     await entity.async_turn_off()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(57, 0)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     entity.async_write_ha_state.assert_called_once()
 
 
@@ -177,7 +176,6 @@ async def test_boosted_cooling_turn_on() -> None:
     await entity.async_turn_on()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(51, 1)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     entity.async_write_ha_state.assert_called_once()
 
 
@@ -189,7 +187,6 @@ async def test_boosted_cooling_turn_off() -> None:
     await entity.async_turn_off()
 
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(51, 0)
-    entity.coordinator.async_request_refresh.assert_awaited_once()
     entity.async_write_ha_state.assert_called_once()
 
 

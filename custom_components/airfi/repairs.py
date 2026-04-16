@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi.config_flow_handler.schemas import get_reconfigure_schema
-from custom_components.airfi.config_flow_handler.validators import validate_connection
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN, ISSUE_DEVICE_UNREACHABLE
-from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant.components.repairs import RepairsFlow
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import issue_registry as ir
+
+from .config_flow_handler.schemas import get_reconfigure_schema
+from .config_flow_handler.validators import validate_connection
+from .const import CONF_SERIAL_NUMBER, DOMAIN, ISSUE_DEVICE_UNREACHABLE
+from .utils.error_mapping import map_connection_exception_to_error
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry

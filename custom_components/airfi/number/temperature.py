@@ -52,7 +52,7 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
     @property
     def native_value(self) -> float | None:
         """Return the current target temperature in °C."""
-        registers: list[int] = self.coordinator.data.get("holding_registers", [])
+        registers: list[int] = self.coordinator.data.holding_registers
         index = HOLDING_REGISTER_TARGET_TEMPERATURE - 1
         if index >= len(registers):
             return None
@@ -79,7 +79,7 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
         Some Lovelace components read `supply_air_temperature` from entity attributes
         to show the measured temperature alongside a setpoint control.
         """
-        input_registers: list[int] = self.coordinator.data.get("input_registers", [])
+        input_registers: list[int] = self.coordinator.data.input_registers
         index = INPUT_REGISTER_SUPPLY_AIR_TEMP - 1
         if index >= len(input_registers):
             return {}

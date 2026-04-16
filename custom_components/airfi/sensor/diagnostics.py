@@ -41,4 +41,4 @@ class AirfiDiagnosticSensor(SensorEntity, AirfiEntity):
     @property
     def native_value(self) -> str | None:
         """Return the diagnostic value from coordinator data."""
-        return self.coordinator.data.get(self.entity_description.key)
+        return getattr(self.coordinator.data, self.entity_description.key, None)

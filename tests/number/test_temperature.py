@@ -6,8 +6,24 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.number.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureNumber
 from homeassistant.const import UnitOfTemperature
+
+
+def _make_data(
+    holding_registers: list[int],
+    input_registers: list[int] | None = None,
+) -> AirfiDeviceData:
+    """Build an AirfiDeviceData with the given registers."""
+    return AirfiDeviceData(
+        holding_registers=holding_registers,
+        input_registers=input_registers or [],
+        lookup_registers=[],
+        model="Airfi",
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+    )
 
 
 def _build_coordinator(
@@ -32,12 +48,7 @@ def _build_coordinator(
     coordinator.async_set_holding_register = AsyncMock()
     coordinator.async_request_refresh = AsyncMock()
     coordinator.feature_manager = feature_manager
-    coordinator.data = {
-        "holding_registers": holding_registers,
-        "input_registers": [],
-        "model": "Airfi",
-        "firmware_version": "3.8.1",
-    }
+    coordinator.data = _make_data(holding_registers)
     return coordinator
 
 
@@ -48,7 +59,7 @@ def test_native_unit_and_supply_air_temperature_attribute() -> None:
     # Input register 8 = 206 => measured 20.6
     input_registers = [0, 0, 0, 0, 0, 0, 0, 206]
     coordinator = _build_coordinator([0, 0, 0, 0, 200])
-    coordinator.data["input_registers"] = input_registers
+    coordinator.data = _make_data([0, 0, 0, 0, 200], input_registers)
 
     entity = AirfiTemperatureNumber(coordinator, ENTITY_DESCRIPTIONS[0])
 
@@ -63,7 +74,7 @@ def test_native_unit_and_supply_air_temperature_attribute() -> None:
 def test_extra_state_attributes_no_input_registers() -> None:
     """Test that extra_state_attributes returns empty dict when input registers are missing."""
     coordinator = _build_coordinator([0, 0, 0, 0, 200])
-    coordinator.data["input_registers"] = []  # No input registers
+    coordinator.data = _make_data([0, 0, 0, 0, 200], [])  # No input registers
 
     entity = AirfiTemperatureNumber(coordinator, ENTITY_DESCRIPTIONS[0])
 
