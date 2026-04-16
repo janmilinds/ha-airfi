@@ -116,7 +116,7 @@
   },
   "entity": {
     "binary_sensor": {
-      "api_connectivity": {
+      "device_connectivity": {
         "name": "Device connection"
       }
     },

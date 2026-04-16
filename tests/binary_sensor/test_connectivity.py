@@ -60,7 +60,7 @@ def test_connectivity_sensor_extra_state_attributes() -> None:
 def test_connectivity_sensor_entity_description() -> None:
     """Test that entity description has correct device class and category."""
     desc = ENTITY_DESCRIPTIONS[0]
-    assert desc.key == "api_connectivity"
-    assert desc.translation_key == "api_connectivity"
+    assert desc.key == "device_connectivity"
+    assert desc.translation_key == "device_connectivity"
     assert desc.device_class == BinarySensorDeviceClass.CONNECTIVITY
     assert desc.entity_category == EntityCategory.DIAGNOSTIC
