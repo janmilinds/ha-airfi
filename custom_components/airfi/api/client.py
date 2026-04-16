@@ -264,8 +264,12 @@ class AirfiApiClient:
             finally:
                 client.close()
 
+        holding_chunks = max(1, (holding_length + MODBUS_READ_LIMIT - 1) // MODBUS_READ_LIMIT)
+        input_chunks = max(1, (input_length + MODBUS_READ_LIMIT - 1) // MODBUS_READ_LIMIT)
+        poll_timeout = (holding_chunks + input_chunks) * self._timeout_seconds
+
         try:
-            async with asyncio.timeout(self._timeout_seconds):
+            async with asyncio.timeout(poll_timeout):
                 return await asyncio.to_thread(_read_all)
         except TimeoutError as exception:
             msg = f"Timeout while reading Modbus registers: {exception}"
