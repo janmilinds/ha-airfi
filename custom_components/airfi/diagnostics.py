@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.redact import async_redact_data
+
+from .const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
