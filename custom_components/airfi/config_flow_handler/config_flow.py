@@ -111,7 +111,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         exception,
                     )
                 else:
-                    LOGGER.error("Discovery scan failed: %s", exception)
+                    LOGGER.error("Discovery scan failed", exc_info=exception)
                 next_step = "fallback_error" if isinstance(exception, OSError) else "fallback"
                 return self.async_show_progress_done(next_step_id=next_step)
 
