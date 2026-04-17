@@ -48,18 +48,18 @@ PYTEST_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --cov)
-            COVERAGE_ARGS+=("--cov=custom_components/airfi" "--cov-report=term-missing")
-            shift
-            ;;
-        --cov-html)
-            COVERAGE_ARGS+=("--cov=custom_components/airfi" "--cov-report=html")
-            shift
-            ;;
-        *)
-            PYTEST_ARGS+=("$1")
-            shift
-            ;;
+    --cov)
+        COVERAGE_ARGS+=("--cov=custom_components/ha_integration_domain" "--cov-report=term-missing")
+        shift
+        ;;
+    --cov-html)
+        COVERAGE_ARGS+=("--cov=custom_components/ha_integration_domain" "--cov-report=html")
+        shift
+        ;;
+    *)
+        PYTEST_ARGS+=("$1")
+        shift
+        ;;
     esac
 done
 
@@ -76,7 +76,14 @@ else
     log_header "Running tests"
 fi
 echo ""
+
+run_hook "test" "pre"
+echo ""
 pytest "${COVERAGE_ARGS[@]}" "${PYTEST_ARGS[@]}"
+
+run_hook "test" "post"
+
+log_success "Tests completed"
 
 if [[ ${#COVERAGE_ARGS[@]} -gt 0 ]] && [[ " ${COVERAGE_ARGS[*]} " =~ " --cov-report=html " ]]; then
     echo ""
