@@ -4,7 +4,7 @@ config/*
 
 # Custom components (HACS-installed dependencies and dev symlinks)
 custom_components/*
-!custom_components/ha_integration_domain/
+!custom_components/airfi/
 
 # Development tool caches and dependency locks
 .ruff_cache/
@@ -202,6 +202,7 @@ pip-selfcheck.json
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.default.jsonc
+!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
