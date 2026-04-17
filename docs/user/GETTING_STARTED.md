@@ -78,17 +78,17 @@ A device entry representing your Airfi ventilation unit with:
 
 ### Entities
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| **Fan** | `fan` | Main ventilation control — on/off and 5-speed control |
-| **Outdoor air temperature** | `sensor` | Temperature of incoming outdoor air (°C) |
-| **Extract air temperature** | `sensor` | Temperature of air extracted from the building (°C) |
-| **Exhaust air temperature** | `sensor` | Temperature of air exhausted outdoors (°C) |
-| **Supply air temperature** | `sensor` | Temperature of air supplied to the building (°C) |
-| **Relative humidity** | `sensor` | Indoor relative humidity (%) |
-| **Device connection** | `binary_sensor` | Whether the unit is reachable (diagnostic, disabled by default) |
-| **Firmware version** | `sensor` | Current firmware version (diagnostic, disabled by default) |
-| **Modbus register version** | `sensor` | Modbus register map version (diagnostic, disabled by default) |
+| Entity                      | Type            | Description                                                     |
+| --------------------------- | --------------- | --------------------------------------------------------------- |
+| **Fan**                     | `fan`           | Main ventilation control — on/off and 5-speed control           |
+| **Outdoor air temperature** | `sensor`        | Temperature of incoming outdoor air (°C)                        |
+| **Extract air temperature** | `sensor`        | Temperature of air extracted from the building (°C)             |
+| **Exhaust air temperature** | `sensor`        | Temperature of air exhausted outdoors (°C)                      |
+| **Supply air temperature**  | `sensor`        | Temperature of air supplied to the building (°C)                |
+| **Relative humidity**       | `sensor`        | Indoor relative humidity (%)                                    |
+| **Device connection**       | `binary_sensor` | Whether the unit is reachable (diagnostic, disabled by default) |
+| **Firmware version**        | `sensor`        | Current firmware version (diagnostic, disabled by default)      |
+| **Modbus register version** | `sensor`        | Modbus register map version (diagnostic, disabled by default)   |
 
 All temperature and humidity sensors support **long-term statistics** in Home Assistant.
 
