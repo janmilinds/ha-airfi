@@ -21,7 +21,7 @@ If not provided, ask for:
 **Entity Implementation:**
 
 - Create new sensor file in `custom_components/airfi/sensor/`
-- Inherit from `AirfiEntity` and `SensorEntity`
+- Inherit from `IntegrationBlueprintEntity` and `SensorEntity`
 - Use `SensorEntityDescription` for static metadata
 - Implement `native_value` property to return sensor value from coordinator data
 - Add proper type hints for all methods and properties
@@ -48,7 +48,7 @@ If not provided, ask for:
 **Entity Template:**
 
 ```python
-"""[Sensor description] for Airfi."""
+"""[Sensor description] for Integration Blueprint."""
 
 from __future__ import annotations
 
@@ -62,12 +62,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import [UNIT_CONSTANT]  # e.g., PERCENTAGE, UnitOfTemperature
 from homeassistant.core import callback
 
-from ..coordinator import AirfiDataUpdateCoordinator
-from ..entity import AirfiEntity
+from ..coordinator import IntegrationBlueprintDataUpdateCoordinator
+from ..entity import IntegrationBlueprintEntity
 
 
-class Airfi[SensorName]Sensor(
-    AirfiEntity,
+class IntegrationBlueprint[SensorName]Sensor(
+    IntegrationBlueprintEntity,
     SensorEntity,
 ):
     """Sensor for [description]."""
@@ -85,7 +85,7 @@ class Airfi[SensorName]Sensor(
 
     def __init__(
         self,
-        coordinator: AirfiDataUpdateCoordinator,
+        coordinator: IntegrationBlueprintDataUpdateCoordinator,
         entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""

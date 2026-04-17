@@ -20,7 +20,7 @@ If not provided, ask for:
 **Entity Implementation:**
 
 - Create entity file in appropriate platform directory
-- Inherit from `AirfiEntity` and platform base class
+- Inherit from `IntegrationBlueprintEntity` and platform base class
 - Ensure `device_info` property returns same identifiers as other entities on this device
 - Coordinate device_info generation via `entity_utils/device_info.py` helper
 

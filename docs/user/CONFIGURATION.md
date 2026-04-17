@@ -10,11 +10,11 @@ The integration is configured entirely through the Home Assistant UI — no YAML
 
 These values are set during initial setup and stored in the config entry:
 
-| Option | Type | Source | Description |
-|--------|------|--------|-------------|
-| **Host** | string | Auto-discovered or manual | IP address of the ventilation unit |
+| Option            | Type   | Source                    | Description                                  |
+| ----------------- | ------ | ------------------------- | -------------------------------------------- |
+| **Host**          | string | Auto-discovered or manual | IP address of the ventilation unit           |
 | **Serial Number** | string | Auto-discovered or manual | Unique device identifier (used as unique ID) |
-| **Model Name** | string | Auto-discovered or manual | Device model (e.g., "Airfi 100 L") |
+| **Model Name**    | string | Auto-discovered or manual | Device model (e.g., "Airfi 100 L")           |
 
 - **Port** is always 502 (Modbus TCP standard) and not configurable
 - **No authentication** — Modbus TCP does not use credentials
@@ -42,9 +42,9 @@ After initial setup, you can modify runtime options:
 2. Find "Airfi"
 3. Click **Configure**
 
-| Option | Type | Range | Default | Description |
-|--------|------|-------|---------|-------------|
-| **Update interval** | integer (seconds) | 5–60 | 10 | How often to poll the device for updates |
+| Option              | Type              | Range | Default | Description                              |
+| ------------------- | ----------------- | ----- | ------- | ---------------------------------------- |
+| **Update interval** | integer (seconds) | 5–60  | 10      | How often to poll the device for updates |
 
 ### Choosing an Update Interval
 
@@ -62,29 +62,29 @@ The integration creates one device with the following entities:
 
 ### Fan
 
-| Entity | Description | Features |
-|--------|-------------|----------|
+| Entity          | Description                  | Features                      |
+| --------------- | ---------------------------- | ----------------------------- |
 | **Ventilation** | Main ventilation fan control | 5 speed presets (1–5), on/off |
 
 Fan speed presets map directly to the ventilation unit's speed settings (1 = lowest, 5 = highest). Turning the fan off sets speed to 0; turning it on restores the previous speed or defaults to speed 1.
 
 ### Controls
 
-| Entity | Type | Range | Description |
-|--------|------|-------|-------------|
+| Entity                             | Type   | Range    | Description                   |
+| ---------------------------------- | ------ | -------- | ----------------------------- |
 | **Supply air temperature setting** | number | 13–25 °C | Target supply air temperature |
 
 The supply air temperature setting controls the target temperature for air delivered into the rooms. When the device supports minimum temperature parity (Modbus map version ≥ 2.1.0), the minimum temperature setting is also updated automatically to keep both values in sync.
 
 ### Sensors
 
-| Entity | Device Class | Unit | State Class | Description |
-|--------|-------------|------|-------------|-------------|
-| **Supply air temperature** | temperature | °C | measurement | Air temperature after heat exchanger |
-| **Extract air temperature** | temperature | °C | measurement | Air drawn from rooms |
-| **Outdoor air temperature** | temperature | °C | measurement | Outside air intake |
-| **Exhaust air temperature** | temperature | °C | measurement | Air exhausted outside |
-| **Humidity** | humidity | % | measurement | Relative humidity |
+| Entity                      | Device Class | Unit | State Class | Description                          |
+| --------------------------- | ------------ | ---- | ----------- | ------------------------------------ |
+| **Supply air temperature**  | temperature  | °C   | measurement | Air temperature after heat exchanger |
+| **Extract air temperature** | temperature  | °C   | measurement | Air drawn from rooms                 |
+| **Outdoor air temperature** | temperature  | °C   | measurement | Outside air intake                   |
+| **Exhaust air temperature** | temperature  | °C   | measurement | Air exhausted outside                |
+| **Humidity**                | humidity     | %    | measurement | Relative humidity                    |
 
 All sensors report `measurement` state class, making them suitable for long-term statistics in Home Assistant.
 
@@ -92,11 +92,11 @@ All sensors report `measurement` state class, making them suitable for long-term
 
 These entities are disabled by default and can be enabled in entity settings if needed:
 
-| Entity | Type | Category | Description |
-|--------|------|----------|-------------|
-| **Device connection** | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
-| **Firmware version** | sensor | diagnostic | Current firmware version of the unit |
-| **Modbus register version** | sensor | diagnostic | Modbus register map version |
+| Entity                      | Type          | Category   | Description                                  |
+| --------------------------- | ------------- | ---------- | -------------------------------------------- |
+| **Device connection**       | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
+| **Firmware version**        | sensor        | diagnostic | Current firmware version of the unit         |
+| **Modbus register version** | sensor        | diagnostic | Modbus register map version                  |
 
 The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
 
@@ -104,11 +104,11 @@ The connectivity sensor is redundant in most cases — all entities automaticall
 
 These switches are only available when the device's Modbus register map version supports them (≥ 2.5.0). They are disabled by default and must be manually enabled:
 
-| Entity | Feature Flag | Description |
-|--------|-------------|-------------|
-| **Fireplace function** | `fireplace_function` | When activated, overpressure is maintained for 30 min. |
-| **Sauna function** | `sauna_function` | When activated, prevents ventilation increase for 30 min when unit detects increase in humidity. |
-| **Boosted cooling** | `boosted_cooling` | When activated, the unit monitors temperatures and boosts air volumes as needed depending on conditions. Useful especially during summer time to draw in cool outside air during nighttime. |
+| Entity                 | Feature Flag         | Description                                                                                                                                                                                 |
+| ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fireplace function** | `fireplace_function` | When activated, overpressure is maintained for 30 min.                                                                                                                                      |
+| **Sauna function**     | `sauna_function`     | When activated, prevents ventilation increase for 30 min when unit detects increase in humidity.                                                                                            |
+| **Boosted cooling**    | `boosted_cooling`    | When activated, the unit monitors temperatures and boosts air volumes as needed depending on conditions. Useful especially during summer time to draw in cool outside air during nighttime. |
 
 To enable a switch:
 
@@ -169,27 +169,27 @@ Ensure:
 
 The integration supports all Airfi ventilation unit models with Modbus register version 1.5.0 or newer. Supported models (L = left, R = right variant):
 
-| Model Family | Variants |
-|-------------|----------|
-| **60** | 60 L, 60 R |
-| **100** | 100 L, 100 R |
-| **130** | 130 L, 130 R |
-| **150** | 150 L, 150 R |
-| **250 Electric** | 250 L Electric, 250 R Electric |
-| **250 Water** | 250 L Water, 250 R Water |
-| **350 Electric** | 350 L Electric, 350 R Electric |
-| **350 Water** | 350 L Water, 350 R Water |
-| **C5 Electric** | C5 L Electric, C5 R Electric |
-| **C5 Water** | C5 L Water, C5 R Water |
-| **53 mini** | 53 mini L, 53 mini R |
-| **53 miniENT** | 53 miniENT L, 53 miniENT R |
-| **60 ENT** | 60 ENT L, 60 ENT R |
-| **130 ENT** | 130 ENT L, 130 ENT R |
-| **150 ENT** | 150 ENT L, 150 ENT R |
+| Model Family         | Variants                               |
+| -------------------- | -------------------------------------- |
+| **60**               | 60 L, 60 R                             |
+| **100**              | 100 L, 100 R                           |
+| **130**              | 130 L, 130 R                           |
+| **150**              | 150 L, 150 R                           |
+| **250 Electric**     | 250 L Electric, 250 R Electric         |
+| **250 Water**        | 250 L Water, 250 R Water               |
+| **350 Electric**     | 350 L Electric, 350 R Electric         |
+| **350 Water**        | 350 L Water, 350 R Water               |
+| **C5 Electric**      | C5 L Electric, C5 R Electric           |
+| **C5 Water**         | C5 L Water, C5 R Water                 |
+| **53 mini**          | 53 mini L, 53 mini R                   |
+| **53 miniENT**       | 53 miniENT L, 53 miniENT R             |
+| **60 ENT**           | 60 ENT L, 60 ENT R                     |
+| **130 ENT**          | 130 ENT L, 130 ENT R                   |
+| **150 ENT**          | 150 ENT L, 150 ENT R                   |
 | **250 ENT Electric** | 250 ENT L Electric, 250 ENT R Electric |
-| **250 ENT Water** | 250 ENT L Water, 250 ENT R Water |
+| **250 ENT Water**    | 250 ENT L Water, 250 ENT R Water       |
 | **350 ENT Electric** | 350 ENT L Electric, 350 ENT R Electric |
-| **350 ENT Water** | 350 ENT L Water, 350 ENT R Water |
+| **350 ENT Water**    | 350 ENT L Water, 350 ENT R Water       |
 
 **Firmware note:** Firmware version 3.2.0 is known to have issues and is explicitly unsupported. Update to a newer firmware version if you encounter compatibility problems.
 

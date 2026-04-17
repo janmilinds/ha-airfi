@@ -26,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Diagnostics snapshot contained leftover placeholder fields and a duplicate host entry
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-rc.1...v1.0.0-rc.2
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/compare/v1.0.0-rc.1...v1.0.0-rc.2>
 
 ## [1.0.0-rc.1] - 2026-04-15
 
@@ -45,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Read modbus register version directly from input registers
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.4...v1.0.0-rc.1
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.4...v1.0.0-rc.1>
 
 ## [1.0.0-beta.4] - 2026-04-11
 
@@ -60,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fan state UI bouncing when turning fan on/off; added optimistic state handling to update HA state immediately.
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.3...v1.0.0-beta.4
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.3...v1.0.0-beta.4>
 
 ## [1.0.0-beta.3] - 2026-04-08
 
@@ -90,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused coordinator/listeners.py from template.
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.2...v1.0.0-beta.3
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.2...v1.0.0-beta.3>
 
 ## [1.0.0-beta.2] - 2026-03-28
 
@@ -114,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - These changes are primarily documentation, i18n and code-quality improvements that simplify the config flow and enable translations. Related to issue #5.
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.1...v1.0.0-beta.2
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/compare/v1.0.0-beta.1...v1.0.0-beta.2>
 
 ## [1.0.0-beta.1] - 2026-03-27
 
@@ -136,4 +141,5 @@ First public beta release.
 - Local installation via HACS custom repository
 
 ---
-**Full Changelog**: https://github.com/janmilinds/ha-airfi/commits/v1.0.0-beta.1
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/commits/v1.0.0-beta.1>

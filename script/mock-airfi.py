@@ -8,26 +8,26 @@ HA integration can auto-discover the mock device.
 Usage
 -----
 Basic (single device):
-    python3 script/mock-airfi --serial=12345678
+    python3 script/mock-airfi.py --serial=12345678
 
 Full options:
-    python3 script/mock-airfi --serial=12345678 --firmware=3.1.0 --modbus=2.5.0 --model=3
+    python3 script/mock-airfi.py --serial=12345678 --firmware=3.1.0 --modbus=2.5.0 --model=3
 
 Fixed IP in discovery packets (useful for rediscovery testing):
-    python3 script/mock-airfi --serial=12345678 --ip=127.0.0.2
+    python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
 
 Rediscovery test workflow:
     # Step 1 – start mock advertising 127.0.0.2
-    python3 script/mock-airfi --serial=12345678 --ip=127.0.0.2
+    python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
     # Configure HA integration with host=127.0.0.2
     # Step 2 – restart mock advertising 127.0.0.3 (simulates IP change)
-    python3 script/mock-airfi --serial=12345678 --ip=127.0.0.3
+    python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.3
     # HA loses connection to 127.0.0.2, triggers rediscovery, finds 127.0.0.3
     # Any 127.x.x.x address works without 'ip addr add' on Linux (entire /8 is loopback)
 
 Multiple devices (open separate terminals):
-    python3 script/mock-airfi --serial=12345678
-    python3 script/mock-airfi --serial=87654321
+    python3 script/mock-airfi.py --serial=12345678
+    python3 script/mock-airfi.py --serial=87654321
 
 Arguments:
 ---------
