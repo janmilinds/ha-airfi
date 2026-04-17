@@ -31,12 +31,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # PAT with 'workflow' scope required so git pushes can create/update
+          # workflow files. Without this, checkout configures GITHUB_TOKEN as
+          # the remote credential, which is rejected for .github/workflows/.
+          token: ${{ secrets.TEMPLATE_SYNC_TOKEN }}
 
       - name: Sync from blueprint template
         uses: AndreasAugustin/actions-template-sync@v2
         with:
           source_repo_path: jpawlowski/hacs.integration_blueprint
           upstream_branch: main
+          source_gh_token: ${{ secrets.TEMPLATE_SYNC_TOKEN }}
           pr_labels: template-sync
           pr_title: "chore: sync updates from integration blueprint template"
           pr_commit_msg: "chore(template): sync blueprint updates"
