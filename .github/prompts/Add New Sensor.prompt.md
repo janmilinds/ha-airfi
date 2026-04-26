@@ -20,7 +20,7 @@ If not provided, ask for:
 
 **Entity Implementation:**
 
-- Create new sensor file in `custom_components/airfi/sensor/`
+- Create new sensor file in `custom_components/ha_integration_domain/sensor/`
 - Inherit from `IntegrationBlueprintEntity` and `SensorEntity`
 - Use `SensorEntityDescription` for static metadata
 - Implement `native_value` property to return sensor value from coordinator data
@@ -151,9 +151,9 @@ async def async_setup_entry(
 
 **Related Files:**
 
-- Entity: `custom_components/airfi/sensor/[sensor_name].py`
-- Platform: `custom_components/airfi/sensor/__init__.py`
-- Translations: `custom_components/airfi/translations/*.json`
+- Entity: `custom_components/ha_integration_domain/sensor/[sensor_name].py`
+- Platform: `custom_components/ha_integration_domain/sensor/__init__.py`
+- Translations: `custom_components/ha_integration_domain/translations/*.json`
 - Documentation: Reference [#file:docs/development/ARCHITECTURE.md]
 
 **DO NOT create tests unless explicitly requested.**
