@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-04-26
+
+### Added
+
+- Airfi device integration for Home Assistant via Modbus TCP
+- Automatic device discovery over UDP multicast, with manual host entry as fallback and reconfigure support
+- Fan entity with 5-level speed control and at-home/away mode (on/off)
+- Supply air temperature setting (number entity) with current supply air temperature shown as a state attribute
+- Temperature sensors: supply air, extract air, outdoor air, exhaust air
+- Relative humidity sensor
+- Device connectivity binary sensor
+- Function switches for fireplace, sauna and boosted cooling (when supported by device firmware)
+- Diagnostic sensor entities for deeper device visibility
+- Diagnostics snapshot with sensitive data redaction
+- Repair flow for connection issues
+- Localisation: English, Finnish, Swedish and Polish translations
+- Local installation via HACS custom repository
+
+---
+
+**Full Changelog**: <https://github.com/janmilinds/ha-airfi/commits/v1.0.0>
+
 ## [1.0.0-rc.2] - 2026-04-16
 
 ### Changed
