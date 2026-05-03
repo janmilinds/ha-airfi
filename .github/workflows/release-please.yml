@@ -1,7 +1,9 @@
 name: Release Please
 
 on:
-  workflow_dispatch: # Run manually for now
+  push:
+    branches:
+      - main
 
 # Required permissions for GITHUB_TOKEN to create releases and pull requests.
 #

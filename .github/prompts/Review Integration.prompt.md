@@ -358,7 +358,7 @@ Create report in `.ai-scratch/review-report.md`:
 
 ## Integration Context
 
-- **Domain:** `airfi`
+- **Domain:** `ha_integration_domain`
 - **Class prefix:** `IntegrationBlueprint`
 - **Instructions:** `.github/instructions/*.instructions.md`
 - **Guidelines:** `AGENTS.md`, `CONTRIBUTING.md`
