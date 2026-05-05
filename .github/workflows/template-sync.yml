@@ -38,7 +38,7 @@ jobs:
           token: ${{ secrets.TEMPLATE_SYNC_TOKEN }}
 
       - name: Sync from blueprint template
-        uses: AndreasAugustin/actions-template-sync@v2
+        uses: AndreasAugustin/actions-template-sync@v2.5.2
         with:
           source_repo_path: jpawlowski/hacs.integration_blueprint
           upstream_branch: main
