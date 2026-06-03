@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           # PAT with 'workflow' scope required so git pushes can create/update
           # workflow files. Without this, checkout configures GITHUB_TOKEN as
