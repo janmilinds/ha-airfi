@@ -19,7 +19,7 @@ If not provided, ask for:
 
 ### 1. Create Platform Directory Structure
 
-**Directory:** `custom_components/airfi/[platform]/`
+**Directory:** `custom_components/ha_integration_domain/[platform]/`
 
 **Files to create:**
 
@@ -129,7 +129,7 @@ class IntegrationBlueprint[EntityName](
 
 ### 4. Update Manifest
 
-Add platform to `custom_components/airfi/manifest.json`:
+Add platform to `custom_components/ha_integration_domain/manifest.json`:
 
 ```json
 {
@@ -307,7 +307,7 @@ async def async_press(self) -> None:
 
 ## Integration Context
 
-- **Domain:** `airfi`
+- **Domain:** `ha_integration_domain`
 - **Class prefix:** `IntegrationBlueprint`
 - **Base entity:** `IntegrationBlueprintEntity` in `entity/base.py`
 - **Coordinator:** `IntegrationBlueprintDataUpdateCoordinator`

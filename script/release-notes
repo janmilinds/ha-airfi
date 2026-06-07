@@ -35,7 +35,7 @@ COPILOT_MODEL="${COPILOT_MODEL:-claude-sonnet-4.6}"
 DIFF_MAX_BYTES="${RELEASE_NOTES_DIFF_MAX:-8000}"
 
 # Integration domain — used for path filtering
-DOMAIN="airfi"
+DOMAIN="ha_integration_domain"
 COMPONENT_DIR="custom_components/$DOMAIN"
 
 # User-facing paths (changes here are most relevant for release notes)
