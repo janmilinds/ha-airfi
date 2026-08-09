@@ -8,19 +8,19 @@ applyTo: "custom_components/**/alarm_control_panel/**/*.py, custom_components/**
 
 ## Shared Infrastructure
 
-- **`entity/`** - Base entity classes (inherit `IntegrationBlueprintEntity` from `entity/base.py`)
+- **`entity/`** - Base entity classes (inherit the integration's base entity class from `entity/base.py`)
 - **`entity_utils/`** - Shared utilities (device info, state helpers) used by 3+ entity classes
 - **`coordinator/`** - Data fetching (entities never call API directly)
 
 ## Base Entity Inheritance
 
-**MUST inherit from:** `(PlatformEntity, IntegrationBlueprintEntity)` - order matters for MRO
+**MUST inherit from:** `(PlatformEntity, {ClassPrefix}Entity)` — the integration's base entity class from `..entity`, order matters for MRO
 
 **Base class provides:** Coordinator integration, device info, unique ID (`{entry_id}_{description.key}`), attribution, entity naming
 
 **You implement:** Platform-specific properties/methods (`native_value`, `is_on`, `async_press`, etc.)
 
-**Imports pattern:** `from homeassistant.components.PLATFORM import PlatformEntity, PlatformEntityDescription` + `from ..entity import IntegrationBlueprintEntity`
+**Imports pattern:** `from homeassistant.components.PLATFORM import PlatformEntity, PlatformEntityDescription` + `from ..entity import {ClassPrefix}Entity`
 
 **Constructor:** Call `super().__init__(coordinator, entity_description)` - base handles setup
 
@@ -98,6 +98,27 @@ applyTo: "custom_components/**/alarm_control_panel/**/*.py, custom_components/**
 
 **Import pattern:** `from ..entity_utils.module import function`
 
+## Device Registry Ownership
+
+Home Assistant Core 2026.8 and newer assigns every device to exactly one config entry and at most one config subentry.
+
+**MUST:**
+
+- Return `DeviceInfo` for a device owned by the entity's own config entry.
+- Create a separate device for each config subentry; never share one device across subentries.
+- Use `via_device_id` when linking a subentry device to a separate hub/account device.
+- Use `self.device_entry` inside an entity when the registered device is needed.
+- Scope explicit registry lookups with `async_get_device_by_identifier(identifier, config_entry_id)` or
+  `async_get_device_by_connection(connection, config_entry_id)`.
+
+**NEVER:**
+
+- Use the deprecated unscoped `async_get_device()` lookup.
+- Use `via_device`, because identifiers are not globally unique across config entries.
+- Add this integration's config entry to a device owned by another integration. Helper entities link to the source
+  device by assigning `self.device_entry` instead of copying its identifiers or connections into `DeviceInfo`.
+- Depend on a device being shared or merged across config entries.
+
 ## Type Hints
 
 **Avoid circular imports:** Use `TYPE_CHECKING` block for coordinator imports
@@ -106,7 +127,7 @@ applyTo: "custom_components/**/alarm_control_panel/**/*.py, custom_components/**
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..coordinator import IntegrationBlueprintDataUpdateCoordinator
+    from ..coordinator import {ClassPrefix}DataUpdateCoordinator
 ```
 
 ## PARALLEL_UPDATES
