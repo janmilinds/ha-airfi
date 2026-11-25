@@ -10,11 +10,16 @@
 
 Home Assistant custom integration for controlling Airfi air handling units over local Modbus TCP.
 
+## Why Airfi for Home Assistant
+
+- **Real Home Assistant entities.** The unit appears as a fan with on/off (away and at home on the unit, so the ventilation never stops completely) and speed, together with temperature and humidity sensors that carry the right device classes. They work in Apple Home through HomeKit Bridge, and are designed to work with Google Assistant, Alexa and Assist in the same way.
+- **Finds the unit and follows it.** Setup searches your network for Airfi units, so there is no IP address to look up. If the unit later gets a new IP address, the integration finds it again by its serial number and carries on.
+- **Local only.** Home Assistant talks to the unit over your own network with Modbus TCP. No cloud account and no internet connection are needed.
+
+Also included: a guided repair when the unit stays unreachable, a warning for unsupported firmware, switches only for the functions your unit's firmware offers, diagnostics with the host and serial number removed, and translations in English, Finnish, Swedish and Polish.
+
 ## Features
 
-- Local Modbus TCP integration, no cloud account required
-- Automatic device discovery (UDP multicast) with manual fallback
-- Fan control (on/off + speed percentage)
 - Temperature sensors:
   - Outdoor air
   - Extract air
@@ -23,8 +28,6 @@ Home Assistant custom integration for controlling Airfi air handling units over 
 - Relative humidity sensor
 - Diagnostic sensors: firmware version, modbus register version, connectivity (disabled by default)
 - Reconfigure flow for host updates without removing the integration
-- Automatic IP recovery after device IP changes (serial-based rediscovery)
-- Repairs flow for unreachable devices (guided host update + connection validation)
 - Configurable polling interval in options flow (`update_interval_seconds`)
 
 ## Supported Models
@@ -100,7 +103,7 @@ Options flow currently provides:
 
 ### Fan
 
-- Fan: on/off state and speed percentage (mapped to device speed levels)
+- Fan: on/off state and speed percentage (mapped to device speed levels). Off sets the unit to away mode, which runs the ventilation at the lowest speed; on returns it to at-home mode and its previous speed
 
 ### Sensors
 
@@ -194,6 +197,7 @@ logger:
 
 - Project guidelines: [AGENTS.md](AGENTS.md)
 - Architecture notes: [docs/development/ARCHITECTURE.md](docs/development/ARCHITECTURE.md)
+- Tests: `script/test` runs the suite, which covers 100 % of the integration's code; CI fails any change that lowers the coverage
 
 <!-- ha-marketplace:exclude-end -->
 
