@@ -56,6 +56,9 @@ filterwarnings = [
     # never from this integration, so they would only mask Core's upstream work.
     "ignore:Setting custom ClientSession\\..* attribute is discouraged:DeprecationWarning",
     "ignore:Inheritance class .* from web\\.Application is discouraged:DeprecationWarning",
+    # homeassistant/components/http/ keeps plain string keys on the app and on each request, which aiohttp warns
+    # about once a test sets up http, as the diagnostics endpoint needs.
+    "ignore:It is recommended to use web\\.(App|Request)Key instances for keys:aiohttp.web_exceptions.NotAppKeyWarning:homeassistant\\.components\\.http",
     # backoff, pinned by Core through aiogithubapi for the frontend, calls a helper Python 3.14 deprecates; it fires
     # on import of homeassistant.components.frontend, before any test runs.
     "ignore:'asyncio\\.iscoroutinefunction' is deprecated:DeprecationWarning:backoff\\._decorator",
