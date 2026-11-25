@@ -1,7 +1,5 @@
 """Coordinator data processing for Modbus payloads."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any
 

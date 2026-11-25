@@ -1,7 +1,5 @@
 """Test the Airfi API client."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -199,8 +197,8 @@ async def test_read_chunk_input_registers() -> None:
     """Test that _async_read_chunk reads input registers correctly."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
         mock_response.isError.return_value = False
@@ -219,8 +217,8 @@ async def test_read_chunk_holding_registers() -> None:
     """Test that _async_read_chunk reads holding registers correctly."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
         mock_response.isError.return_value = False
@@ -238,8 +236,8 @@ async def test_read_chunk_connection_failure() -> None:
     """Test that failed TCP connection raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
         with pytest.raises(AirfiApiClientConnectionError, match="Unable to connect"):
@@ -251,8 +249,8 @@ async def test_read_chunk_modbus_error_response() -> None:
     """Test that Modbus error response raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
         mock_response.isError.return_value = True
@@ -267,8 +265,8 @@ async def test_read_chunk_unexpected_response_length() -> None:
     """Test that mismatched register count raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
         mock_response.isError.return_value = False
@@ -284,8 +282,8 @@ async def test_read_chunk_unexpected_exception() -> None:
     """Test that unexpected exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = OSError("unexpected")
 
         with pytest.raises(AirfiApiClientError, match="Unexpected Modbus read failure"):
@@ -326,8 +324,8 @@ async def test_read_all_registers_success() -> None:
     """Test that _async_read_all_registers reads holding and input in one connection."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
         holding_resp = MagicMock()
@@ -355,8 +353,8 @@ async def test_read_all_registers_connection_failure() -> None:
     """Test that connection failure raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
         with pytest.raises(AirfiApiClientConnectionError, match="Unable to connect"):
@@ -370,8 +368,8 @@ async def test_read_all_registers_modbus_error() -> None:
     """Test that Modbus error in holding read raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
         error_resp = MagicMock()
@@ -389,8 +387,8 @@ async def test_read_all_registers_unexpected_response_length() -> None:
     """Test that mismatched register count in input read raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
         holding_resp = MagicMock()
@@ -428,8 +426,8 @@ async def test_read_all_registers_unexpected_exception() -> None:
     """Test that unexpected exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = RuntimeError("unexpected")
 
         with pytest.raises(AirfiApiClientError, match="Unexpected Modbus read failure"):
@@ -443,8 +441,8 @@ async def test_read_all_registers_chunks_large_reads() -> None:
     """Test that reads larger than MODBUS_READ_LIMIT are properly chunked."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
         # 42 input registers → 2 chunks (30 + 12)
@@ -482,8 +480,8 @@ async def test_async_write_holding_register_calls_modbus_write() -> None:
     """Test that async_write_holding_register writes the correct register and value."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=False))
 
@@ -498,8 +496,8 @@ async def test_async_write_holding_register_raises_connection_error_on_tcp_failu
     """Test that a failed TCP connection raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
         with pytest.raises(AirfiApiClientConnectionError):
@@ -511,8 +509,8 @@ async def test_async_write_holding_register_raises_modbus_error_on_error_respons
     """Test that a Modbus error response raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=True))
 
@@ -525,8 +523,8 @@ async def test_async_write_unexpected_exception() -> None:
     """Test that unexpected write exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as MockTcpClient:
-        mock_instance = MockTcpClient.return_value
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = OSError("unexpected")
 
         with pytest.raises(AirfiApiClientError, match="Unexpected Modbus write failure"):

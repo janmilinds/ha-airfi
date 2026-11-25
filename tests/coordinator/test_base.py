@@ -1,7 +1,5 @@
 """Test the airfi coordinator."""
 
-from __future__ import annotations
-
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 

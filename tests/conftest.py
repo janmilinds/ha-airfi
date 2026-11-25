@@ -1,11 +1,9 @@
 """Shared fixtures for Airfi tests."""
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from homeassistant.const import CONF_HOST
@@ -23,12 +21,6 @@ def config_entry() -> MockConfigEntry:
         unique_id="airfi-12345",
         title="Airfi AIRFI-12345",
     )
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations) -> None:
-    """Enable custom integration loading in tests."""
-    del enable_custom_integrations
 
 
 @pytest.fixture

@@ -1,7 +1,5 @@
 """Switch entities for Airfi special functions (sauna, fireplace, boosted cooling)."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 

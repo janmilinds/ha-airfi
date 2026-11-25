@@ -4,8 +4,6 @@ This module provides firmware validation, register length mapping, and device
 capability detection based on the Modbus map version.
 """
 
-from __future__ import annotations
-
 from packaging import version
 
 from custom_components.airfi.const import LOGGER

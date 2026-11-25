@@ -1,7 +1,5 @@
 """Test feature manager behavior."""
 
-from __future__ import annotations
-
 import pytest
 
 from custom_components.airfi.coordinator.feature_manager import (

@@ -1,7 +1,5 @@
 """Test supply air temperature number entity for Airfi."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -110,7 +108,7 @@ def test_native_value_returns_none_when_register_missing() -> None:
 
 @pytest.mark.unit
 async def test_set_value_writes_register_5() -> None:
-    """Test that setting the value writes °C × 10 to register 5."""
+    """Test that setting the value writes °C x 10 to register 5."""
     coordinator = _build_coordinator([0, 0, 0, 0, 200])
     entity = AirfiTemperatureNumber(coordinator, ENTITY_DESCRIPTIONS[0])
 
@@ -141,7 +139,7 @@ async def test_set_value_writes_minimum_with_feature() -> None:
 
     calls = coordinator.async_set_holding_register.call_args_list
     assert len(calls) == 2
-    # First call: register 5 = 180 (18.0 × 10)
+    # First call: register 5 = 180 (18.0 x 10)
     assert calls[0][0] == (5, 180)
     # Second call: register 50 = 18 (raw °C)
     assert calls[1][0] == (50, 18)

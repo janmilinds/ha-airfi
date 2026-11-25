@@ -17,8 +17,6 @@ When schemas grow (>300 lines per file), split further:
 All schemas are re-exported from this __init__.py for convenient imports.
 """
 
-from __future__ import annotations
-
 from custom_components.airfi.config_flow_handler.schemas.config import (
     get_discovery_confirm_schema,
     get_discovery_select_schema,

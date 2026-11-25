@@ -15,8 +15,6 @@ When validators grow (>300 lines per file), split further:
 All validators are re-exported from this __init__.py for convenient imports.
 """
 
-from __future__ import annotations
-
 from custom_components.airfi.config_flow_handler.validators.connection import validate_connection
 
 # Re-export all validators for convenient imports

@@ -1,7 +1,5 @@
 """Utils package for Airfi."""
 
-from __future__ import annotations
-
 
 def version_tuple(register_value: int) -> tuple[int, int, int]:
     """Convert a Modbus register value to a semantic version tuple.

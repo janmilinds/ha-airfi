@@ -13,8 +13,6 @@ Planned future responsibilities (not yet implemented):
   fetched independently and a partial result is available
 """
 
-from __future__ import annotations
-
 from custom_components.airfi.api import AirfiApiClientConnectionError
 from custom_components.airfi.const import LOGGER
 

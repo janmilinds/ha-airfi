@@ -10,18 +10,16 @@ When adding many options, consider grouping them:
 - device_options.py: Device-specific settings
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
 
-import voluptuous as vol
+import probatio
 
 from custom_components.airfi.const import DEFAULT_POLL_INTERVAL_SECONDS
 from homeassistant.helpers import selector
 
 
-def get_options_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
+def get_options_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schema:
     """
     Get schema for options flow.
 
@@ -33,9 +31,9 @@ def get_options_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
 
     """
     defaults = defaults or {}
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Optional(
+            probatio.Optional(
                 "update_interval_seconds",
                 default=defaults.get("update_interval_seconds", DEFAULT_POLL_INTERVAL_SECONDS),
             ): selector.NumberSelector(

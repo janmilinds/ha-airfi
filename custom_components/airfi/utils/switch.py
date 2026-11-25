@@ -1,7 +1,5 @@
 """Switch register address constants for Airfi."""
 
-from __future__ import annotations
-
 HOLDING_REGISTER_BOOSTED_COOLING = 51
 """Modbus holding register address for boosted cooling (4x00051).
 

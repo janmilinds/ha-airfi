@@ -1,11 +1,9 @@
 """Test diagnostics for Airfi."""
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from custom_components.airfi.coordinator.data_processing import AirfiDeviceData

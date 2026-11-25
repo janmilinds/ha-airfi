@@ -13,12 +13,10 @@ When this file grows too large (>300 lines), consider splitting into:
 - discovery.py: Discovery schemas
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
 
-import voluptuous as vol
+import probatio
 
 from custom_components.airfi.const import AIRFI_MODELS, CONF_MODEL_NAME, CONF_SERIAL_NUMBER
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, get_model_name
@@ -37,7 +35,7 @@ def _get_model_options() -> list[selector.SelectOptionDict]:
     ]
 
 
-def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
+def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schema:
     """
     Get schema for user step (initial setup).
 
@@ -49,23 +47,23 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
 
     """
     defaults = defaults or {}
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Required(
+            probatio.Required(
                 CONF_HOST,
-                default=defaults.get(CONF_HOST, vol.UNDEFINED),
+                default=defaults.get(CONF_HOST, probatio.UNDEFINED),
             ): selector.TextSelector(
                 selector.TextSelectorConfig(
                     type=selector.TextSelectorType.TEXT,
                 ),
             ),
-            vol.Required(
+            probatio.Required(
                 CONF_SERIAL_NUMBER,
-                default=defaults.get(CONF_SERIAL_NUMBER, vol.UNDEFINED),
+                default=defaults.get(CONF_SERIAL_NUMBER, probatio.UNDEFINED),
             ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
-            vol.Required(
+            probatio.Required(
                 CONF_MODEL_NAME,
-                default=defaults.get(CONF_MODEL_NAME, vol.UNDEFINED),
+                default=defaults.get(CONF_MODEL_NAME, probatio.UNDEFINED),
             ): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=_get_model_options(),
@@ -76,7 +74,7 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
     )
 
 
-def get_reconfigure_schema(host: str, serial_number: str | None) -> vol.Schema:
+def get_reconfigure_schema(host: str, serial_number: str | None) -> probatio.Schema:
     """
     Get schema for reconfigure step.
 
@@ -89,9 +87,9 @@ def get_reconfigure_schema(host: str, serial_number: str | None) -> vol.Schema:
 
     """
     del serial_number
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Required(
+            probatio.Required(
                 CONF_HOST,
                 default=host,
             ): selector.TextSelector(
@@ -103,7 +101,7 @@ def get_reconfigure_schema(host: str, serial_number: str | None) -> vol.Schema:
     )
 
 
-def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> vol.Schema:
+def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> probatio.Schema:
     """
     Get schema for discovery device selection step.
 
@@ -134,9 +132,9 @@ def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> vol.Sch
         )
     )
 
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Required("device"): selector.SelectSelector(
+            probatio.Required("device"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=device_options,
                 ),
@@ -148,7 +146,7 @@ def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> vol.Sch
 def get_discovery_confirm_schema(
     device: AirfiDiscoveredDevice,
     suggested_name: str | None = None,
-) -> vol.Schema:
+) -> probatio.Schema:
     """
     Get schema for discovery device confirmation and naming.
 
@@ -165,9 +163,9 @@ def get_discovery_confirm_schema(
     """
     default_name = suggested_name or f"Airfi {device.model_name}"
 
-    return vol.Schema(
+    return probatio.Schema(
         {
-            vol.Optional("name", default=default_name): selector.TextSelector(
+            probatio.Optional("name", default=default_name): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
             ),
         },

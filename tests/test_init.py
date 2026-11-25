@@ -1,11 +1,9 @@
 """Tests for the Airfi integration __init__.py."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi import async_reload_entry, async_setup, async_setup_entry, async_unload_entry
 

@@ -1,7 +1,5 @@
 """Temperature sensor entities for Airfi."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.entity import AirfiEntity

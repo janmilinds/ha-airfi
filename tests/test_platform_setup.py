@@ -1,7 +1,5 @@
 """Tests for platform async_setup_entry functions."""
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock
 
 import pytest

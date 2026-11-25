@@ -1,7 +1,5 @@
 """Shared mapping from integration exceptions to user-facing form errors."""
 
-from __future__ import annotations
-
 from custom_components.airfi.api import AirfiApiClientConnectionError, AirfiApiClientModbusError
 
 
