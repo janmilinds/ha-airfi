@@ -30,7 +30,7 @@
         },
         "data_description": {
           "host": "The IP address of the Airfi unit on your local network.",
-          "serial_number": "Find it on the unit's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the unit.",
+          "serial_number": "Enter it exactly as shown on the unit's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the unit. Home Assistant uses it to find the unit again if its IP address changes.",
           "model_name": "The model of your unit, as shown on its type plate."
         }
       },
@@ -41,7 +41,7 @@
           "device": "Discovered device"
         },
         "data_description": {
-          "device": "Each unit is listed with its model, IP address and serial number."
+          "device": "Each unit is listed with its model, IP address and serial number. The last two entries search the network again or let you enter a unit by hand."
         }
       },
       "discovery_confirm": {

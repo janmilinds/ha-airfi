@@ -30,7 +30,7 @@
         },
         "data_description": {
           "host": "Airfi-laitteen IP-osoite lähiverkossasi.",
-          "serial_number": "Löydät sen laitteen tyyppikilvestä, Airfi-sovelluksesta tai web-käyttöliittymästä tai löydettyjen laitteiden listasta, jos haku löysi laitteen.",
+          "serial_number": "Syötä se täsmälleen niin kuin se näkyy laitteen tyyppikilvessä, Airfi-sovelluksessa tai web-käyttöliittymässä tai löydettyjen laitteiden listassa, jos haku löysi laitteen. Home Assistant löytää laitteen sen avulla uudelleen, jos sen IP-osoite muuttuu.",
           "model_name": "Laitteesi malli sellaisena kuin se on tyyppikilvessä."
         }
       },
@@ -41,7 +41,7 @@
           "device": "Löydetty laite"
         },
         "data_description": {
-          "device": "Jokaisesta laitteesta näytetään malli, IP-osoite ja sarjanumero."
+          "device": "Jokaisesta laitteesta näytetään malli, IP-osoite ja sarjanumero. Kaksi viimeistä vaihtoehtoa hakevat verkosta uudelleen tai antavat syöttää laitteen tiedot itse."
         }
       },
       "discovery_confirm": {
