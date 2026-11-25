@@ -91,12 +91,13 @@ class AirfiFan(FanEntity, AirfiEntity):
         **kwargs: Any,
     ) -> None:
         """Turn on (set at-home mode, device value 0 to register 12)."""
-        await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_ACTIVE, 0)
         if percentage is not None and percentage > 0:
             await self.async_set_percentage(percentage)
-        else:
-            self._optimistic_is_on = True
-            self.async_write_ha_state()
+            return
+        await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_ACTIVE, 0)
+        self._optimistic_is_on = True
+        self.async_write_ha_state()
+        await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off (set away mode, device value 1 to register 12)."""
@@ -104,17 +105,19 @@ class AirfiFan(FanEntity, AirfiEntity):
         self._optimistic_is_on = False
         self._optimistic_percentage = 0
         self.async_write_ha_state()
+        await self.coordinator.async_request_refresh()
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set fan speed percentage (20-100, maps to device 1-5)."""
         if percentage == 0:
             await self.async_turn_off()
             return
-        # Ensure fan is on before setting speed
-        await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_ACTIVE, 0)
-        # Convert percentage to device value 1-5
         device_speed = math.ceil(percentage_to_ranged_value(SPEED_RANGE, percentage))
-        await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_SPEED, device_speed)
-        self._optimistic_is_on = True
-        self._optimistic_percentage = percentage
-        self.async_write_ha_state()
+        await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_ACTIVE, 0)
+        try:
+            await self.coordinator.async_set_holding_register(HOLDING_REGISTER_FAN_SPEED, device_speed)
+            self._optimistic_is_on = True
+            self._optimistic_percentage = percentage
+            self.async_write_ha_state()
+        finally:
+            await self.coordinator.async_request_refresh()

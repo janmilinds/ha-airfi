@@ -19,6 +19,7 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
+    coordinator.async_request_refresh = AsyncMock()
     coordinator.data = AirfiDeviceData(
         holding_registers=holding_registers,
         input_registers=[],
@@ -106,6 +107,7 @@ async def test_fan_turn_on_writes_0_to_register_12() -> None:
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 0)
     # Optimistic state was written to HA
     entity.async_write_ha_state.assert_called_once()
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -118,6 +120,7 @@ async def test_fan_turn_off_writes_1_to_register_12() -> None:
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(12, 1)
     # Optimistic state was written to HA
     entity.async_write_ha_state.assert_called_once()
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -158,20 +161,15 @@ async def test_fan_set_percentage_0_turns_off() -> None:
 
 @pytest.mark.unit
 async def test_fan_turn_on_with_percentage() -> None:
-    """Test that turn_on with percentage also sets the speed."""
+    """Test that turn_on with percentage turns the fan on once and sets the speed."""
     entity = _build_fan([3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
     await entity.async_turn_on(percentage=60)
 
     calls = entity.coordinator.async_set_holding_register.call_args_list
-    assert len(calls) == 3
-    # First call: turn on (register 12 = 0)
-    assert calls[0][0] == (12, 0)
-    # Second call: ensure on (register 12 = 0 again from set_percentage)
-    assert calls[1][0] == (12, 0)
-    # Third call: set speed (register 1 = 3)
-    assert calls[2][0] == (1, 3)
+    assert [call.args for call in calls] == [(12, 0), (1, 3)]
     entity.async_write_ha_state.assert_called_once()
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit

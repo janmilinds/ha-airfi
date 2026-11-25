@@ -61,14 +61,11 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
         """Set the supply air temperature (°C, written as value x 10)."""
         device_value = round(value * 10)
         await self.coordinator.async_set_holding_register(HOLDING_REGISTER_TARGET_TEMPERATURE, device_value)
-
-        if self.coordinator.feature_manager.has_feature("minimum_temperature_set"):
-            await self.coordinator.async_set_holding_register(
-                HOLDING_REGISTER_MINIMUM_TEMPERATURE,
-                round(value),
-            )
-
-        await self.coordinator.async_request_refresh()
+        try:
+            if self.coordinator.feature_manager.has_feature("minimum_temperature_set"):
+                await self.coordinator.async_set_holding_register(HOLDING_REGISTER_MINIMUM_TEMPERATURE, round(value))
+        finally:
+            await self.coordinator.async_request_refresh()
 
     @property
     def extra_state_attributes(self) -> dict[str, float | str | None]:
