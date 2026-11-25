@@ -47,7 +47,7 @@ from custom_components.airfi.utils import version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
@@ -328,13 +328,15 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
     def _check_runtime_firmware(self, firmware_version: str, modbus_register_version: str = "") -> None:
         """Check firmware version from coordinator data at runtime.
 
-        If the device reports an unsupported firmware version during normal
-        polling, a non-fixable repairs issue is raised. If a previously
-        unsupported firmware is now acceptable (e.g. user upgraded), the
-        issue is cleared.
+        The version is recorded on the device first, so the device page
+        follows a firmware update. If the device reports an unsupported
+        firmware version during normal polling, a non-fixable repairs issue
+        is raised. If a previously unsupported firmware is now acceptable
+        (e.g. user upgraded), the issue is cleared.
         """
         if not firmware_version:
             return
+        self._update_device_sw_version(firmware_version)
         if self.feature_manager.is_configuration_unsupported(firmware_version, modbus_register_version):
             self._raise_unsupported_firmware_issue(firmware_version)
         else:
@@ -342,6 +344,15 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:
                 ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
                 LOGGER.info("Firmware %s is now supported, cleared repairs issue", firmware_version)
+
+    def _update_device_sw_version(self, firmware_version: str) -> None:
+        """Record the firmware the unit reports on its device, which Home Assistant reads only when it is created."""
+        device_registry = dr.async_get(self.hass)
+        device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, self.config_entry.entry_id), self.config_entry.entry_id
+        )
+        if device is not None and device.sw_version != firmware_version:
+            device_registry.async_update_device(device.id, sw_version=firmware_version)
 
     async def async_set_holding_register(self, address: int, value: int) -> None:
         """Write a holding register value via the API client.

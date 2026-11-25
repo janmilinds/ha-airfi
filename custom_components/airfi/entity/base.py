@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 
 from custom_components.airfi.const import ATTRIBUTION, CONF_MODEL_NAME, CONF_SERIAL_NUMBER
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
-from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -70,10 +69,3 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
             hw_version=coordinator.hw_version or None,
             sw_version=coordinator.data.firmware_version if coordinator.data else "Unknown",
         )
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Update device info sw_version from live coordinator data, then propagate."""
-        if self.coordinator.data and self._attr_device_info is not None:
-            self._attr_device_info["sw_version"] = self.coordinator.data.firmware_version
-        super()._handle_coordinator_update()
