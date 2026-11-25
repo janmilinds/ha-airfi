@@ -99,6 +99,12 @@
     },
     "setup_invalid_device_data": {
       "message": "Nie udało się pobrać prawidłowych danych z centrali wentylacyjnej. Sprawdź, czy jest włączona i podłączona do sieci."
+    },
+    "write_failed": {
+      "message": "Nie udało się wysłać polecenia do urządzenia Airfi: zapis do rejestru {register} nie powiódł się."
+    },
+    "write_failed_unreachable": {
+      "message": "Nie udało się wysłać polecenia do urządzenia Airfi pod adresem {host}: urządzenie nie odpowiedziało."
     }
   },
   "issues": {

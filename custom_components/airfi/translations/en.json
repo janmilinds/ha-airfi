@@ -99,6 +99,12 @@
     },
     "setup_invalid_device_data": {
       "message": "Failed to retrieve valid device data from the air handling unit. Check that it is powered on and connected to the network."
+    },
+    "write_failed": {
+      "message": "Could not send the command to the Airfi unit: the write to register {register} failed."
+    },
+    "write_failed_unreachable": {
+      "message": "Could not send the command to the Airfi unit at {host}: the unit did not respond."
     }
   },
   "issues": {

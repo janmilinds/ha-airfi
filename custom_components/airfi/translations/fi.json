@@ -99,6 +99,12 @@
     },
     "setup_invalid_device_data": {
       "message": "Laitteesta ei saatu kelvollista tietoa. Tarkista, että ilmanvaihtokone on päällä ja yhdistetty verkkoon."
+    },
+    "write_failed": {
+      "message": "Komentoa ei voitu lähettää Airfi-laitteelle: kirjoitus rekisteriin {register} epäonnistui."
+    },
+    "write_failed_unreachable": {
+      "message": "Komentoa ei voitu lähettää Airfi-laitteelle osoitteessa {host}: laite ei vastannut."
     }
   },
   "issues": {
