@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 from homeassistant.components.repairs import RepairsFlow, RepairsFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import issue_registry as ir
 
 from .config_flow_handler.schemas import get_reconfigure_schema
 from .config_flow_handler.validators import validate_connection
-from .const import CONF_SERIAL_NUMBER, DOMAIN, ISSUE_DEVICE_UNREACHABLE
+from .const import CONF_SERIAL_NUMBER, ISSUE_DEVICE_UNREACHABLE
 from .utils.error_mapping import map_connection_exception_to_error
 
 if TYPE_CHECKING:
@@ -57,8 +56,7 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
                     self._entry,
                     data={**self._entry.data, CONF_HOST: user_input[CONF_HOST]},
                 )
-                ir.async_delete_issue(self.hass, DOMAIN, self.issue_id)
-                await self.hass.config_entries.async_reload(self._entry.entry_id)
+                self.hass.config_entries.async_schedule_reload(self._entry.entry_id)
                 return self.async_create_entry(data={})
 
         return self.async_show_form(
