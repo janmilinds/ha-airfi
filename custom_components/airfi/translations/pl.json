@@ -30,7 +30,7 @@
         },
         "data_description": {
           "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej.",
-          "serial_number": "Wpisz go dokładnie tak, jak widnieje na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie. Home Assistant używa go, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP.",
+          "serial_number": "Wpisz go dokładnie tak, jak widnieje na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie. Home Assistant używa go, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP, a wyszukiwanie może do niego dotrzeć.",
           "model_name": "Model Twojego urządzenia, taki jak na tabliczce znamionowej."
         }
       },
