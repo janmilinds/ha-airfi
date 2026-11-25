@@ -47,7 +47,7 @@ async def async_get_config_entry_diagnostics(
     devices = dr.async_entries_for_config_entry(device_reg, entry.entry_id)
     device_info = []
     for device in devices:
-        entities = er.async_entries_for_device(entity_reg, device.id)
+        entities = sorted(er.async_entries_for_device(entity_reg, device.id), key=lambda entity: entity.entity_id)
         device_info.append(
             {
                 "id": device.id,
