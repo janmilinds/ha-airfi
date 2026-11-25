@@ -128,7 +128,18 @@
   "entity": {
     "binary_sensor": {
       "device_connectivity": {
-        "name": "Połączenie z urządzeniem"
+        "name": "Połączenie z urządzeniem",
+        "state_attributes": {
+          "update_interval": {
+            "name": "Interwał aktualizacji"
+          },
+          "transport": {
+            "name": "Typ połączenia",
+            "state": {
+              "modbus_tcp": "Modbus TCP"
+            }
+          }
+        }
       }
     },
     "fan": {
@@ -138,7 +149,12 @@
     },
     "number": {
       "supply_air_temperature_setting": {
-        "name": "Temperatura nawiewu"
+        "name": "Temperatura nawiewu",
+        "state_attributes": {
+          "supply_air_temperature": {
+            "name": "Aktualna temperatura nawiewu"
+          }
+        }
       }
     },
     "sensor": {

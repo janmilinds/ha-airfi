@@ -128,7 +128,18 @@
   "entity": {
     "binary_sensor": {
       "device_connectivity": {
-        "name": "Enhetens anslutning"
+        "name": "Enhetens anslutning",
+        "state_attributes": {
+          "update_interval": {
+            "name": "Uppdateringsintervall"
+          },
+          "transport": {
+            "name": "Anslutningstyp",
+            "state": {
+              "modbus_tcp": "Modbus TCP"
+            }
+          }
+        }
       }
     },
     "fan": {
@@ -138,7 +149,12 @@
     },
     "number": {
       "supply_air_temperature_setting": {
-        "name": "Tilluftstemperatur"
+        "name": "Tilluftstemperatur",
+        "state_attributes": {
+          "supply_air_temperature": {
+            "name": "Aktuell tilluftstemperatur"
+          }
+        }
       }
     },
     "sensor": {

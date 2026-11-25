@@ -128,7 +128,18 @@
   "entity": {
     "binary_sensor": {
       "device_connectivity": {
-        "name": "Laitteen yhteys"
+        "name": "Laitteen yhteys",
+        "state_attributes": {
+          "update_interval": {
+            "name": "Päivitysväli"
+          },
+          "transport": {
+            "name": "Yhteystyyppi",
+            "state": {
+              "modbus_tcp": "Modbus TCP"
+            }
+          }
+        }
       }
     },
     "fan": {
@@ -138,7 +149,12 @@
     },
     "number": {
       "supply_air_temperature_setting": {
-        "name": "Tuloilman lämpötila"
+        "name": "Tuloilman lämpötila",
+        "state_attributes": {
+          "supply_air_temperature": {
+            "name": "Nykyinen tuloilman lämpötila"
+          }
+        }
       }
     },
     "sensor": {
