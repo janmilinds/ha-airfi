@@ -7,6 +7,8 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry
 from pytest_homeassistant.components.diagnostics import get_diagnostics_for_config_entry
 from pytest_homeassistant.typing import ClientSessionGenerator
+from syrupy.assertion import SnapshotAssertion
+from syrupy.filters import paths
 
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
@@ -220,3 +222,18 @@ async def test_diagnostics_key_each_register_by_its_address(
     assert sample["input_registers"]["3x00042"] == 142
     assert sample["holding_registers"]["4x00001"] == 201
     assert sample["holding_registers"]["4x00059"] == 259
+
+
+@pytest.mark.integration
+async def test_diagnostics_download(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """The downloaded diagnostics stay as recorded, so any new field shows up in review."""
+    assert await async_setup_component(hass, "diagnostics", {})
+
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+
+    assert result == snapshot(exclude=paths("entry.entry_id", "devices.0.id", "integration.version"))
