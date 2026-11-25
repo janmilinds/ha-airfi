@@ -142,15 +142,8 @@
           dict({
             'disabled': False,
             'disabled_by': None,
-            'entity_id': 'sensor.airfi_airfi_12345_relative_humidity',
-            'original_name': 'Relative humidity',
-            'platform': 'airfi',
-          }),
-          dict({
-            'disabled': False,
-            'disabled_by': None,
-            'entity_id': 'sensor.airfi_airfi_12345_outdoor_air',
-            'original_name': 'Outdoor air',
+            'entity_id': 'sensor.airfi_airfi_12345_exhaust_air',
+            'original_name': 'Exhaust air',
             'platform': 'airfi',
           }),
           dict({
@@ -163,8 +156,15 @@
           dict({
             'disabled': False,
             'disabled_by': None,
-            'entity_id': 'sensor.airfi_airfi_12345_exhaust_air',
-            'original_name': 'Exhaust air',
+            'entity_id': 'sensor.airfi_airfi_12345_outdoor_air',
+            'original_name': 'Outdoor air',
+            'platform': 'airfi',
+          }),
+          dict({
+            'disabled': False,
+            'disabled_by': None,
+            'entity_id': 'sensor.airfi_airfi_12345_relative_humidity',
+            'original_name': 'Relative humidity',
             'platform': 'airfi',
           }),
           dict({
