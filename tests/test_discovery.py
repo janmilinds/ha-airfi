@@ -157,6 +157,21 @@ def test_create_socket_returns_socket() -> None:
     mock_sock.setblocking.assert_called_once_with(False)
 
 
+@pytest.mark.unit
+def test_create_socket_closes_socket_when_bind_fails() -> None:
+    """Test that _create_socket closes the socket when configuring it fails."""
+    service = AirfiDiscoveryService()
+    with patch("socket.socket") as mock_socket_cls:
+        mock_sock = MagicMock()
+        mock_sock.bind.side_effect = OSError("address in use")
+        mock_socket_cls.return_value = mock_sock
+
+        with pytest.raises(OSError, match="address in use"):
+            service._create_socket()  # noqa: SLF001
+
+    mock_sock.close.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # async_scan
 # ---------------------------------------------------------------------------
