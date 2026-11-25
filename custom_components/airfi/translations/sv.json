@@ -31,7 +31,7 @@
         "data_description": {
           "host": "Airfi-enhetens IP-adress i ditt lokala nätverk.",
           "serial_number": "Ange det exakt som det står på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över upptäckta enheter om sökningen hittade enheten. Home Assistant använder det för att hitta enheten igen om dess IP-adress ändras och sökningen når den.",
-          "model_name": "Välj modellnumret på enhetens typskylt, till exempel Model 60. Modellen används bara i enhetens namn i Home Assistant, så valet mellan L och R, eller Electric och Water, påverkar inget annat."
+          "model_name": "Välj modellen på enhetens typskylt, till exempel Model 60, eller det exakta modellnamnet från Airfi-appen. Modellen ger enheten dess namn i Home Assistant, och entiteternas ID:n bildas av det namnet."
         }
       },
       "discovery_select": {
