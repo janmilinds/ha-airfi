@@ -29,9 +29,9 @@
           "model_name": "Model"
         },
         "data_description": {
-          "host": "The IP address of the Airfi unit on your local network.",
-          "serial_number": "Enter it exactly as shown on the unit's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the unit. Home Assistant uses it to find the unit again if its IP address changes.",
-          "model_name": "The model of your unit, as shown on its type plate."
+          "host": "The IP address of the Airfi device on your local network.",
+          "serial_number": "Enter it exactly as shown on the device's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the device. Home Assistant uses it to find the device again if its IP address changes and the search can reach it.",
+          "model_name": "The model of your device, as shown on its type plate."
         }
       },
       "discovery_select": {
@@ -41,7 +41,7 @@
           "device": "Discovered device"
         },
         "data_description": {
-          "device": "Each unit is listed with its model, IP address and serial number. The last two entries search the network again or let you enter a unit by hand."
+          "device": "Each device is listed with its model, IP address, and serial number. The last two entries search the network again or let you add a device manually."
         }
       },
       "discovery_confirm": {
@@ -60,7 +60,7 @@
           "host": "IP address"
         },
         "data_description": {
-          "host": "The IP address at which the Airfi unit can be reached now."
+          "host": "The IP address at which the Airfi device can be reached now."
         }
       }
     },
@@ -134,7 +134,7 @@
               "host": "IP address"
             },
             "data_description": {
-              "host": "The IP address at which the Airfi unit can be reached now."
+              "host": "The IP address at which the Airfi device can be reached now."
             }
           }
         }
