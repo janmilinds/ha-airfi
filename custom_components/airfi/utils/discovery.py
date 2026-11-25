@@ -115,16 +115,15 @@ class AirfiDiscoveryService:
     def _create_socket(self) -> socket.socket:
         """Create and configure UDP multicast socket."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        sock.bind((DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
-
-        # Join multicast group
-        mreq = socket.inet_aton(DISCOVERY_MULTICAST_GROUP) + socket.inet_aton("0.0.0.0")
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-
-        # Set non-blocking
-        sock.setblocking(False)
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
+            mreq = socket.inet_aton(DISCOVERY_MULTICAST_GROUP) + socket.inet_aton("0.0.0.0")
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+            sock.setblocking(False)
+        except OSError:
+            sock.close()
+            raise
 
         return sock
 
