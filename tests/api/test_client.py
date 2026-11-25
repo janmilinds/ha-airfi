@@ -781,6 +781,69 @@ async def test_write_abandoned_while_waiting_for_device_never_reaches_unit() -> 
     mock_instance.write_register.assert_called_once_with(12, 2, device_id=1)
 
 
+def _blocking_write_unit(calls: list[str], release: threading.Event, started: threading.Event) -> MagicMock:
+    """Patch target for ModbusTcpClient whose writes block until released and whose reads succeed at once."""
+
+    def _write(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("write")
+        started.set()
+        release.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False))
+
+    def _read(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("read")
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0, 381, 300])
+
+    instance = MagicMock()
+    instance.connect.return_value = True
+    instance.write_register.side_effect = _write
+    instance.read_input_registers.side_effect = _read
+    return MagicMock(return_value=instance)
+
+
+@pytest.mark.unit
+async def test_clients_for_the_same_unit_share_one_connection_at_a_time() -> None:
+    """Test that a second client for the same unit, such as the config flow's check, waits for the first."""
+    writer = AirfiApiClient(host="192.168.1.10", port=502)
+    checker = AirfiApiClient(host="192.168.1.20", port=502)
+    checker.update_host("192.168.1.10")
+    calls: list[str] = []
+    release, started = threading.Event(), threading.Event()
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)):
+        write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
+        await asyncio.to_thread(started.wait, 5)
+        check = asyncio.create_task(checker.async_test_connection())
+        await asyncio.sleep(0.1)
+
+        assert calls == ["write"]
+        assert not check.done()
+
+        release.set()
+        await asyncio.gather(write, check)
+
+    assert calls == ["write", "read"]
+
+
+@pytest.mark.unit
+async def test_clients_for_different_units_do_not_wait_for_each_other() -> None:
+    """Test that a request to one unit does not hold back a request to another unit."""
+    writer = AirfiApiClient(host="192.168.1.10", port=502)
+    other = AirfiApiClient(host="192.168.1.20", port=502)
+    calls: list[str] = []
+    release, started = threading.Event(), threading.Event()
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)):
+        write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
+        await asyncio.to_thread(started.wait, 5)
+        async with asyncio.timeout(1):
+            await other.async_test_connection()
+        release.set()
+        await write
+
+    assert calls == ["write", "read"]
+
+
 # ---------------------------------------------------------------------------
 # update_host
 # ---------------------------------------------------------------------------
