@@ -8,6 +8,11 @@ def masked_serial(serial: object) -> str:
     return partial_redact(str(serial), unmasked_prefix=0, unmasked_suffix=4)
 
 
+def register_address(prefix: str, address: int) -> str:
+    """Return a Modbus register address in the form the unit's register map uses, such as 4x00012."""
+    return f"{prefix}{address:05d}"
+
+
 def version_tuple(register_value: int) -> tuple[int, int, int]:
     """Convert a Modbus register value to a semantic version tuple.
 
@@ -32,4 +37,4 @@ def version_string(register_value: int) -> str:
     return f"{major}.{minor}.{patch}"
 
 
-__all__ = ["masked_serial", "version_string", "version_tuple"]
+__all__ = ["masked_serial", "register_address", "version_string", "version_tuple"]
