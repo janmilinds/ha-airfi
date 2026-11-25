@@ -60,15 +60,16 @@ import signal
 import socket
 import struct
 import sys
+import time
 
 from packaging import version as pkg_version
 
 # Allow running from repo root without install
 sys.path.insert(0, str(Path(__file__).parent / ".."))
 
-from pymodbus.datastore import ModbusDeviceContext, ModbusSequentialDataBlock, ModbusServerContext
-from pymodbus.datastore.store import ExcCodes
+from pymodbus.constants import ExcCodes
 from pymodbus.server import ModbusTcpServer
+from pymodbus.simulator import DataType, SimData, SimDevice
 
 from custom_components.airfi.const import AIRFI_MODELS
 
@@ -79,37 +80,68 @@ logging.basicConfig(
 LOGGER = logging.getLogger("mock-airfi")
 
 
-class Fw320InputBlock(ModbusSequentialDataBlock):
-    """Input register block that simulates firmware 3.2.0 behaviour.
+FUNCTION_READ_INPUT_REGISTERS = 4
 
-    Firmware 3.2.0 has a hidden register at address 10 (1-based). Any bulk
-    read request whose range includes address 10 returns a Modbus error,
-    breaking multi-register reads that span across it.
+# Input registers that drift, as protocol addresses: outdoor, extract, exhaust and supply air, then humidity
+TEMPERATURE_REGISTERS = (4, 6, 7, 8)
+HUMIDITY_REGISTER = 23
+DRIFT_INTERVAL_SECONDS = 5.0
 
-    In pymodbus 3.x, ``ModbusDeviceContext`` adds +1 to the protocol address
-    before calling ``getValues``, so protocol address 10 becomes internal
-    address 11.  We override ``getValues`` (not ``validate``, which is never
-    called in pymodbus 3.x) to intercept the read.
+
+class MockAirfiBehaviour:
+    """Device behaviour that plain register storage cannot express.
+
+    pymodbus calls ``on_access`` on every request with the whole register block
+    of the addressed type, which it may modify in place or answer with an error.
+
+    - Firmware 3.2.0 has a hidden input register at address 10. Any read whose
+      range includes it returns a Modbus error, breaking multi-register reads
+      that span across it.
+    - Sensor values drift slightly, at most once per ``DRIFT_INTERVAL_SECONDS``,
+      to simulate a live device.
     """
 
-    HIDDEN_ADDRESS = 10  # 1-based protocol address
+    HIDDEN_ADDRESS = 10
 
-    def getValues(self, address: int, count: int = 1) -> list[int] | list[bool] | ExcCodes:
-        """Return ILLEGAL_ADDRESS when the read range crosses the hidden register."""
-        # ModbusDeviceContext adds +1 to the protocol address before calling
-        # getValues, so hidden protocol addr 10 → internal addr 11.
-        hidden_internal = self.HIDDEN_ADDRESS + 1
+    def __init__(self, *, hide_register_10: bool) -> None:
+        """Initialize the behaviour."""
+        self._hide_register_10 = hide_register_10
+        self._last_drift = time.monotonic()
+
+    async def on_access(
+        self,
+        function_code: int,
+        start_address: int,
+        address: int,
+        count: int,
+        registers: list[int],
+        _set_values: list[int] | list[bool] | None,
+    ) -> ExcCodes | None:
+        """Reject reads across the hidden register and drift the sensor values."""
+        if function_code != FUNCTION_READ_INPUT_REGISTERS:
+            return None
         end_address = address + count - 1
-        if address <= hidden_internal <= end_address:
+        if self._hide_register_10 and address <= self.HIDDEN_ADDRESS <= end_address:
             LOGGER.debug(
-                "FW 3.2.0 simulation: rejecting read [%d..%d] (hidden reg %d, internal %d)",
-                address - 1,
-                end_address - 1,
+                "FW 3.2.0 simulation: rejecting read [%d..%d] (hidden reg %d)",
+                address,
+                end_address,
                 self.HIDDEN_ADDRESS,
-                hidden_internal,
             )
             return ExcCodes.ILLEGAL_ADDRESS
-        return super().getValues(address, count)
+        if time.monotonic() - self._last_drift >= DRIFT_INTERVAL_SECONDS:
+            self._last_drift = time.monotonic()
+            _drift(registers, start_address)
+        return None
+
+
+def _drift(registers: list[int], start_address: int) -> None:
+    """Move each temperature by up to 2 and the humidity by up to 1, in place."""
+    for reg_addr in TEMPERATURE_REGISTERS:
+        index = reg_addr - start_address
+        registers[index] = max(0, min(65535, registers[index] + random.randint(-2, 2)))
+    index = HUMIDITY_REGISTER - start_address
+    registers[index] = max(20, min(80, registers[index] + random.randint(-1, 1)))
 
 
 # Discovery constants (must match integration)
@@ -323,39 +355,6 @@ async def send_discovery_packets(
         LOGGER.info("Discovery sender stopped")
 
 
-async def simulate_sensor_drift(
-    context: ModbusServerContext,
-    stop_event: asyncio.Event,
-) -> None:
-    """Slowly drift sensor values to simulate a live device."""
-    while not stop_event.is_set():
-        try:
-            store = context[1]  # slave_id=1
-
-            # Drift input registers (temperatures, 1-based addresses)
-            for reg_addr in (4, 6, 7, 8):  # outdoor, extract, exhaust, supply
-                current = store.getValues(4, reg_addr, count=1)  # ir uses fx=4
-                if current:
-                    val = current[0]
-                    drift = random.randint(-2, 2)
-                    new_val = max(0, min(65535, val + drift))
-                    store.setValues(4, reg_addr, [new_val])
-
-            # Drift humidity (1-based address 23)
-            current_hum = store.getValues(4, 23, count=1)
-            if current_hum:
-                hum = current_hum[0]
-                drift = random.randint(-1, 1)
-                new_hum = max(20, min(80, hum + drift))
-                store.setValues(4, 23, [new_hum])
-
-        except Exception:
-            LOGGER.warning("Sensor drift update failed", exc_info=True)
-
-        with contextlib.suppress(TimeoutError):
-            await asyncio.wait_for(stop_event.wait(), timeout=5.0)
-
-
 async def run_mock_device(args: argparse.Namespace) -> None:
     """Run the mock Airfi device (Modbus server + discovery sender)."""
     serial = int(args.serial)
@@ -404,26 +403,20 @@ async def run_mock_device(args: argparse.Namespace) -> None:
     LOGGER.info("  Discovery IP:  %s", advertised_ip)
     LOGGER.info("=" * 60)
 
-    # Create Modbus datastore
-    # pymodbus 3.x has an internal +1 offset: reading address N returns
-    # array[N+1] from a block starting at address 0.  Prepend two dummy
-    # elements so that protocol address 1 maps to our values[0].
-
-    # Firmware 3.2.0 simulation: use a custom block that hides register 10
     if firmware == "3.2.0":
         LOGGER.warning("Firmware 3.2.0: input register 10 is hidden (bulk reads crossing it will fail)")
-        ir_block = Fw320InputBlock(0, [0, 0, *input_values])
-    else:
-        ir_block = ModbusSequentialDataBlock(0, [0, 0, *input_values])
-    hr_block = ModbusSequentialDataBlock(0, [0, 0, *holding_values])
+    behaviour = MockAirfiBehaviour(hide_register_10=firmware == "3.2.0")
 
-    slave_context = ModbusDeviceContext(
-        ir=ir_block,
-        hr=hr_block,
-    )
-    server_context = ModbusServerContext(
-        devices={1: slave_context},
-        single=False,
+    # Protocol address 1 is the first value of each block; coils and discrete inputs are unused placeholders.
+    device = SimDevice(
+        id=1,
+        simdata=(
+            [SimData(1, values=False, datatype=DataType.BITS)],
+            [SimData(1, values=False, datatype=DataType.BITS)],
+            [SimData(1, values=holding_values, datatype=DataType.REGISTERS)],
+            [SimData(1, values=input_values, datatype=DataType.REGISTERS)],
+        ),
+        action=behaviour.on_access,
     )
 
     # Prepare stop event and signal handlers
@@ -458,14 +451,14 @@ async def run_mock_device(args: argparse.Namespace) -> None:
 
     # Create Modbus TCP server bound to the resolved address
     server = ModbusTcpServer(
-        context=server_context,
+        context=device,
         address=(bind_addr, port),
     )
 
     # Start server with no fallback — if binding fails, it was reported above
     await server.serve_forever(background=True)
 
-    # Start discovery + sensor drift tasks
+    # Start discovery
     discovery_task = asyncio.create_task(
         send_discovery_packets(
             advertised_ip=advertised_ip,
@@ -475,7 +468,6 @@ async def run_mock_device(args: argparse.Namespace) -> None:
             stop_event=stop_event,
         )
     )
-    drift_task = asyncio.create_task(simulate_sensor_drift(server_context, stop_event))
 
     LOGGER.info("Modbus TCP server listening on %s:%d (slave_id=1)", bind_addr, port)
 
@@ -484,11 +476,8 @@ async def run_mock_device(args: argparse.Namespace) -> None:
     finally:
         await server.shutdown()
         discovery_task.cancel()
-        drift_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await discovery_task
-        with contextlib.suppress(asyncio.CancelledError):
-            await drift_task
 
     LOGGER.info("Mock device stopped")
 
