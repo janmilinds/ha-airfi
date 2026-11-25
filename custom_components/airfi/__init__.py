@@ -12,8 +12,6 @@ For integration development guidelines:
 https://developers.home-assistant.io/docs/creating_integration_manifest
 """
 
-from __future__ import annotations
-
 from datetime import timedelta
 from typing import TYPE_CHECKING
 

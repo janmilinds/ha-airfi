@@ -17,10 +17,10 @@ Fixed IP in discovery packets (useful for rediscovery testing):
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
 
 Rediscovery test workflow:
-    # Step 1 – start mock advertising 127.0.0.2
+    # Step 1 - start mock advertising 127.0.0.2
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
     # Configure HA integration with host=127.0.0.2
-    # Step 2 – restart mock advertising 127.0.0.3 (simulates IP change)
+    # Step 2 - restart mock advertising 127.0.0.3 (simulates IP change)
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.3
     # HA loses connection to 127.0.0.2, triggers rediscovery, finds 127.0.0.3
     # Any 127.x.x.x address works without 'ip addr add' on Linux (entire /8 is loopback)
@@ -38,7 +38,7 @@ Arguments:
 --ip            IP address to advertise in discovery packets AND to bind the Modbus
                 server to. The server only responds to connections on this address,
                 which enables rediscovery testing (see usage examples above).
-                Use 127.0.0.x addresses – the full 127/8 loopback block is always
+                Use 127.0.0.x addresses - the full 127/8 loopback block is always
                 available on Linux without 'ip addr add'.
                 (default: auto-detect local IP, bind to 0.0.0.0)
 
@@ -49,8 +49,6 @@ Notes:
 - SO_REUSEADDR is set for the discovery socket.
 - Stop with Ctrl+C.
 """
-
-from __future__ import annotations
 
 import argparse
 import asyncio
@@ -163,11 +161,11 @@ def build_input_registers(
         3x00001: Hardware version
         3x00002: Firmware version
         3x00003: Modbus map version
-        3x00004: Outdoor air temperature (°C × 10)
+        3x00004: Outdoor air temperature (°C x 10)
         3x00005: (reserved)
-        3x00006: Extract air temperature (°C × 10)
-        3x00007: Exhaust air temperature (°C × 10)
-        3x00008: Supply air temperature (°C × 10)
+        3x00006: Extract air temperature (°C x 10)
+        3x00007: Exhaust air temperature (°C x 10)
+        3x00008: Supply air temperature (°C x 10)
         3x00023: Relative humidity (0-100%)
     """
     values = [0] * input_count
@@ -205,7 +203,7 @@ def build_holding_registers(
 
     Register map (1-based addressing, stored 0-based):
         4x00001: Fan speed (1-5)
-        4x00005: Target supply air temperature (°C × 10)
+        4x00005: Target supply air temperature (°C x 10)
         4x00012: Fan active state (0=at-home, 1=away)
         4x00050: Minimum temperature (modbus >= 2.1.0)
         4x00051: Boosted cooling (modbus >= 2.5.0)
@@ -351,7 +349,7 @@ async def simulate_sensor_drift(
                 new_hum = max(20, min(80, hum + drift))
                 store.setValues(4, 23, [new_hum])
 
-        except Exception:  # noqa: BLE001
+        except Exception:
             LOGGER.warning("Sensor drift update failed", exc_info=True)
 
         with contextlib.suppress(TimeoutError):

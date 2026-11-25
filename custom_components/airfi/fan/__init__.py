@@ -1,7 +1,5 @@
 """Fan platform for Airfi."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.const import PARALLEL_UPDATES as PARALLEL_UPDATES

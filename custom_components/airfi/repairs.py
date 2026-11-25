@@ -1,13 +1,10 @@
 """Repairs platform for Airfi."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
-from homeassistant.components.repairs import RepairsFlow
+from homeassistant.components.repairs import RepairsFlow, RepairsFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import issue_registry as ir
 
 from .config_flow_handler.schemas import get_reconfigure_schema
@@ -42,7 +39,7 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
         """Initialize the repair flow."""
         self._entry = entry
 
-    async def async_step_init(self, user_input: dict[str, str] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, str] | None = None) -> RepairsFlowResult:
         """Handle the initial repair step."""
         errors: dict[str, str] = {}
 

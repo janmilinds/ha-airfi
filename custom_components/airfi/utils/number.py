@@ -1,7 +1,5 @@
 """Number register address constants for Airfi."""
 
-from __future__ import annotations
-
 HOLDING_REGISTER_TARGET_TEMPERATURE = 5
 """Modbus holding register address for target supply air temperature (4x00005).
 

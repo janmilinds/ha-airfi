@@ -1,7 +1,5 @@
 """Supply air temperature number entity for Airfi air handling unit."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.entity import AirfiEntity
@@ -34,7 +32,7 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
     """Supply air target temperature control.
 
     Reads/writes holding register 5 (4x00005).
-    Device stores the value as °C × 10 (e.g. 200 = 20.0 °C).
+    Device stores the value as °C x 10 (e.g. 200 = 20.0 °C).
 
     When the ``minimum_temperature_set`` feature is available (modbus >= 2.1.0),
     also writes holding register 50 (4x00050) with the raw °C value so the two
@@ -60,14 +58,14 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
         return round(raw / 10.0, 1)
 
     async def async_set_native_value(self, value: float) -> None:
-        """Set the supply air temperature (°C, written as value × 10)."""
-        device_value = int(round(value * 10))
+        """Set the supply air temperature (°C, written as value x 10)."""
+        device_value = round(value * 10)
         await self.coordinator.async_set_holding_register(HOLDING_REGISTER_TARGET_TEMPERATURE, device_value)
 
         if self.coordinator.feature_manager.has_feature("minimum_temperature_set"):
             await self.coordinator.async_set_holding_register(
                 HOLDING_REGISTER_MINIMUM_TEMPERATURE,
-                int(round(value)),
+                round(value),
             )
 
         await self.coordinator.async_request_refresh()

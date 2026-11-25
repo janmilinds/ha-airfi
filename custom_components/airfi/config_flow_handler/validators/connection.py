@@ -1,7 +1,5 @@
 """Connection validators for config flow."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from custom_components.airfi.api import AirfiApiClient

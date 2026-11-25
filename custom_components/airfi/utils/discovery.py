@@ -1,7 +1,5 @@
 """Airfi device discovery via UDP multicast."""
 
-from __future__ import annotations
-
 import asyncio
 from dataclasses import dataclass
 import logging
@@ -28,7 +26,7 @@ def get_model_name(model_id: int) -> str:
         index = (model_id - 1) // 2
         base_name = AIRFI_MODELS[index]
         variant = "L" if model_id % 2 == 1 else "R"
-    except (IndexError, ZeroDivisionError):
+    except IndexError, ZeroDivisionError:
         return "Unknown"
     else:
         return f"Model {base_name.replace('{}', variant)}"
