@@ -17,6 +17,7 @@ _MODBUS_DUMP_LOGGER = logging.getLogger("custom_components.airfi.modbus")
 
 _DEVICE_LOCKS: weakref.WeakValueDictionary[tuple[str, int], threading.Lock] = weakref.WeakValueDictionary()
 
+DEVICE_LOCK_POLL_SECONDS = 0.1
 MODBUS_READ_LIMIT = 30
 MODBUS_SLAVE_ID = 1
 REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[tuple[int, int, int], tuple[int, int]], ...] = (
@@ -63,10 +64,11 @@ def _register_lengths(map_version_raw: int) -> tuple[int, int]:
 
 def _device_lock_for(host: str, port: int) -> threading.Lock:
     """Return the lock shared by every client that talks to the unit at this address."""
-    lock = _DEVICE_LOCKS.get((host, port))
+    key = (host.strip().lower(), port)
+    lock = _DEVICE_LOCKS.get(key)
     if lock is None:
         lock = threading.Lock()
-        _DEVICE_LOCKS[host, port] = lock
+        _DEVICE_LOCKS[key] = lock
     return lock
 
 
@@ -200,17 +202,23 @@ class AirfiApiClient:
         The thread lock is shared by every client for that address, so the config flow's connection check and a
         reloaded entry's new client wait as well. It also holds while a thread outlives the timeout or cancellation of
         the task awaiting it, which the asyncio lock cannot. A request abandoned while it waited is dropped without
-        reaching the unit, so a write reported as failed is never sent later.
+        reaching the unit, so a write reported as failed is never sent later, and its thread does not wait out the lock.
         """
         abandoned = threading.Event()
         device_lock = self._device_lock
 
         def _run() -> T:
-            with device_lock:
+            while not device_lock.acquire(timeout=DEVICE_LOCK_POLL_SECONDS):
+                if abandoned.is_set():
+                    msg = "Request abandoned while waiting for the device"
+                    raise AirfiApiClientConnectionError(msg)
+            try:
                 if abandoned.is_set():
                     msg = "Request abandoned before it reached the device"
                     raise AirfiApiClientConnectionError(msg)
                 return request()
+            finally:
+                device_lock.release()
 
         try:
             return await asyncio.to_thread(_run)
