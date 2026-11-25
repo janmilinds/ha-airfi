@@ -59,7 +59,7 @@ def _register_lengths(map_version_raw: int) -> tuple[int, int]:
 
 
 class AirfiApiClient:
-    """API client that reads and writes Airfi Modbus registers, one request to the unit at a time."""
+    """API client that reads and writes Airfi Modbus registers, one request at a time per client."""
 
     def __init__(
         self,
@@ -182,7 +182,7 @@ class AirfiApiClient:
         }
 
     async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
-        """Run a blocking request in a worker thread, never alongside another one.
+        """Run a blocking request in a worker thread, never alongside another request from this client.
 
         A thread outlives the timeout or cancellation of the task awaiting it, so the asyncio lock alone cannot keep
         two connections from overlapping; the thread lock can. A request abandoned while it waited for the thread lock
