@@ -64,7 +64,7 @@ def _register_lengths(map_version_raw: int) -> tuple[int, int]:
 
 def _device_lock_for(host: str, port: int) -> threading.Lock:
     """Return the lock shared by every client that talks to the unit at this address."""
-    key = (host.strip().lower(), port)
+    key = (host.strip().lower().rstrip("."), port)
     lock = _DEVICE_LOCKS.get(key)
     if lock is None:
         lock = threading.Lock()
@@ -73,7 +73,7 @@ def _device_lock_for(host: str, port: int) -> threading.Lock:
 
 
 class AirfiApiClient:
-    """API client that reads and writes Airfi Modbus registers, one connection to a unit at a time."""
+    """API client that reads and writes Airfi Modbus registers, one connection to an address at a time."""
 
     def __init__(
         self,
@@ -197,7 +197,7 @@ class AirfiApiClient:
         }
 
     async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
-        """Run a blocking request in a worker thread, never alongside another connection to the same unit.
+        """Run a blocking request in a worker thread, never alongside another connection to the same address.
 
         The thread lock is shared by every client for that address, so the config flow's connection check and a
         reloaded entry's new client wait as well. It also holds while a thread outlives the timeout or cancellation of

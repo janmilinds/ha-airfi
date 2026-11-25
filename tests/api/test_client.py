@@ -838,8 +838,10 @@ async def test_clients_for_the_same_unit_share_one_connection_at_a_time() -> Non
 
 @pytest.mark.unit
 def test_host_spelling_does_not_split_the_device_lock() -> None:
-    """Test that the same hostname in another case or with stray whitespace shares the unit's lock."""
-    assert _device_lock_for("Airfi.local", 502) is _device_lock_for(" airfi.local", 502)
+    """Test that the same hostname in another case, with stray whitespace or as a full name shares one lock."""
+    lock = _device_lock_for("Airfi.local", 502)
+    assert _device_lock_for(" airfi.local", 502) is lock
+    assert _device_lock_for("airfi.local.", 502) is lock
 
 
 @pytest.mark.unit
