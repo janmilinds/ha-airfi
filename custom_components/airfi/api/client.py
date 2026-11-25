@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ConnectionException, ModbusIOException
 
 from custom_components.airfi.utils import version_string, version_tuple
 
@@ -321,7 +322,7 @@ class AirfiApiClient:
             value: Integer value to write.
 
         Raises:
-            AirfiApiClientConnectionError: If the device is unreachable.
+            AirfiApiClientConnectionError: If the device is unreachable or does not answer.
             AirfiApiClientModbusError: If the Modbus write fails.
             AirfiApiClientError: For unexpected failures.
         """
@@ -333,7 +334,11 @@ class AirfiApiClient:
                 msg = f"Unable to connect to device at {self._host}:{self._port}"
                 raise AirfiApiClientConnectionError(msg)
             try:
-                response = client.write_register(address, value, device_id=MODBUS_SLAVE_ID)
+                try:
+                    response = client.write_register(address, value, device_id=MODBUS_SLAVE_ID)
+                except (ConnectionException, ModbusIOException) as exception:
+                    msg = f"No answer from device at {self._host}:{self._port}: {exception}"
+                    raise AirfiApiClientConnectionError(msg) from exception
                 if response.isError():
                     msg = f"Modbus write error for holding register at {address}"
                     raise AirfiApiClientModbusError(msg)

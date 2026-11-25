@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pymodbus.exceptions import ConnectionException, ModbusIOException
 import pytest
 
 from custom_components.airfi.api.client import (
@@ -516,6 +517,29 @@ async def test_async_write_holding_register_raises_modbus_error_on_error_respons
 
         with pytest.raises(AirfiApiClientModbusError):
             await client.async_write_holding_register(address=1, value=3)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "error",
+    [ModbusIOException("No response received after 3 retries"), ConnectionException("connection lost")],
+)
+async def test_async_write_holding_register_raises_connection_error_when_unit_does_not_answer(
+    error: Exception,
+) -> None:
+    """Test that a unit that takes the connection but never answers the write counts as unreachable."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.write_register.side_effect = error
+
+        with pytest.raises(AirfiApiClientConnectionError) as exc_info:
+            await client.async_write_holding_register(address=1, value=3)
+
+    assert exc_info.value.__cause__ is error
+    mock_instance.close.assert_called_once()
 
 
 @pytest.mark.unit
