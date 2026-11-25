@@ -475,7 +475,7 @@ async def test_discovery_select_manual_option(hass) -> None:
 
 @pytest.mark.unit
 async def test_discovery_select_scan_more(hass) -> None:
-    """Test that selecting the search-again option resets and re-scans."""
+    """Test that selecting the search-for-more option scans again and keeps the devices already found."""
     handler = _make_handler(hass)
     handler.discovered_devices = [_discovered_device()]
 
