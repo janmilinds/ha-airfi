@@ -110,7 +110,7 @@ async def async_get_config_entry_diagnostics(
         "last_exception_type": (type(coordinator.last_exception).__name__ if coordinator.last_exception else None),
     }
 
-    # Current data sample (sanitized)
+    # Current data sample, with every raw register value
     data_sample = {}
     if coordinator.data:
         data_sample = {
