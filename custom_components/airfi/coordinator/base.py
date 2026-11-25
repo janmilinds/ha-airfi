@@ -48,6 +48,7 @@ from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
+from homeassistant.helpers.redact import partial_redact
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
@@ -429,7 +430,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
 
             LOGGER.warning(
                 "Recovered Airfi device %s at new IP %s (was %s)",
-                str(device.serial),
+                partial_redact(str(device.serial), unmasked_prefix=0, unmasked_suffix=4),
                 device.host,
                 current_host,
             )
