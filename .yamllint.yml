@@ -1,5 +1,5 @@
 ---
-# yamllint configuration for airfi
+# yamllint configuration
 # Documentation: https://yamllint.readthedocs.io/en/stable/rules.html
 
 extends: default

@@ -1,0 +1,11 @@
+{
+  "identity": {
+    "domain": "airfi",
+    "title": "Airfi",
+    "prefix": "Airfi",
+    "owner": "janmilinds",
+    "repository": "ha-airfi",
+    "author": "Jan Lindstr\u00f6m"
+  },
+  "reviewed": "3660a9f193df73e3f54c33aaac79eebcb215126d"
+}
