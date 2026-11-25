@@ -27,6 +27,11 @@
           "host": "IP address",
           "serial_number": "Serial number",
           "model_name": "Model"
+        },
+        "data_description": {
+          "host": "The IP address of the Airfi unit on your local network.",
+          "serial_number": "Find it on the unit's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the unit.",
+          "model_name": "The model of your unit, as shown on its type plate."
         }
       },
       "discovery_select": {
@@ -34,6 +39,9 @@
         "description": "Found {count} Airfi device(s). Select one to continue.",
         "data": {
           "device": "Discovered device"
+        },
+        "data_description": {
+          "device": "Each unit is listed with its model, IP address and serial number."
         }
       },
       "discovery_confirm": {
@@ -50,6 +58,9 @@
         "description": "Update the connection settings for this integration.",
         "data": {
           "host": "IP address"
+        },
+        "data_description": {
+          "host": "The IP address at which the Airfi unit can be reached now."
         }
       }
     },
@@ -121,6 +132,9 @@
             "description": "Update the IP address for {name} if it has changed. If the IP address has not changed, keep the current value and verify the device/network connection.",
             "data": {
               "host": "IP address"
+            },
+            "data_description": {
+              "host": "The IP address at which the Airfi unit can be reached now."
             }
           }
         }

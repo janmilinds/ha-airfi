@@ -27,6 +27,11 @@
           "host": "IP-adress",
           "serial_number": "Serienummer",
           "model_name": "Modell"
+        },
+        "data_description": {
+          "host": "Airfi-enhetens IP-adress i ditt lokala nätverk.",
+          "serial_number": "Du hittar det på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över upptäckta enheter om sökningen hittade enheten.",
+          "model_name": "Din enhets modell, så som den står på typskylten."
         }
       },
       "discovery_select": {
@@ -34,6 +39,9 @@
         "description": "Hittade {count} Airfi-enhet(er). Välj en för att fortsätta.",
         "data": {
           "device": "Upptäckt enhet"
+        },
+        "data_description": {
+          "device": "Varje enhet visas med modell, IP-adress och serienummer."
         }
       },
       "discovery_confirm": {
@@ -50,6 +58,9 @@
         "description": "Uppdatera anslutningsinställningarna för denna integration.",
         "data": {
           "host": "IP-adress"
+        },
+        "data_description": {
+          "host": "IP-adressen där Airfi-enheten nu kan nås."
         }
       }
     },
@@ -121,6 +132,9 @@
             "description": "Uppdatera IP-adressen för {name} om den har ändrats. Om IP-adressen inte har ändrats, behåll det aktuella värdet och kontrollera enhetens eller nätverkets anslutning.",
             "data": {
               "host": "IP-adress"
+            },
+            "data_description": {
+              "host": "IP-adressen där Airfi-enheten nu kan nås."
             }
           }
         }
