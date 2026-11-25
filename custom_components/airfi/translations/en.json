@@ -211,5 +211,13 @@
         "name": "Boosted cooling"
       }
     }
+  },
+  "selector": {
+    "discovered_device": {
+      "options": {
+        "scan_more": "Search again",
+        "manual": "Add device manually"
+      }
+    }
   }
 }

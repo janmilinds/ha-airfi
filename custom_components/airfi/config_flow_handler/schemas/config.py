@@ -18,7 +18,13 @@ from typing import Any
 
 import probatio
 
-from custom_components.airfi.const import AIRFI_MODELS, CONF_MODEL_NAME, CONF_SERIAL_NUMBER
+from custom_components.airfi.const import (
+    AIRFI_MODELS,
+    CONF_MODEL_NAME,
+    CONF_SERIAL_NUMBER,
+    DISCOVERY_OPTION_MANUAL,
+    DISCOVERY_OPTION_SCAN_MORE,
+)
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, get_model_name
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers import selector
@@ -115,21 +121,13 @@ def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> probati
     device_options = [
         selector.SelectOptionDict(
             value=device.unique_key,
-            label=f"Airfi {device.model_name} ({device.host}) - S/N: {device.serial}",
+            label=f"Airfi {device.model_name} · {device.host} · {device.serial}",
         )
         for device in devices
     ]
-    device_options.append(
-        selector.SelectOptionDict(
-            value="__scan_more__",
-            label="Search more...",
-        )
-    )
-    device_options.append(
-        selector.SelectOptionDict(
-            value="__manual__",
-            label="Add device manually...",
-        )
+    device_options.extend(
+        selector.SelectOptionDict(value=option, label=option)
+        for option in (DISCOVERY_OPTION_SCAN_MORE, DISCOVERY_OPTION_MANUAL)
     )
 
     return probatio.Schema(
@@ -137,6 +135,7 @@ def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> probati
             probatio.Required("device"): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=device_options,
+                    translation_key="discovered_device",
                 ),
             ),
         },

@@ -211,5 +211,13 @@
         "name": "Wzmocnione chłodzenie"
       }
     }
+  },
+  "selector": {
+    "discovered_device": {
+      "options": {
+        "scan_more": "Wyszukaj ponownie",
+        "manual": "Dodaj urządzenie ręcznie"
+      }
+    }
   }
 }

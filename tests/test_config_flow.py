@@ -1,6 +1,8 @@
 """Test the Airfi config flow."""
 
 import asyncio
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -8,7 +10,14 @@ import pytest
 from custom_components.airfi.api import AirfiApiClientConnectionError, AirfiApiClientModbusError
 from custom_components.airfi.config_flow_handler.config_flow import AirfiConfigFlowHandler
 from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow
-from custom_components.airfi.const import CONF_MODEL_NAME, CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi.config_flow_handler.schemas import get_discovery_select_schema
+from custom_components.airfi.const import (
+    CONF_MODEL_NAME,
+    CONF_SERIAL_NUMBER,
+    DISCOVERY_OPTION_MANUAL,
+    DISCOVERY_OPTION_SCAN_MORE,
+    DOMAIN,
+)
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
 from homeassistant.const import CONF_HOST
 from homeassistant.data_entry_flow import FlowResultType
@@ -452,12 +461,12 @@ async def test_discovery_select_picks_device(hass) -> None:
 
 @pytest.mark.unit
 async def test_discovery_select_manual_option(hass) -> None:
-    """Test that selecting __manual__ goes to manual step."""
+    """Test that selecting the manual option goes to manual step."""
     handler = _make_handler(hass)
     handler.discovered_devices = [_discovered_device()]
 
     result = await handler.async_step_discovery_select(
-        {"device": "__manual__"},
+        {"device": DISCOVERY_OPTION_MANUAL},
     )
 
     assert result["type"] is FlowResultType.FORM
@@ -466,7 +475,7 @@ async def test_discovery_select_manual_option(hass) -> None:
 
 @pytest.mark.unit
 async def test_discovery_select_scan_more(hass) -> None:
-    """Test that selecting __scan_more__ resets and re-scans."""
+    """Test that selecting the search-again option resets and re-scans."""
     handler = _make_handler(hass)
     handler.discovered_devices = [_discovered_device()]
 
@@ -478,7 +487,7 @@ async def test_discovery_select_scan_more(hass) -> None:
 
     with patch.object(handler, "_async_run_discovery", side_effect=_pending):
         result = await handler.async_step_discovery_select(
-            {"device": "__scan_more__"},
+            {"device": DISCOVERY_OPTION_SCAN_MORE},
         )
 
     assert handler._discovery_accumulate is True  # noqa: SLF001
@@ -774,3 +783,20 @@ def test_map_exception_to_error_generic(hass) -> None:
     handler = _make_handler(hass)
     result = handler._map_exception_to_error(RuntimeError("unknown"))  # noqa: SLF001
     assert result == "cannot_connect"
+
+
+@pytest.mark.unit
+def test_device_list_shows_no_untranslated_text() -> None:
+    """Test that the device list's own options are translated and a device row carries no English words."""
+    device = AirfiDiscoveredDevice(host="192.168.1.10", serial=12345678, model_id=1)
+    config = get_discovery_select_schema([device]).schema["device"].config
+    strings = json.loads(
+        (Path(__file__).parent.parent / "custom_components" / DOMAIN / "translations" / "en.json").read_text("utf-8")
+    )
+    translated = strings["selector"][config["translation_key"]]["options"]
+
+    device_row, *own_options = config["options"]
+
+    assert device_row["label"] == "Airfi Model 60 L · 192.168.1.10 · 12345678"
+    assert [option["value"] for option in own_options] == [DISCOVERY_OPTION_SCAN_MORE, DISCOVERY_OPTION_MANUAL]
+    assert all(option["value"] in translated for option in own_options)

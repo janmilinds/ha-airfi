@@ -25,6 +25,8 @@ from custom_components.airfi.const import (
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_INITIAL_SCAN_TIMEOUT_SECONDS,
+    DISCOVERY_OPTION_MANUAL,
+    DISCOVERY_OPTION_SCAN_MORE,
     DISCOVERY_SCAN_TIMEOUT_SECONDS,
     DOMAIN,
     LOGGER,
@@ -309,12 +311,12 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             # Find selected device by unique_key
             selected_key = user_input.get("device")
 
-            if selected_key == "__scan_more__":
+            if selected_key == DISCOVERY_OPTION_SCAN_MORE:
                 self._discovery_accumulate = True
                 self.discovery_task = None
                 return await self.async_step_user()
 
-            if selected_key == "__manual__":
+            if selected_key == DISCOVERY_OPTION_MANUAL:
                 return await self.async_step_manual()
 
             for device in self.discovered_devices:

@@ -211,5 +211,13 @@
         "name": "Förbättrad kylning"
       }
     }
+  },
+  "selector": {
+    "discovered_device": {
+      "options": {
+        "scan_more": "Sök igen",
+        "manual": "Lägg till enhet manuellt"
+      }
+    }
   }
 }
