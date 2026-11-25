@@ -76,7 +76,7 @@ async def test_async_setup_uses_serial_number_and_caches_profile(hass, config_en
         )
         await setup_method()
 
-    initialize_mock.assert_called_once_with("Airfi AIRFI-12345", [0, 381, 300])
+    initialize_mock.assert_called_once_with("Airfi ***2345", [0, 381, 300])
     client.set_register_profile.assert_called_once_with(
         firmware_version="3.8.1",
         modbus_register_version="3.0.0",

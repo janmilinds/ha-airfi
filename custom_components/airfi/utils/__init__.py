@@ -1,5 +1,12 @@
 """Utils package for Airfi."""
 
+from homeassistant.helpers.redact import partial_redact
+
+
+def masked_serial(serial: object) -> str:
+    """Return a serial number for a log line: its last four characters, or fully masked when it is short."""
+    return partial_redact(str(serial), unmasked_prefix=0, unmasked_suffix=4)
+
 
 def version_tuple(register_value: int) -> tuple[int, int, int]:
     """Convert a Modbus register value to a semantic version tuple.
@@ -25,4 +32,4 @@ def version_string(register_value: int) -> str:
     return f"{major}.{minor}.{patch}"
 
 
-__all__ = ["version_string", "version_tuple"]
+__all__ = ["masked_serial", "version_string", "version_tuple"]
