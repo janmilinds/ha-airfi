@@ -117,8 +117,8 @@ async def test_diagnostics_includes_data_sample(hass) -> None:
 
     assert result["data_sample"]["firmware_version"] == "3.8.1"
     assert result["data_sample"]["modbus_register_version"] == "3.0.0"
-    assert result["data_sample"]["input_register_count"] == 42
-    assert result["data_sample"]["holding_register_count"] == 59
+    assert len(result["data_sample"]["input_registers"]) == 42
+    assert len(result["data_sample"]["holding_registers"]) == 59
 
 
 @pytest.mark.unit

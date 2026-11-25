@@ -25,6 +25,11 @@ TO_REDACT = {
 }
 
 
+def _registers_by_address(prefix: str, registers: list[int]) -> dict[str, int]:
+    """Key each raw register value by its Modbus address, such as 3x00004."""
+    return {f"{prefix}{address:05d}": value for address, value in enumerate(registers, start=1)}
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: AirfiConfigEntry,
@@ -110,8 +115,8 @@ async def async_get_config_entry_diagnostics(
         data_sample = {
             "firmware_version": coordinator.data.firmware_version,
             "modbus_register_version": coordinator.data.modbus_register_version,
-            "input_register_count": len(coordinator.data.input_registers),
-            "holding_register_count": len(coordinator.data.holding_registers),
+            "input_registers": _registers_by_address("3x", coordinator.data.input_registers),
+            "holding_registers": _registers_by_address("4x", coordinator.data.holding_registers),
         }
 
     return {
