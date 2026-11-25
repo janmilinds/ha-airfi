@@ -892,6 +892,45 @@ async def test_recover_host_matches_numeric_serial(hass, config_entry, mock_inte
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("serial", "logged_as"),
+    [
+        pytest.param(12345678, "***5678", id="long-serial-keeps-last-four"),
+        pytest.param(12345, "**REDACTED**", id="short-serial-fully-masked"),
+    ],
+)
+async def test_recover_host_log_masks_the_serial_number(
+    hass: HomeAssistant,
+    mock_integration: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+    serial: int,
+    logged_as: str,
+) -> None:
+    """Test that the warning about a unit found at a new IP does not print its full serial number."""
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: str(serial)},
+        unique_id=str(serial),
+    )
+    config_entry.add_to_hass(hass)
+    coordinator, _ = _make_coordinator(hass, config_entry, mock_integration)
+    coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
+    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=serial, model_id=1)
+
+    with (
+        patch(
+            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            new=AsyncMock(return_value=[discovered]),
+        ),
+        patch.object(hass.config_entries, "async_update_entry"),
+    ):
+        assert await coordinator._async_try_recover_host()  # noqa: SLF001
+
+    assert f"Recovered Airfi device {logged_as} at new IP 192.168.1.99 (was 192.168.1.10)" in caplog.text
+    assert str(serial) not in caplog.text
+
+
+@pytest.mark.unit
 async def test_recover_host_returns_false_on_oserror(hass, config_entry, mock_integration) -> None:
     """Test that OSError during discovery scan is treated as rediscovery not available."""
     coordinator, _ = _make_coordinator(hass, config_entry, mock_integration)
