@@ -1,6 +1,9 @@
 {
   "domain": "airfi",
   "name": "Airfi",
+  "categories": [
+    "climate.fans_ventilation"
+  ],
   "codeowners": [
     "@janmilinds"
   ],
