@@ -1,5 +1,6 @@
 """Tests for the Airfi repairs module."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -46,11 +47,10 @@ async def test_async_create_fix_flow_raises_for_unknown_issue_id(hass) -> None:
         await async_create_fix_flow(hass, "some_completely_unknown_issue", None)
 
 
-@pytest.fixture
-async def repair_issue(hass: HomeAssistant, init_integration: MockConfigEntry) -> str:
-    """Raise the unreachable-device issue for the loaded entry and return its ID."""
+async def _raise_unreachable_issue(hass: HomeAssistant, entry: MockConfigEntry) -> str:
+    """Raise the unreachable-device issue for an entry and return its ID."""
     assert await async_setup_component(hass, "repairs", {})
-    issue_id = f"{ISSUE_DEVICE_UNREACHABLE}_{init_integration.entry_id}"
+    issue_id = f"{ISSUE_DEVICE_UNREACHABLE}_{entry.entry_id}"
     ir.async_create_issue(
         hass,
         DOMAIN,
@@ -58,9 +58,15 @@ async def repair_issue(hass: HomeAssistant, init_integration: MockConfigEntry) -
         is_fixable=True,
         severity=ir.IssueSeverity.WARNING,
         translation_key=ISSUE_DEVICE_UNREACHABLE,
-        translation_placeholders={"name": init_integration.title},
+        translation_placeholders={"name": entry.title},
     )
     return issue_id
+
+
+@pytest.fixture
+async def repair_issue(hass: HomeAssistant, init_integration: MockConfigEntry) -> str:
+    """Raise the unreachable-device issue for the loaded entry and return its ID."""
+    return await _raise_unreachable_issue(hass, init_integration)
 
 
 @pytest.mark.integration
@@ -84,12 +90,14 @@ async def test_repair_saves_the_new_address_and_reloads(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
     issue_registry: ir.IssueRegistry,
+    mock_api: SimpleNamespace,
     init_integration: MockConfigEntry,
     repair_issue: str,
 ) -> None:
-    """A reachable new address is stored, the issue goes away and the entry loads again."""
+    """A reachable new address is stored, the issue goes away and the entry is set up again once."""
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
+    setups_before = mock_api.get_lookup_registers.await_count
 
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
         result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
@@ -99,6 +107,7 @@ async def test_repair_saves_the_new_address_and_reloads(
     assert init_integration.data[CONF_HOST] == "10.0.0.1"
     assert issue_registry.async_get_issue(DOMAIN, repair_issue) is None
     assert init_integration.state is ConfigEntryState.LOADED
+    assert mock_api.get_lookup_registers.await_count == setups_before + 1
 
 
 @pytest.mark.integration
@@ -119,6 +128,7 @@ async def test_repair_keeps_the_address_when_the_new_one_fails(
     expected: str,
 ) -> None:
     """A new address that does not answer shows why, and nothing is stored."""
+    original_host = init_integration.data[CONF_HOST]
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
 
@@ -127,5 +137,30 @@ async def test_repair_keeps_the_address_when_the_new_one_fails(
 
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {"base": expected}
-    assert init_integration.data[CONF_HOST] == "192.168.1.10"
+    assert init_integration.data[CONF_HOST] == original_host
     assert issue_registry.async_get_issue(DOMAIN, repair_issue) is not None
+
+
+@pytest.mark.integration
+async def test_repair_sets_up_an_entry_that_is_retrying(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> None:
+    """An entry waiting to retry setup loads at once with the new address."""
+    mock_api.get_data.side_effect = AirfiApiClientModbusError("illegal")
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    issue_id = await _raise_unreachable_issue(hass, config_entry)
+    mock_api.get_data.side_effect = None
+    client = await hass_client()
+    flow = await start_repair_fix_flow(client, DOMAIN, issue_id)
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.async_block_till_done()
+
+    assert config_entry.state is ConfigEntryState.LOADED
