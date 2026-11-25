@@ -40,32 +40,34 @@ The integration includes model mapping for Airfi model families and variants (L/
 
 ## Installation
 
-### HACS (Recommended)
+**Prerequisite:** Home Assistant 2026.11 or newer, which has the Marketplace built in (**Settings** > **Marketplace**).
 
-Prerequisite: [HACS](https://hacs.xyz/) is installed.
+In the Marketplace, open this repository and select **Download**.
 
-This repository is not in the official HACS default list, so add it as a custom repository first:
+<!-- ha-marketplace:exclude-start -->
 
-1. Open HACS in Home Assistant.
-2. Open **Integrations**.
-3. Click the three-dot menu in the top-right corner.
-4. Select **Custom repositories**.
-5. Add repository URL: `https://github.com/janmilinds/ha-airfi`.
-6. Select category: **Integration**.
-7. Click **Add**.
-8. Find **Airfi** in HACS and click **Download**.
-9. Restart Home Assistant.
+Airfi is not in the Marketplace catalog, so the button below adds it as a custom repository first:
 
-### Manual Installation
+[![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=janmilinds&repository=ha-airfi&category=integration)
 
-1. Copy [custom_components/airfi](custom_components/airfi) to your Home Assistant `custom_components` directory.
-2. Restart Home Assistant.
+Airfi 1.0.0 is the last release for Home Assistant 2026.4 to 2026.10. There, install [HACS](https://hacs.xyz/) first, add this repository in HACS as a custom repository of the category **Integration**, download it, and restart Home Assistant.
+
+<details>
+<summary><strong>Manual installation</strong></summary>
+
+1. Download `airfi.zip` from the [latest release](https://github.com/janmilinds/ha-airfi/releases/latest).
+2. Extract it into `custom_components/airfi/` in your Home Assistant configuration directory.
+3. Restart Home Assistant.
+
+</details>
+
+<!-- ha-marketplace:exclude-end -->
 
 ## Setup
 
 ### Add Integration
 
-Make sure installation is complete first (HACS or manual) and Home Assistant has been restarted after installation.
+Install the integration first.
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=airfi)
 
@@ -186,10 +188,14 @@ logger:
 - [Getting Started](docs/user/GETTING_STARTED.md) — Installation, setup, and first steps
 - [Configuration Reference](docs/user/CONFIGURATION.md) — All options, entities, and supported devices
 
+<!-- ha-marketplace:exclude-start -->
+
 ## Development
 
 - Project guidelines: [AGENTS.md](AGENTS.md)
 - Architecture notes: [docs/development/ARCHITECTURE.md](docs/development/ARCHITECTURE.md)
+
+<!-- ha-marketplace:exclude-end -->
 
 ## License
 
