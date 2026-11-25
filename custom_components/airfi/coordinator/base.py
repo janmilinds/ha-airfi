@@ -43,7 +43,7 @@ from custom_components.airfi.coordinator.feature_manager import (
     AirfiFeatureManager,
     UnsupportedFirmwareError,
 )
-from custom_components.airfi.utils import masked_serial, version_string
+from custom_components.airfi.utils import masked_serial, register_address, version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
@@ -381,7 +381,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="write_failed",
-                translation_placeholders={"register": f"4x{address:05d}"},
+                translation_placeholders={"register": register_address("4x", address)},
             ) from exception
 
     async def _async_try_recover_host(self, *, force: bool = False) -> bool:

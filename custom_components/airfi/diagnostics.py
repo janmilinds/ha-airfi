@@ -12,6 +12,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.redact import async_redact_data
 
 from .const import CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
+from .utils import register_address
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -27,7 +28,7 @@ TO_REDACT = {
 
 def _registers_by_address(prefix: str, registers: list[int]) -> dict[str, int]:
     """Key each raw register value by its Modbus address, such as 3x00004."""
-    return {f"{prefix}{address:05d}": value for address, value in enumerate(registers, start=1)}
+    return {register_address(prefix, address): value for address, value in enumerate(registers, start=1)}
 
 
 async def async_get_config_entry_diagnostics(
