@@ -106,8 +106,8 @@ These switches are only available when the device's Modbus register map version 
 
 | Entity                 | Feature Flag         | Description                                                                                                                                                                                 |
 | ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Fireplace function** | `fireplace_function` | When activated, overpressure is maintained for 30 min.                                                                                                                                      |
-| **Sauna function**     | `sauna_function`     | When activated, prevents ventilation increase for 30 min when unit detects increase in humidity.                                                                                            |
+| **Fireplace function** | `fireplace_function` | When activated, the unit maintains overpressure indoors.                                                                                                                                    |
+| **Sauna function**     | `sauna_function`     | When activated, the unit does not increase ventilation when it detects an increase in humidity.                                                                                             |
 | **Boosted cooling**    | `boosted_cooling`    | When activated, the unit monitors temperatures and boosts air volumes as needed depending on conditions. Useful especially during summer time to draw in cool outside air during nighttime. |
 
 To enable a switch:

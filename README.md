@@ -118,8 +118,8 @@ Options flow currently provides:
 
 Available when the device's Modbus register map version supports them (≥ 2.5.0):
 
-- **Fireplace function** — activates overpressure for 30 minutes
-- **Sauna function** — prevents humidity-triggered ventilation increase for 30 minutes
+- **Fireplace function** — maintains overpressure indoors
+- **Sauna function** — prevents a humidity-triggered ventilation increase
 - **Boosted cooling** — monitors temperatures and boosts air volumes as needed (useful for drawing in cool outside air during summer nights)
 
 These switches must be manually enabled. See [Configuration Reference](docs/user/CONFIGURATION.md) for details.
