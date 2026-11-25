@@ -698,6 +698,89 @@ async def test_write_waits_until_in_flight_poll_finishes() -> None:
     assert calls == ["read", "read", "close", "write", "close"]
 
 
+@pytest.mark.unit
+async def test_write_waits_for_read_thread_that_outlived_its_timeout() -> None:
+    """Test that a poll which timed out still holds back the next write until its thread has closed the connection."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    client.set_register_profile(
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+        input_register_length=3,
+        holding_register_length=3,
+    )
+    release_read = threading.Event()
+    calls: list[str] = []
+
+    def _blocking_read(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("read")
+        release_read.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0, 381, 300])
+
+    def _write(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("write")
+        return MagicMock(isError=MagicMock(return_value=False))
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = _blocking_read
+        mock_instance.read_input_registers.side_effect = _blocking_read
+        mock_instance.write_register.side_effect = _write
+        mock_instance.close.side_effect = lambda: calls.append("close")
+
+        with pytest.raises(AirfiApiClientConnectionError):
+            await client.async_get_data()
+
+        write = asyncio.create_task(client.async_write_holding_register(address=12, value=1))
+        await asyncio.sleep(0.1)
+
+        assert calls == ["read"]
+        assert not write.done()
+
+        release_read.set()
+        await write
+
+    assert calls == ["read", "read", "close", "write", "close"]
+
+
+@pytest.mark.unit
+async def test_write_abandoned_while_waiting_for_device_never_reaches_unit() -> None:
+    """Test that a write cancelled while a timed-out poll thread still holds the unit is dropped, not sent later."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    client.set_register_profile(
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+        input_register_length=3,
+        holding_register_length=3,
+    )
+    release_read = threading.Event()
+
+    def _blocking_read(*_args: object, **_kwargs: object) -> MagicMock:
+        release_read.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0, 381, 300])
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = _blocking_read
+        mock_instance.read_input_registers.side_effect = _blocking_read
+        mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=False))
+
+        with pytest.raises(AirfiApiClientConnectionError):
+            await client.async_get_data()
+
+        abandoned_write = asyncio.create_task(client.async_write_holding_register(address=12, value=1))
+        await asyncio.sleep(0.1)
+        abandoned_write.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await abandoned_write
+
+        release_read.set()
+        await client.async_write_holding_register(address=12, value=2)
+
+    mock_instance.write_register.assert_called_once_with(12, 2, device_id=1)
+
+
 # ---------------------------------------------------------------------------
 # update_host
 # ---------------------------------------------------------------------------
