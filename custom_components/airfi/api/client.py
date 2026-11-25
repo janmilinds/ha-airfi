@@ -1,7 +1,9 @@
 """Modbus TCP API client for Airfi devices."""
 
 import asyncio
+from collections.abc import Callable
 import logging
+import threading
 from typing import Any
 
 from pymodbus.client import ModbusTcpClient
@@ -74,6 +76,7 @@ class AirfiApiClient:
         self._input_register_length: int | None = None
         self._holding_register_length: int | None = None
         self._lock = asyncio.Lock()
+        self._device_lock = threading.Lock()
 
     async def async_test_connection(self) -> None:
         """Validate that the device is reachable and responds to lookup read."""
@@ -178,6 +181,28 @@ class AirfiApiClient:
             "model": "Airfi",
         }
 
+    async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
+        """Run a blocking request in a worker thread, never alongside another one.
+
+        A thread outlives the timeout or cancellation of the task awaiting it, so the asyncio lock alone cannot keep
+        two connections from overlapping; the thread lock can. A request abandoned while it waited for the thread lock
+        is dropped without reaching the unit, so a write reported as failed is never sent later.
+        """
+        abandoned = threading.Event()
+
+        def _run() -> T:
+            with self._device_lock:
+                if abandoned.is_set():
+                    msg = "Request abandoned before it reached the device"
+                    raise AirfiApiClientConnectionError(msg)
+                return request()
+
+        try:
+            return await asyncio.to_thread(_run)
+        except asyncio.CancelledError:
+            abandoned.set()
+            raise
+
     async def _async_read_registers(
         self,
         start_address: int,
@@ -231,7 +256,7 @@ class AirfiApiClient:
 
         try:
             async with asyncio.timeout(10):
-                return await asyncio.to_thread(_read)
+                return await self._async_run_on_device(_read)
         except TimeoutError as exception:
             msg = f"Timeout while reading Modbus registers: {exception}"
             raise AirfiApiClientConnectionError(msg) from exception
@@ -270,7 +295,7 @@ class AirfiApiClient:
 
         try:
             async with asyncio.timeout(poll_timeout):
-                return await asyncio.to_thread(_read_all)
+                return await self._async_run_on_device(_read_all)
         except TimeoutError as exception:
             msg = f"Timeout while reading Modbus registers: {exception}"
             raise AirfiApiClientConnectionError(msg) from exception
@@ -348,7 +373,7 @@ class AirfiApiClient:
 
         try:
             async with self._lock, asyncio.timeout(10):
-                await asyncio.to_thread(_write)
+                await self._async_run_on_device(_write)
         except TimeoutError as exception:
             msg = f"Timeout while writing Modbus register: {exception}"
             raise AirfiApiClientConnectionError(msg) from exception
