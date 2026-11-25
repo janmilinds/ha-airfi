@@ -31,13 +31,15 @@ from custom_components.airfi.coordinator.feature_manager import (
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
 from homeassistant.components.fan import ATTR_PERCENTAGE, DOMAIN as FAN_DOMAIN, SERVICE_SET_PERCENTAGE
+from homeassistant.components.homeassistant import SERVICE_UPDATE_ENTITY
 from homeassistant.components.number import ATTR_VALUE, DOMAIN as NUMBER_DOMAIN, SERVICE_SET_VALUE
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, SERVICE_TURN_OFF, SERVICE_TURN_ON
-from homeassistant.core import HomeAssistant
+from homeassistant.core import DOMAIN as HOMEASSISTANT_DOMAIN, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
-from homeassistant.helpers import entity_registry as er, issue_registry as ir
+from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.setup import async_setup_component
 
 
 @pytest.mark.unit
@@ -263,6 +265,66 @@ async def test_write_that_never_reached_the_unit_is_not_followed_by_a_read(
         )
 
     assert mock_api.get_data.await_count == polls_before
+
+
+@pytest.mark.integration
+async def test_device_shows_firmware_the_unit_reports_after_an_update(
+    hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test that a firmware update on the unit reaches the device page without a reload."""
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, init_integration.entry_id), init_integration.entry_id
+    )
+    assert device is not None
+    assert device.sw_version == "3.1.0"
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, init_integration.entry_id)
+        if entry.disabled_by is None
+    )
+    mock_api.get_data.return_value = {**mock_api.get_data.return_value, "firmware_version": "3.8.1"}
+    assert await async_setup_component(hass, HOMEASSISTANT_DOMAIN, {})
+
+    await hass.services.async_call(
+        HOMEASSISTANT_DOMAIN, SERVICE_UPDATE_ENTITY, {ATTR_ENTITY_ID: entity_id}, blocking=True
+    )
+
+    device = device_registry.async_get(device.id)
+    assert device is not None
+    assert device.sw_version == "3.8.1"
+
+
+@pytest.mark.integration
+async def test_device_shows_firmware_from_the_lookup_after_a_failed_poll(
+    hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test that the firmware read by the lookup after a failed poll reaches the device page."""
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, init_integration.entry_id)
+        if entry.disabled_by is None
+    )
+    mock_api.get_data.side_effect = AirfiApiClientModbusError("illegal")
+    mock_api.get_lookup_registers.return_value = [100, 381, 270]
+    assert await async_setup_component(hass, HOMEASSISTANT_DOMAIN, {})
+
+    await hass.services.async_call(
+        HOMEASSISTANT_DOMAIN, SERVICE_UPDATE_ENTITY, {ATTR_ENTITY_ID: entity_id}, blocking=True
+    )
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, init_integration.entry_id), init_integration.entry_id
+    )
+    assert device is not None
+    assert device.sw_version == "3.8.1"
 
 
 @pytest.mark.unit
