@@ -19,7 +19,7 @@
     },
     "number": {
       "supply_air_temperature_setting": {
-        "default": "mdi:home-thermometer"
+        "default": "mdi:thermometer-chevron-down"
       }
     },
     "sensor": {
@@ -30,7 +30,7 @@
         }
       },
       "extract_air_temperature": {
-        "default": "mdi:thermometer-chevron-down",
+        "default": "mdi:home-thermometer",
         "state": {
           "unavailable": "mdi:thermometer-off"
         }
@@ -54,7 +54,7 @@
         }
       },
       "supply_air_temperature": {
-        "default": "mdi:home-thermometer",
+        "default": "mdi:thermometer-chevron-down",
         "state": {
           "unavailable": "mdi:thermometer-off"
         }
