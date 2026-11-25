@@ -216,7 +216,7 @@
     "discovered_device": {
       "options": {
         "scan_more": "Sök efter fler enheter",
-        "manual": "Lägg till enhet manuellt"
+        "manual": "Lägg till en enhet manuellt"
       }
     }
   }
