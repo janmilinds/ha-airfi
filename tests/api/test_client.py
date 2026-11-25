@@ -900,6 +900,39 @@ async def test_abandoned_request_frees_its_worker_thread_while_the_unit_is_busy(
     assert calls == ["write", "read"]
 
 
+@pytest.mark.unit
+async def test_request_abandoned_just_before_the_unit_comes_free_never_reaches_unit() -> None:
+    """Test that a request cancelled while waiting is dropped even when the lock comes free before it wakes up."""
+    loop = asyncio.get_running_loop()
+    executor = ThreadPoolExecutor(max_workers=2)
+    writer = AirfiApiClient(host="192.168.1.10", port=502)
+    checker = AirfiApiClient(host="192.168.1.10", port=502)
+    calls: list[str] = []
+    release, started = threading.Event(), threading.Event()
+
+    async def _two_worker_to_thread(func: Callable[[], object]) -> object:
+        return await loop.run_in_executor(executor, func)
+
+    with (
+        patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
+        patch("custom_components.airfi.api.client.asyncio.to_thread", _two_worker_to_thread),
+        patch("custom_components.airfi.api.client.DEVICE_LOCK_POLL_SECONDS", 30),
+    ):
+        write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
+        await loop.run_in_executor(None, started.wait, 5)
+        abandoned = asyncio.create_task(checker.async_test_connection())
+        await asyncio.sleep(0.1)
+        abandoned.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await abandoned
+
+        release.set()
+        await write
+        await loop.run_in_executor(None, executor.shutdown)
+
+    assert calls == ["write"]
+
+
 # ---------------------------------------------------------------------------
 # update_host
 # ---------------------------------------------------------------------------
