@@ -149,7 +149,7 @@ To download diagnostic data for troubleshooting:
 2. Find "Airfi" → click on the device
 3. Click **Download Diagnostics**
 
-Diagnostic data includes coordinator statistics, Modbus connection status, device information, the list of entities, and the raw value of every input and holding register the unit reports. **Sensitive data (host IP, serial number) is automatically redacted.**
+Diagnostic data includes coordinator statistics, Modbus connection status, device information, every entity (including those disabled by default), and the raw value of every input and holding register the unit reports. **Sensitive data (host IP, serial number) is automatically redacted.**
 
 ## Network Requirements
 
