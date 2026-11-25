@@ -183,16 +183,24 @@ async def test_failed_write_reaches_service_caller_and_keeps_state(
 @pytest.mark.integration
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 @pytest.mark.parametrize(
-    ("domain", "service", "service_data", "write_results"),
+    ("domain", "service", "service_data", "write_results", "outcome"),
     [
-        pytest.param(FAN_DOMAIN, SERVICE_TURN_OFF, {}, [None], id="fan-written"),
-        pytest.param(SWITCH_DOMAIN, SERVICE_TURN_ON, {}, [None], id="switch-written"),
-        pytest.param(NUMBER_DOMAIN, SERVICE_SET_VALUE, {ATTR_VALUE: 20.0}, [None, None], id="number-written"),
+        pytest.param(FAN_DOMAIN, SERVICE_TURN_OFF, {}, [None], contextlib.nullcontext(), id="fan-written"),
+        pytest.param(SWITCH_DOMAIN, SERVICE_TURN_ON, {}, [None], contextlib.nullcontext(), id="switch-written"),
+        pytest.param(
+            NUMBER_DOMAIN,
+            SERVICE_SET_VALUE,
+            {ATTR_VALUE: 20.0},
+            [None, None],
+            contextlib.nullcontext(),
+            id="number-written",
+        ),
         pytest.param(
             FAN_DOMAIN,
             SERVICE_SET_PERCENTAGE,
             {ATTR_PERCENTAGE: 60},
             [None, AirfiApiClientModbusError("illegal")],
+            pytest.raises(HomeAssistantError),
             id="fan-speed-rejected-after-turning-on",
         ),
         pytest.param(
@@ -200,6 +208,7 @@ async def test_failed_write_reaches_service_caller_and_keeps_state(
             SERVICE_SET_VALUE,
             {ATTR_VALUE: 20.0},
             [None, AirfiApiClientModbusError("illegal")],
+            pytest.raises(HomeAssistantError),
             id="minimum-rejected-after-setpoint",
         ),
     ],
@@ -213,6 +222,7 @@ async def test_write_that_reached_the_unit_is_confirmed_at_once(
     service: str,
     service_data: dict[str, float],
     write_results: list[Exception | None],
+    outcome: contextlib.AbstractContextManager[object],
 ) -> None:
     """Test that the unit is read again right after a command, even when only its first register was written."""
     entity_id = next(
@@ -223,7 +233,7 @@ async def test_write_that_reached_the_unit_is_confirmed_at_once(
     mock_api.write_holding_register.side_effect = write_results
     polls_before = mock_api.get_data.await_count
 
-    with contextlib.suppress(HomeAssistantError):
+    with outcome:
         await hass.services.async_call(domain, service, {ATTR_ENTITY_ID: entity_id, **service_data}, blocking=True)
 
     assert mock_api.write_holding_register.await_count == len(write_results)
