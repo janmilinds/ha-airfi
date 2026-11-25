@@ -43,12 +43,11 @@ from custom_components.airfi.coordinator.feature_manager import (
     AirfiFeatureManager,
     UnsupportedFirmwareError,
 )
-from custom_components.airfi.utils import version_string
+from custom_components.airfi.utils import masked_serial, version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
-from homeassistant.helpers.redact import partial_redact
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 if TYPE_CHECKING:
@@ -115,7 +114,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
         plain, translation-less ConfigEntryNotReady, destroying the
         translation_key).
         """
-        device_name = f"Airfi {self.config_entry.data.get(CONF_SERIAL_NUMBER, 'Unknown')}"
+        serial = self.config_entry.data.get(CONF_SERIAL_NUMBER)
+        device_name = f"Airfi {'Unknown' if serial is None else masked_serial(serial)}"
         try:
             lookup_registers = await self.config_entry.runtime_data.client.async_get_lookup_registers()
         except AirfiApiClientError as exception:
@@ -430,7 +430,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
 
             LOGGER.warning(
                 "Recovered Airfi device %s at new IP %s (was %s)",
-                partial_redact(str(device.serial), unmasked_prefix=0, unmasked_suffix=4),
+                masked_serial(device.serial),
                 device.host,
                 current_host,
             )
