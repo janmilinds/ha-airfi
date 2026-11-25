@@ -3,11 +3,13 @@
 import asyncio
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api import AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi.api import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
 from custom_components.airfi.config_flow_handler.config_flow import AirfiConfigFlowHandler
 from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow
 from custom_components.airfi.config_flow_handler.schemas import get_discovery_select_schema
@@ -19,7 +21,9 @@ from custom_components.airfi.const import (
     DOMAIN,
 )
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 # ---------------------------------------------------------------------------
@@ -335,58 +339,78 @@ async def test_manual_step_shows_error_on_connection_failure(hass) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
-async def test_reconfigure_shows_form(hass, config_entry) -> None:
-    """Test that reconfigure shows a prefilled form."""
-    handler = _make_handler(hass)
-    handler.context = {"source": "reconfigure"}
-
-    with patch.object(handler, "_get_reconfigure_entry", return_value=config_entry):
-        result = await handler.async_step_reconfigure()
+@pytest.mark.integration
+async def test_reconfigure_shows_the_current_address(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Reconfiguring opens a form prefilled with the address the entry uses now."""
+    result = await init_integration.start_reconfigure_flow(hass)
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {}
 
 
-@pytest.mark.unit
-async def test_reconfigure_updates_entry_on_success(hass, config_entry) -> None:
-    """Test that reconfigure updates the config entry with a new host."""
-    handler = _make_handler(hass)
+@pytest.mark.integration
+async def test_reconfigure_sets_a_loaded_entry_up_once(
+    hass: HomeAssistant,
+    caplog: pytest.LogCaptureFixture,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+) -> None:
+    """A new address is stored and the running entry is set up again exactly once."""
+    result = await init_integration.start_reconfigure_flow(hass)
+    setups_before = mock_api.get_lookup_registers.await_count
 
-    with (
-        patch.object(handler, "_get_reconfigure_entry", return_value=config_entry),
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(handler, "async_update_reload_and_abort", return_value={"type": "abort"}) as mock_update,
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert init_integration.data[CONF_HOST] == "10.0.0.1"
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert mock_api.get_lookup_registers.await_count == setups_before + 1
+    assert "should use it for scheduling a reload" not in caplog.text
+
+
+@pytest.mark.integration
+async def test_reconfigure_sets_up_an_entry_that_is_retrying(
+    hass: HomeAssistant,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> None:
+    """An entry waiting to retry setup loads at once with the new address."""
+    mock_api.get_data.side_effect = AirfiApiClientModbusError("illegal")
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    mock_api.get_data.side_effect = None
+    result = await config_entry.start_reconfigure_flow(hass)
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.async_block_till_done()
+
+    assert config_entry.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.integration
+async def test_reconfigure_keeps_the_address_when_the_new_one_fails(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """A new address that does not answer shows why, and nothing is stored."""
+    original_host = init_integration.data[CONF_HOST]
+    result = await init_integration.start_reconfigure_flow(hass)
+
+    with patch.object(
+        AirfiApiClient, "async_test_connection", AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
     ):
-        result = await handler.async_step_reconfigure(
-            {CONF_HOST: "10.0.0.1"},
-        )
-
-    mock_update.assert_called_once()
-    assert result == {"type": "abort"}
-
-
-@pytest.mark.unit
-async def test_reconfigure_shows_error_on_failure(hass, config_entry) -> None:
-    """Test that reconfiguration failure shows form with error."""
-    handler = _make_handler(hass)
-
-    with (
-        patch.object(handler, "_get_reconfigure_entry", return_value=config_entry),
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(side_effect=AirfiApiClientConnectionError("timeout")),
-        ),
-    ):
-        result = await handler.async_step_reconfigure(
-            {CONF_HOST: "bad-host"},
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
+    assert init_integration.data[CONF_HOST] == original_host
 
 
 # ---------------------------------------------------------------------------
