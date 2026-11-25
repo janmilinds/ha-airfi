@@ -31,7 +31,7 @@
         "data_description": {
           "host": "The IP address of the Airfi device on your local network.",
           "serial_number": "Enter it exactly as shown on the device's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the device. Home Assistant uses it to find the device again if its IP address changes and the search can reach it.",
-          "model_name": "The model of your device, as shown on its type plate."
+          "model_name": "Pick the model number shown on the device's type plate, such as Model 60. It only names the device in Home Assistant, so choosing L or R, or Electric or Water, changes nothing else."
         }
       },
       "discovery_select": {
