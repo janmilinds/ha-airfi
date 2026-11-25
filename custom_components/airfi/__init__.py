@@ -1,9 +1,8 @@
 """
 Custom integration to integrate Airfi with Home Assistant.
 
-The current implementation provides the Modbus transport, coordinator, config
-flow, and the connectivity entity needed to validate communication with the
-device while the remaining entity platforms are ported incrementally.
+Connects to an Airfi ventilation unit over Modbus TCP on the local network and
+exposes its fan, sensors, switches and setpoints as Home Assistant entities.
 
 For more details about this integration, please refer to:
 https://github.com/janmilinds/ha-airfi
@@ -58,7 +57,7 @@ async def async_setup_entry(
     1. Creates the API client with device connection details from the config entry
     2. Initializes the DataUpdateCoordinator for data fetching
     3. Performs the first data refresh
-    4. Sets up the currently supported platforms
+    4. Sets up the entity platforms
     5. Sets up reload listener for config changes
 
     Data flow in this integration:
@@ -130,10 +129,8 @@ async def async_unload_entry(
     Unload a config entry.
 
     This is called when the integration is being removed or reloaded.
-    It ensures proper cleanup of:
-    - All platform entities
-    - Registered services
-    - Update listeners
+    It unloads the platform entities; the update listener is removed by the
+    entry's unload callbacks.
 
     Args:
         hass: The Home Assistant instance.
