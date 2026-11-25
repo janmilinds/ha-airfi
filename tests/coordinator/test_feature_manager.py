@@ -122,15 +122,15 @@ def test_feature_flags_modbus_250_all_enabled() -> None:
 
 
 @pytest.mark.unit
-def test_feature_flags_modbus_210_only_minimum_temperature() -> None:
-    """Test that only minimum_temperature_set is enabled with modbus 2.1.0."""
+def test_feature_flags_modbus_210_minimum_temperature_and_boosted_cooling() -> None:
+    """Test that register map 2.1.0 enables the supply minimum and boosted cooling, but not sauna or fireplace."""
     manager = AirfiFeatureManager()
     manager.initialize("Airfi AIRFI-12345", [0, 381, 210])
 
     assert manager.has_feature("minimum_temperature_set") is True
     assert manager.has_feature("fireplace_function") is False
     assert manager.has_feature("sauna_function") is False
-    assert manager.has_feature("boosted_cooling") is False
+    assert manager.has_feature("boosted_cooling") is True
 
 
 @pytest.mark.unit

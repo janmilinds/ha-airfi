@@ -4,7 +4,7 @@ HOLDING_REGISTER_BOOSTED_COOLING = 51
 """Modbus holding register address for boosted cooling (4x00051).
 
 Device values: 0 = off, 1 = on.
-Requires Modbus map version >= 2.5.0.
+Requires Modbus map version >= 2.1.0.
 """
 
 HOLDING_REGISTER_SAUNA_FUNCTION = 57

@@ -46,7 +46,7 @@ class AirfiFeatureManager:
     _FEATURE_VERSION_MAP: dict[str, str] = {
         "minimum_temperature_set": "2.1.0",
         "fireplace_function": "2.5.0",
-        "boosted_cooling": "2.5.0",
+        "boosted_cooling": "2.1.0",
         "sauna_function": "2.5.0",
     }
 

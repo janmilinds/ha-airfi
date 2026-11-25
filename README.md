@@ -119,11 +119,11 @@ Options flow currently provides:
 
 ### Switches (disabled by default, feature-gated)
 
-Available when the device's Modbus register map version supports them (≥ 2.5.0):
+Available when the device's Modbus register map version supports them:
 
-- **Fireplace function** — maintains overpressure indoors
-- **Sauna function** — prevents a humidity-triggered ventilation increase
-- **Boosted cooling** — monitors temperatures and boosts air volumes as needed (useful for drawing in cool outside air during summer nights)
+- **Fireplace function** (≥ 2.5.0) — maintains overpressure indoors
+- **Sauna function** (≥ 2.5.0) — prevents a humidity-triggered ventilation increase
+- **Boosted cooling** (≥ 2.1.0) — monitors temperatures and boosts air volumes as needed (useful for drawing in cool outside air during summer nights)
 
 These switches must be manually enabled. See [Configuration Reference](docs/user/CONFIGURATION.md) for details.
 

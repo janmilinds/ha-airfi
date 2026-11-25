@@ -102,7 +102,7 @@ The connectivity sensor is redundant in most cases — all entities automaticall
 
 ### Special Function Switches (Disabled by Default, Feature-Gated)
 
-These switches are only available when the device's Modbus register map version supports them (≥ 2.5.0). They are disabled by default and must be manually enabled:
+These switches are only available when the device's Modbus register map version supports them: boosted cooling from 2.1.0, the fireplace and sauna functions from 2.5.0. They are disabled by default and must be manually enabled:
 
 | Entity                 | Feature Flag         | Description                                                                                                                                                                                 |
 | ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -117,7 +117,7 @@ To enable a switch:
 3. Click the settings icon (⚙)
 4. Toggle **Enable entity** on
 
-**Note:** If the switches don't appear at all, your unit's firmware may not support these features. Check the Modbus register version diagnostic sensor — it needs to be 2.5.0 or newer.
+**Note:** If a switch doesn't appear at all, your unit's firmware may not support that feature. Check the Modbus register version diagnostic sensor — boosted cooling needs 2.1.0 or newer, the fireplace and sauna functions 2.5.0 or newer.
 
 ### Disabling Entities
 

@@ -1,11 +1,15 @@
 """Test switch entities for Airfi special functions."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.switch.functions import ENTITY_DESCRIPTIONS, AirfiFunctionSwitch
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 
 def _build_coordinator(holding_registers: list[int]) -> MagicMock:
@@ -237,3 +241,43 @@ def test_entity_description_feature_flags() -> None:
     }
     for desc in ENTITY_DESCRIPTIONS:
         assert desc.feature_flag == expected[desc.key]
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("map_version", "lookup", "holding_count", "expected"),
+    [
+        pytest.param("2.0.0", 200, 34, set(), id="map-2.0"),
+        pytest.param("2.1.0", 210, 51, {"boosted_cooling"}, id="map-2.1"),
+        pytest.param("2.3.0", 230, 55, {"boosted_cooling"}, id="map-2.3"),
+        pytest.param("2.5.0", 250, 58, {"boosted_cooling", "fireplace_function", "sauna_function"}, id="map-2.5"),
+    ],
+)
+async def test_unit_gets_the_switches_its_register_map_has(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+    map_version: str,
+    lookup: int,
+    holding_count: int,
+    expected: set[str],
+) -> None:
+    """Boosted cooling (4x51) exists from register map 2.1; sauna and fireplace from 2.5."""
+    lookup_registers = [100, 310, lookup]
+    mock_api.get_lookup_registers.return_value = lookup_registers
+    data = mock_api.get_data.return_value
+    data["modbus_register_version"] = map_version
+    data["input_registers"] = [*lookup_registers, *[0] * 37]
+    data["holding_registers"] = [0] * holding_count
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    switches = {
+        entry.translation_key
+        for entry in er.async_entries_for_config_entry(entity_registry, config_entry.entry_id)
+        if entry.domain == "switch"
+    }
+
+    assert switches == expected
