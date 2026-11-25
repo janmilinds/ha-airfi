@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/janmilinds/ha-airfi/compare/v1.0.0...v1.1.0) (2026-11-25)
+
+
+### 🎉 What's new
+
+* Airfi now requires Home Assistant 2026.11 or newer. On Home Assistant 2026.4 to 2026.10, Airfi stays on 1.0.0, which keeps working; this update is not offered there. ([b99544f](https://github.com/janmilinds/ha-airfi/commit/b99544f2c74fc81689b9d9aea3a97c8665e6c904))
+* Each release now includes an `airfi.zip` file, which Home Assistant installs the update from.
+
+
+### 🐛 Fixed
+
+* The **Device connection** and **Supply air temperature** entities show their attribute names instead of raw keys: *Update interval*, *Connection type* with the value *Modbus TCP*, and *Current supply air temperature*. ([72c1ee5](https://github.com/janmilinds/ha-airfi/commit/72c1ee5730555a40c9fb3f9f776ec79e0008d9f8))
+
 ## [1.0.0] - 2026-04-26
 
 ### Added
