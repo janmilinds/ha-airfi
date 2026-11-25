@@ -14,31 +14,30 @@ Airfi is a Home Assistant integration for **Airfi ventilation units** (heat reco
 
 ## Prerequisites
 
-- Home Assistant 2025.7.0 or newer
-- HACS (Home Assistant Community Store) installed
+- Home Assistant 2026.11 or newer
 - An Airfi ventilation unit connected to the same network as Home Assistant
+
+Airfi 1.0.0 is the last release for Home Assistant 2026.4 to 2026.10; there it installs through HACS as a custom
+repository.
 
 ## Installation
 
-### Via HACS (Recommended)
+### Via the Marketplace (Recommended)
 
-1. Open HACS in your Home Assistant instance
-2. Go to **Integrations**
-3. Click the three dots in the top right corner
-4. Select **Custom repositories**
-5. Add this repository URL: `https://github.com/janmilinds/ha-airfi`
-6. Set category to **Integration**
-7. Click **Add**
-8. Find **Airfi** in the integration list
-9. Click **Download**
-10. Restart Home Assistant
+Airfi is not in the Marketplace catalog, so add it as a custom repository:
+
+1. Select the button below. It opens this repository in the Marketplace of your Home Assistant instance and offers to
+   add it as a custom repository.
+
+   [![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=janmilinds&repository=ha-airfi&category=integration)
+
+2. Select **Download**
 
 ### Manual Installation
 
-1. Download the latest release from the [releases page](https://github.com/janmilinds/ha-airfi/releases)
-2. Extract the `airfi` folder from the archive
-3. Copy it to `custom_components/airfi/` in your Home Assistant configuration directory
-4. Restart Home Assistant
+1. Download `airfi.zip` from the [latest release](https://github.com/janmilinds/ha-airfi/releases/latest)
+2. Extract it into `custom_components/airfi/` in your Home Assistant configuration directory
+3. Restart Home Assistant
 
 ## Initial Setup
 
