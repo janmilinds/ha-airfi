@@ -57,7 +57,7 @@ def _register_lengths(map_version_raw: int) -> tuple[int, int]:
 
 
 class AirfiApiClient:
-    """API client that reads and writes Airfi Modbus registers."""
+    """API client that reads and writes Airfi Modbus registers, one request to the unit at a time."""
 
     def __init__(
         self,
@@ -73,10 +73,12 @@ class AirfiApiClient:
         self._modbus_register_version: str | None = None
         self._input_register_length: int | None = None
         self._holding_register_length: int | None = None
+        self._lock = asyncio.Lock()
 
     async def async_test_connection(self) -> None:
         """Validate that the device is reachable and responds to lookup read."""
-        await self._async_read_registers(start_address=1, length=3, register_type="input")
+        async with self._lock:
+            await self._async_read_registers(start_address=1, length=3, register_type="input")
 
     async def async_get_lookup_registers(self) -> list[int]:
         """Read device lookup registers (firmware and modbus map version).
@@ -88,7 +90,8 @@ class AirfiApiClient:
             AirfiApiClientConnectionError: If unable to reach the device.
             AirfiApiClientModbusError: If the Modbus exchange fails.
         """
-        return await self._async_read_registers(start_address=1, length=3, register_type="input")
+        async with self._lock:
+            return await self._async_read_registers(start_address=1, length=3, register_type="input")
 
     def set_register_profile(
         self,
@@ -118,7 +121,7 @@ class AirfiApiClient:
         ):
             return
 
-        input_lookup = await self.async_get_lookup_registers()
+        input_lookup = await self._async_read_registers(start_address=1, length=3, register_type="input")
         firmware_raw = input_lookup[1] if len(input_lookup) > 1 else 0
         modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
         input_length, holding_length = _register_lengths(modbus_map_raw)
@@ -135,14 +138,12 @@ class AirfiApiClient:
         Uses a single TCP connection for all register reads within the poll
         cycle to minimise connection overhead.
         """
-        await self._async_ensure_register_profile()
-
-        input_length = self._input_register_length or 0
-        holding_length = self._holding_register_length or 0
-        holding_registers, input_registers = await self._async_read_all_registers(
-            input_length=input_length,
-            holding_length=holding_length,
-        )
+        async with self._lock:
+            await self._async_ensure_register_profile()
+            holding_registers, input_registers = await self._async_read_all_registers(
+                input_length=self._input_register_length or 0,
+                holding_length=self._holding_register_length or 0,
+            )
         _MODBUS_DUMP_LOGGER.debug(
             "Input registers (length=%d): %s",
             len(input_registers),
@@ -346,7 +347,7 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with asyncio.timeout(10):
+            async with self._lock, asyncio.timeout(10):
                 await asyncio.to_thread(_write)
         except TimeoutError as exception:
             msg = f"Timeout while writing Modbus register: {exception}"
