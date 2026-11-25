@@ -41,7 +41,7 @@
           "device": "Upptäckt enhet"
         },
         "data_description": {
-          "device": "Varje enhet visas med modell, IP-adress och serienummer. De två sista alternativen söker igenom nätverket igen eller låter dig ange en enhet för hand."
+          "device": "Varje enhet visas med modell, IP-adress och serienummer. De två sista alternativen söker efter fler enheter eller låter dig ange en enhet för hand."
         }
       },
       "discovery_confirm": {
@@ -215,7 +215,7 @@
   "selector": {
     "discovered_device": {
       "options": {
-        "scan_more": "Sök igen",
+        "scan_more": "Sök efter fler enheter",
         "manual": "Lägg till enhet manuellt"
       }
     }

@@ -41,7 +41,7 @@
           "device": "Discovered device"
         },
         "data_description": {
-          "device": "Each device is listed with its model, IP address, and serial number. The last two entries search the network again or let you add a device manually."
+          "device": "Each device is listed with its model, IP address, and serial number. The last two entries search for more devices or let you add a device manually."
         }
       },
       "discovery_confirm": {
@@ -215,7 +215,7 @@
   "selector": {
     "discovered_device": {
       "options": {
-        "scan_more": "Search again",
+        "scan_more": "Search for more devices",
         "manual": "Add device manually"
       }
     }
