@@ -117,8 +117,7 @@ class AirfiDiscoveryService:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Bind to multicast group
-        sock.bind(("", DISCOVERY_MULTICAST_PORT))
+        sock.bind((DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
 
         # Join multicast group
         mreq = socket.inet_aton(DISCOVERY_MULTICAST_GROUP) + socket.inet_aton("0.0.0.0")

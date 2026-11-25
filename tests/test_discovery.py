@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from custom_components.airfi.const import DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService, get_model_name
 
 # ---------------------------------------------------------------------------
@@ -152,7 +153,7 @@ def test_create_socket_returns_socket() -> None:
     assert result is mock_sock
     mock_socket_cls.assert_called_once_with(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     mock_sock.setsockopt.assert_any_call(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    mock_sock.bind.assert_called_once()
+    mock_sock.bind.assert_called_once_with((DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
     mock_sock.setblocking.assert_called_once_with(False)
 
 
