@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING
 
 from homeassistant.components.repairs import RepairsFlow, RepairsFlowResult
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
@@ -52,11 +53,13 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
             except Exception as exception:  # noqa: BLE001
                 errors["base"] = self._map_exception_to_error(exception)
             else:
-                self.hass.config_entries.async_update_entry(
+                changed = self.hass.config_entries.async_update_entry(
                     self._entry,
                     data={**self._entry.data, CONF_HOST: user_input[CONF_HOST]},
                 )
-                self.hass.config_entries.async_schedule_reload(self._entry.entry_id)
+                # A loaded entry with changed data already reloads through its update listener.
+                if not changed or self._entry.state is not ConfigEntryState.LOADED:
+                    self.hass.config_entries.async_schedule_reload(self._entry.entry_id)
                 return self.async_create_entry(data={})
 
         return self.async_show_form(
