@@ -1,16 +1,21 @@
 """Test diagnostics for Airfi."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.components.diagnostics import get_diagnostics_for_config_entry
+from pytest_homeassistant.typing import ClientSessionGenerator
 
 from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
 from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.const import CONF_HOST
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.setup import async_setup_component
 
 
 def _build_config_entry_with_runtime_data(hass) -> MockConfigEntry:
@@ -190,3 +195,28 @@ async def test_diagnostics_includes_device_info(hass) -> None:
     assert device["manufacturer"] == "Airfi"
     assert device["model"] == "Model 60 L"
     assert device["name"] == "Airfi AIRFI-12345"
+
+
+@pytest.mark.integration
+async def test_diagnostics_key_each_register_by_its_address(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> None:
+    """Each raw register value appears under its own Modbus address, counted from 1."""
+    data = mock_api.get_data.return_value
+    data["input_registers"] = list(range(101, 101 + len(data["input_registers"])))
+    data["holding_registers"] = list(range(201, 201 + len(data["holding_registers"])))
+    assert await async_setup_component(hass, "diagnostics", {})
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
+
+    sample = result["data_sample"]
+    assert sample["input_registers"]["3x00001"] == 101
+    assert sample["input_registers"]["3x00042"] == 142
+    assert sample["holding_registers"]["4x00001"] == 201
+    assert sample["holding_registers"]["4x00059"] == 259
