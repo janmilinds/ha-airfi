@@ -11,11 +11,12 @@ from syrupy.assertion import SnapshotAssertion
 from syrupy.filters import paths
 
 from custom_components.airfi.api import AirfiApiClientModbusError
+from custom_components.airfi.const import DOMAIN
 from homeassistant.components.homeassistant import DOMAIN as HOMEASSISTANT_DOMAIN, SERVICE_UPDATE_ENTITY
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.setup import async_setup_component
 
 
@@ -109,6 +110,36 @@ async def test_diagnostics_while_setup_retries(
     assert result["data_sample"] == {}
     assert result["coordinator"]["data_keys"] is None
     assert result["error"]["last_exception_type"] == "UpdateFailed"
+
+
+@pytest.mark.integration
+async def test_diagnostics_list_only_this_entrys_entities(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+    init_integration: MockConfigEntry,
+) -> None:
+    """A helper from another integration attached to the unit stays out of the list, enabled or disabled."""
+    assert await async_setup_component(hass, "diagnostics", {})
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, init_integration.entry_id), init_integration.entry_id
+    )
+    assert device is not None
+    helper_entry = MockConfigEntry(domain="derivative")
+    helper_entry.add_to_hass(hass)
+    helpers = [
+        entity_registry.async_get_or_create(
+            "sensor", "derivative", unique_id, config_entry=helper_entry, device_id=device.id, disabled_by=disabled_by
+        )
+        for unique_id, disabled_by in (("enabled", None), ("disabled", er.RegistryEntryDisabler.USER))
+    ]
+
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+
+    listed = {entity["entity_id"] for entity in result["devices"][0]["entities"]}
+    assert listed.isdisjoint(helper.entity_id for helper in helpers)
+    assert result["devices"][0]["entity_count"] == len(listed)
 
 
 @pytest.mark.integration

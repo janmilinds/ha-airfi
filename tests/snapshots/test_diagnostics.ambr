@@ -126,6 +126,13 @@
       dict({
         'entities': list([
           dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'binary_sensor.airfi_airfi_12345_device_connection',
+            'original_name': 'Device connection',
+            'platform': 'airfi',
+          }),
+          dict({
             'disabled': False,
             'disabled_by': None,
             'entity_id': 'fan.airfi_airfi_12345_ventilation',
@@ -154,6 +161,20 @@
             'platform': 'airfi',
           }),
           dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'sensor.airfi_airfi_12345_firmware_version',
+            'original_name': 'Firmware version',
+            'platform': 'airfi',
+          }),
+          dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'sensor.airfi_airfi_12345_modbus_register_version',
+            'original_name': 'Modbus register version',
+            'platform': 'airfi',
+          }),
+          dict({
             'disabled': False,
             'disabled_by': None,
             'entity_id': 'sensor.airfi_airfi_12345_outdoor_air',
@@ -174,8 +195,29 @@
             'original_name': 'Supply air',
             'platform': 'airfi',
           }),
+          dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'switch.airfi_airfi_12345_boosted_cooling',
+            'original_name': 'Boosted cooling',
+            'platform': 'airfi',
+          }),
+          dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'switch.airfi_airfi_12345_fireplace_function',
+            'original_name': 'Fireplace function',
+            'platform': 'airfi',
+          }),
+          dict({
+            'disabled': True,
+            'disabled_by': 'integration',
+            'entity_id': 'switch.airfi_airfi_12345_sauna_function',
+            'original_name': 'Sauna function',
+            'platform': 'airfi',
+          }),
         ]),
-        'entity_count': 7,
+        'entity_count': 13,
         'manufacturer': 'Airfi',
         'model': 'Airfi',
         'name': 'Airfi AIRFI-12345',
