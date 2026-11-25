@@ -41,7 +41,7 @@
           "device": "Löydetty laite"
         },
         "data_description": {
-          "device": "Jokaisesta laitteesta näytetään malli, IP-osoite ja sarjanumero. Kaksi viimeistä vaihtoehtoa hakevat verkosta uudelleen tai antavat syöttää laitteen tiedot itse."
+          "device": "Jokaisesta laitteesta näytetään malli, IP-osoite ja sarjanumero. Kaksi viimeistä vaihtoehtoa etsivät lisää laitteita tai antavat syöttää laitteen tiedot itse."
         }
       },
       "discovery_confirm": {
@@ -215,7 +215,7 @@
   "selector": {
     "discovered_device": {
       "options": {
-        "scan_more": "Hae uudelleen",
+        "scan_more": "Etsi lisää laitteita",
         "manual": "Lisää laite manuaalisesti"
       }
     }

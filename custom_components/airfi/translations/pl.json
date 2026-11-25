@@ -41,7 +41,7 @@
           "device": "Wykryte urządzenie"
         },
         "data_description": {
-          "device": "Każde urządzenie jest pokazane z modelem, adresem IP i numerem seryjnym. Dwie ostatnie pozycje ponownie przeszukują sieć lub pozwalają wpisać urządzenie ręcznie."
+          "device": "Każde urządzenie jest pokazane z modelem, adresem IP i numerem seryjnym. Dwie ostatnie pozycje wyszukują więcej urządzeń lub pozwalają wpisać urządzenie ręcznie."
         }
       },
       "discovery_confirm": {
@@ -215,7 +215,7 @@
   "selector": {
     "discovered_device": {
       "options": {
-        "scan_more": "Wyszukaj ponownie",
+        "scan_more": "Wyszukaj więcej urządzeń",
         "manual": "Dodaj urządzenie ręcznie"
       }
     }
