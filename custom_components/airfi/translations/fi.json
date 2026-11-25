@@ -27,6 +27,11 @@
           "host": "IP-osoite",
           "serial_number": "Sarjanumero",
           "model_name": "Malli"
+        },
+        "data_description": {
+          "host": "Airfi-laitteen IP-osoite lähiverkossasi.",
+          "serial_number": "Löydät sen laitteen tyyppikilvestä, Airfi-sovelluksesta tai web-käyttöliittymästä tai löydettyjen laitteiden listasta, jos haku löysi laitteen.",
+          "model_name": "Laitteesi malli sellaisena kuin se on tyyppikilvessä."
         }
       },
       "discovery_select": {
@@ -34,6 +39,9 @@
         "description": "Löydettiin {count} Airfi-laite(tta). Valitse laite jatkaaksesi.",
         "data": {
           "device": "Löydetty laite"
+        },
+        "data_description": {
+          "device": "Jokaisesta laitteesta näytetään malli, IP-osoite ja sarjanumero."
         }
       },
       "discovery_confirm": {
@@ -50,6 +58,9 @@
         "description": "Päivitä tämän integraation yhteysasetukset.",
         "data": {
           "host": "IP-osoite"
+        },
+        "data_description": {
+          "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
         }
       }
     },
@@ -121,6 +132,9 @@
             "description": "Päivitä laitteen {name} IP-osoite, jos se on muuttunut. Jos IP-osoite ei ole muuttunut, jätä nykyinen arvo ja tarkista laitteen tai verkon yhteys.",
             "data": {
               "host": "IP-osoite"
+            },
+            "data_description": {
+              "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
             }
           }
         }

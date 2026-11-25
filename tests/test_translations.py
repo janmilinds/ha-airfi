@@ -1,4 +1,4 @@
-"""Every state a user can see has a translation, and no language file keeps a key en.json does not have."""
+"""Every state and form field a user can see is translated and explained, and no language file keeps a stale key."""
 
 import json
 from pathlib import Path
@@ -123,3 +123,26 @@ def test_language_files_keep_no_stale_keys() -> None:
     }
 
     assert not stale, json.dumps(stale, indent=2)
+
+
+def _flow_steps(strings: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Return every config, options and repair flow step in en.json, keyed by its path."""
+    steps = {f"config.step.{name}": step for name, step in strings.get("config", {}).get("step", {}).items()}
+    steps |= {f"options.step.{name}": step for name, step in strings.get("options", {}).get("step", {}).items()}
+    for issue, content in strings.get("issues", {}).items():
+        fix_steps = content.get("fix_flow", {}).get("step", {})
+        steps |= {f"issues.{issue}.fix_flow.step.{name}": step for name, step in fix_steps.items()}
+    return steps
+
+
+def test_every_form_field_has_a_description() -> None:
+    """Every field of a setup, options or repair form shows a help line under it."""
+    steps = _flow_steps(_load(TRANSLATIONS / "en.json"))
+
+    missing = {
+        path: sorted(undescribed)
+        for path, step in steps.items()
+        if (undescribed := set(step.get("data", {})) - set(step.get("data_description", {})))
+    }
+
+    assert not missing, json.dumps(missing, indent=2)

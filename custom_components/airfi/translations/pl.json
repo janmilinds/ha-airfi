@@ -27,6 +27,11 @@
           "host": "Adres IP",
           "serial_number": "Numer seryjny",
           "model_name": "Model"
+        },
+        "data_description": {
+          "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej.",
+          "serial_number": "Znajdziesz go na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie.",
+          "model_name": "Model Twojego urządzenia, taki jak na tabliczce znamionowej."
         }
       },
       "discovery_select": {
@@ -34,6 +39,9 @@
         "description": "Znaleziono {count} urządzenie(a) Airfi. Wybierz jedno, aby kontynuować.",
         "data": {
           "device": "Wykryte urządzenie"
+        },
+        "data_description": {
+          "device": "Każde urządzenie jest pokazane z modelem, adresem IP i numerem seryjnym."
         }
       },
       "discovery_confirm": {
@@ -50,6 +58,9 @@
         "description": "Zaktualizuj ustawienia połączenia dla tej integracji.",
         "data": {
           "host": "Adres IP"
+        },
+        "data_description": {
+          "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
         }
       }
     },
@@ -121,6 +132,9 @@
             "description": "Zaktualizuj adres IP urządzenia {name}, jeśli się zmienił. Jeśli adres IP się nie zmienił, pozostaw bieżącą wartość i sprawdź połączenie urządzenia lub sieci.",
             "data": {
               "host": "Adres IP"
+            },
+            "data_description": {
+              "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
             }
           }
         }
