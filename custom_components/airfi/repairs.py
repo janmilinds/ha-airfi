@@ -43,7 +43,8 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
         """Handle the initial repair step."""
         errors: dict[str, str] = {}
 
-        if user_input is not None:
+        # Home Assistant opens the flow with {"issue_id": ...} as input, so only a host means a submitted form.
+        if user_input is not None and CONF_HOST in user_input:
             try:
                 await validate_connection(
                     self.hass,
