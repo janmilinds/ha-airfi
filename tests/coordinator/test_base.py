@@ -1,6 +1,7 @@
 """Test the airfi coordinator."""
 
 import asyncio
+import contextlib
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -29,7 +30,7 @@ from custom_components.airfi.coordinator.feature_manager import (
 )
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
-from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
+from homeassistant.components.fan import ATTR_PERCENTAGE, DOMAIN as FAN_DOMAIN, SERVICE_SET_PERCENTAGE
 from homeassistant.components.number import ATTR_VALUE, DOMAIN as NUMBER_DOMAIN, SERVICE_SET_VALUE
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, SERVICE_TURN_OFF, SERVICE_TURN_ON
@@ -177,6 +178,81 @@ async def test_failed_write_reaches_service_caller_and_keeps_state(
 
     assert exc_info.value.translation_key == translation_key
     assert hass.states.get(entity_id) == state_before
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+@pytest.mark.parametrize(
+    ("domain", "service", "service_data", "write_results"),
+    [
+        pytest.param(FAN_DOMAIN, SERVICE_TURN_OFF, {}, [None], id="fan-written"),
+        pytest.param(SWITCH_DOMAIN, SERVICE_TURN_ON, {}, [None], id="switch-written"),
+        pytest.param(NUMBER_DOMAIN, SERVICE_SET_VALUE, {ATTR_VALUE: 20.0}, [None, None], id="number-written"),
+        pytest.param(
+            FAN_DOMAIN,
+            SERVICE_SET_PERCENTAGE,
+            {ATTR_PERCENTAGE: 60},
+            [None, AirfiApiClientModbusError("illegal")],
+            id="fan-speed-rejected-after-turning-on",
+        ),
+        pytest.param(
+            NUMBER_DOMAIN,
+            SERVICE_SET_VALUE,
+            {ATTR_VALUE: 20.0},
+            [None, AirfiApiClientModbusError("illegal")],
+            id="minimum-rejected-after-setpoint",
+        ),
+    ],
+)
+async def test_write_that_reached_the_unit_is_confirmed_at_once(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+    domain: str,
+    service: str,
+    service_data: dict[str, float],
+    write_results: list[Exception | None],
+) -> None:
+    """Test that the unit is read again right after a command, even when only its first register was written."""
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, init_integration.entry_id)
+        if entry.domain == domain
+    )
+    mock_api.write_holding_register.side_effect = write_results
+    polls_before = mock_api.get_data.await_count
+
+    with contextlib.suppress(HomeAssistantError):
+        await hass.services.async_call(domain, service, {ATTR_ENTITY_ID: entity_id, **service_data}, blocking=True)
+
+    assert mock_api.write_holding_register.await_count == len(write_results)
+    assert mock_api.get_data.await_count == polls_before + 1
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_write_that_never_reached_the_unit_is_not_followed_by_a_read(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Test that a command the unit did not take adds no read, so an unreachable unit is not waited for twice."""
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, init_integration.entry_id)
+        if entry.domain == FAN_DOMAIN
+    )
+    mock_api.write_holding_register.side_effect = AirfiApiClientConnectionError("timeout")
+    polls_before = mock_api.get_data.await_count
+
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            FAN_DOMAIN, SERVICE_SET_PERCENTAGE, {ATTR_ENTITY_ID: entity_id, ATTR_PERCENTAGE: 60}, blocking=True
+        )
+
+    assert mock_api.get_data.await_count == polls_before
 
 
 @pytest.mark.unit

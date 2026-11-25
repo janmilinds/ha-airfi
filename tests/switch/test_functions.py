@@ -19,6 +19,7 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.async_set_holding_register = AsyncMock()
+    coordinator.async_request_refresh = AsyncMock()
     coordinator.data = AirfiDeviceData(
         holding_registers=holding_registers,
         input_registers=[],
@@ -84,6 +85,7 @@ async def test_fireplace_turn_on() -> None:
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(58, 1)
     # Optimistic write should have been performed
     entity.async_write_ha_state.assert_called_once()
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.unit
@@ -96,6 +98,7 @@ async def test_fireplace_turn_off() -> None:
     entity.coordinator.async_set_holding_register.assert_awaited_once_with(58, 0)
     # Optimistic write should have been performed
     entity.async_write_ha_state.assert_called_once()
+    entity.coordinator.async_request_refresh.assert_awaited_once()
 
 
 # ——— Sauna function tests ———
