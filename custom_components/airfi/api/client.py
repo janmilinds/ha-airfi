@@ -5,6 +5,7 @@ from collections.abc import Callable
 import logging
 import threading
 from typing import Any
+import weakref
 
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ConnectionException, ModbusIOException
@@ -13,6 +14,8 @@ from custom_components.airfi.utils import version_string, version_tuple
 
 _LOGGER = logging.getLogger(__name__)
 _MODBUS_DUMP_LOGGER = logging.getLogger("custom_components.airfi.modbus")
+
+_DEVICE_LOCKS: weakref.WeakValueDictionary[tuple[str, int], threading.Lock] = weakref.WeakValueDictionary()
 
 MODBUS_READ_LIMIT = 30
 MODBUS_SLAVE_ID = 1
@@ -58,8 +61,17 @@ def _register_lengths(map_version_raw: int) -> tuple[int, int]:
     return REGISTER_LENGTHS_BY_MAP_VERSION[-1][1]
 
 
+def _device_lock_for(host: str, port: int) -> threading.Lock:
+    """Return the lock shared by every client that talks to the unit at this address."""
+    lock = _DEVICE_LOCKS.get((host, port))
+    if lock is None:
+        lock = threading.Lock()
+        _DEVICE_LOCKS[host, port] = lock
+    return lock
+
+
 class AirfiApiClient:
-    """API client that reads and writes Airfi Modbus registers, one request at a time per client."""
+    """API client that reads and writes Airfi Modbus registers, one connection to a unit at a time."""
 
     def __init__(
         self,
@@ -76,7 +88,7 @@ class AirfiApiClient:
         self._input_register_length: int | None = None
         self._holding_register_length: int | None = None
         self._lock = asyncio.Lock()
-        self._device_lock = threading.Lock()
+        self._device_lock = _device_lock_for(host, port)
 
     async def async_test_connection(self) -> None:
         """Validate that the device is reachable and responds to lookup read."""
@@ -113,6 +125,7 @@ class AirfiApiClient:
     def update_host(self, host: str) -> None:
         """Update target host after rediscovery finds the same device at a new IP."""
         self._host = host
+        self._device_lock = _device_lock_for(host, self._port)
 
     async def _async_ensure_register_profile(self) -> None:
         """Initialize register profile once if coordinator did not preconfigure it."""
@@ -182,16 +195,18 @@ class AirfiApiClient:
         }
 
     async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
-        """Run a blocking request in a worker thread, never alongside another request from this client.
+        """Run a blocking request in a worker thread, never alongside another connection to the same unit.
 
-        A thread outlives the timeout or cancellation of the task awaiting it, so the asyncio lock alone cannot keep
-        two connections from overlapping; the thread lock can. A request abandoned while it waited for the thread lock
-        is dropped without reaching the unit, so a write reported as failed is never sent later.
+        The thread lock is shared by every client for that address, so the config flow's connection check and a
+        reloaded entry's new client wait as well. It also holds while a thread outlives the timeout or cancellation of
+        the task awaiting it, which the asyncio lock cannot. A request abandoned while it waited is dropped without
+        reaching the unit, so a write reported as failed is never sent later.
         """
         abandoned = threading.Event()
+        device_lock = self._device_lock
 
         def _run() -> T:
-            with self._device_lock:
+            with device_lock:
                 if abandoned.is_set():
                     msg = "Request abandoned before it reached the device"
                     raise AirfiApiClientConnectionError(msg)
