@@ -1,5 +1,8 @@
 {
   "name": "Airfi",
-  "homeassistant": "2026.4.0",
+  "zip_release": true,
+  "filename": "airfi.zip",
+  "hide_default_branch": true,
+  "homeassistant": "2026.11.0",
   "hacs": "2.0.5"
 }
