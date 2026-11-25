@@ -20,7 +20,7 @@ import asyncio
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from custom_components.airfi.api import AirfiApiClientError
+from custom_components.airfi.api import AirfiApiClientConnectionError, AirfiApiClientError
 from custom_components.airfi.const import (
     CONF_SERIAL_NUMBER,
     DISCOVERY_RECOVERY_COOLDOWN_SECONDS,
@@ -46,7 +46,7 @@ from custom_components.airfi.coordinator.feature_manager import (
 from custom_components.airfi.utils import version_string
 from custom_components.airfi.utils.discovery import AirfiDiscoveryService
 from homeassistant.const import CONF_HOST
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -355,13 +355,22 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             value: Integer value to write.
 
         Raises:
-            AirfiApiClientError: Re-raised after logging if the write fails.
+            HomeAssistantError: Translated, if the unit is unreachable or rejects the write.
         """
         try:
             await self.config_entry.runtime_data.client.async_write_holding_register(address, value)
+        except AirfiApiClientConnectionError as exception:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed_unreachable",
+                translation_placeholders={"host": self.config_entry.data[CONF_HOST]},
+            ) from exception
         except AirfiApiClientError as exception:
-            LOGGER.warning("Failed to write holding register %d: %s", address, exception)
-            raise
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={"register": f"4x{address:05d}"},
+            ) from exception
 
     async def _async_try_recover_host(self, *, force: bool = False) -> bool:
         """Try to rediscover the configured serial number at a new IP address.

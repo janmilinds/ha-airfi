@@ -99,6 +99,12 @@
     },
     "setup_invalid_device_data": {
       "message": "Kunde inte hämta giltig enhetsdata från ventilationsaggregatet. Kontrollera att det är påslaget och anslutet till nätverket."
+    },
+    "write_failed": {
+      "message": "Det gick inte att skicka kommandot till Airfi-enheten: skrivningen till register {register} misslyckades."
+    },
+    "write_failed_unreachable": {
+      "message": "Det gick inte att skicka kommandot till Airfi-enheten på {host}: enheten svarade inte."
     }
   },
   "issues": {

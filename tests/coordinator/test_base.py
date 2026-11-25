@@ -1,11 +1,17 @@
 """Test the airfi coordinator."""
 
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api.client import AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi.api.client import (
+    AirfiApiClientConnectionError,
+    AirfiApiClientError,
+    AirfiApiClientModbusError,
+)
 from custom_components.airfi.const import (
     CONF_SERIAL_NUMBER,
     DOMAIN,
@@ -23,9 +29,13 @@ from custom_components.airfi.coordinator.feature_manager import (
 )
 from custom_components.airfi.data import AirfiData
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
-from homeassistant.const import CONF_HOST
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
+from homeassistant.components.number import ATTR_VALUE, DOMAIN as NUMBER_DOMAIN, SERVICE_SET_VALUE
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, SERVICE_TURN_OFF, SERVICE_TURN_ON
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import entity_registry as er, issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
@@ -103,27 +113,70 @@ async def test_async_set_holding_register_delegates_to_client(hass, config_entry
 
 
 @pytest.mark.unit
-async def test_async_set_holding_register_re_raises_connection_error(hass, config_entry, mock_integration) -> None:
-    """Test that write bridge re-raises TCP connection errors."""
+@pytest.mark.parametrize(
+    ("error", "translation_key", "placeholders"),
+    [
+        (AirfiApiClientConnectionError("timeout"), "write_failed_unreachable", {"host": "192.168.1.10"}),
+        (AirfiApiClientModbusError("illegal data value"), "write_failed", {"register": "4x00012"}),
+        (AirfiApiClientError("unexpected"), "write_failed", {"register": "4x00012"}),
+    ],
+)
+async def test_async_set_holding_register_raises_translated_error(
+    hass,
+    config_entry,
+    mock_integration,
+    error: AirfiApiClientError,
+    translation_key: str,
+    placeholders: dict[str, str],
+) -> None:
+    """Test that a failed write becomes a translated error that keeps the client error as its cause."""
     coordinator, client = _build_coordinator(hass, config_entry, mock_integration)
-    client.async_write_holding_register.side_effect = AirfiApiClientConnectionError("timeout")
+    client.async_write_holding_register.side_effect = error
 
-    with pytest.raises(AirfiApiClientConnectionError):
-        await coordinator.async_set_holding_register(address=1, value=3)
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await coordinator.async_set_holding_register(address=12, value=1)
+
+    assert exc_info.value.translation_domain == DOMAIN
+    assert exc_info.value.translation_key == translation_key
+    assert exc_info.value.translation_placeholders == placeholders
+    assert exc_info.value.__cause__ is error
 
 
-@pytest.mark.unit
-async def test_async_set_holding_register_re_raises_modbus_error(hass, config_entry, mock_integration) -> None:
-    """Test that write bridge re-raises Modbus protocol errors.
+@pytest.mark.integration
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+@pytest.mark.parametrize(
+    ("domain", "service", "service_data", "error", "translation_key"),
+    [
+        (FAN_DOMAIN, SERVICE_TURN_OFF, {}, AirfiApiClientModbusError("illegal data value"), "write_failed"),
+        (SWITCH_DOMAIN, SERVICE_TURN_ON, {}, AirfiApiClientConnectionError("timeout"), "write_failed_unreachable"),
+        (NUMBER_DOMAIN, SERVICE_SET_VALUE, {ATTR_VALUE: 20.0}, AirfiApiClientModbusError("illegal"), "write_failed"),
+    ],
+)
+async def test_failed_write_reaches_service_caller_and_keeps_state(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_api: SimpleNamespace,
+    init_integration: MockConfigEntry,
+    domain: str,
+    service: str,
+    service_data: dict[str, float],
+    error: AirfiApiClientError,
+    translation_key: str,
+) -> None:
+    """Test that a write the unit does not take reaches a service caller as a translated error."""
+    entity_id = next(
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, init_integration.entry_id)
+        if entry.domain == domain
+    )
+    state_before = hass.states.get(entity_id)
+    mock_api.write_holding_register.side_effect = error
 
-    This covers cases such as writing an invalid value or targeting a
-    register address that does not support writes.
-    """
-    coordinator, client = _build_coordinator(hass, config_entry, mock_integration)
-    client.async_write_holding_register.side_effect = AirfiApiClientModbusError("illegal data value")
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await hass.services.async_call(domain, service, {ATTR_ENTITY_ID: entity_id, **service_data}, blocking=True)
 
-    with pytest.raises(AirfiApiClientModbusError):
-        await coordinator.async_set_holding_register(address=1, value=3)
+    assert exc_info.value.translation_key == translation_key
+    assert hass.states.get(entity_id) == state_before
 
 
 @pytest.mark.unit

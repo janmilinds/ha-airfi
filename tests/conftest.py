@@ -34,7 +34,7 @@ def config_entry() -> MockConfigEntry:
 
 @pytest.fixture
 def mock_api() -> Generator[SimpleNamespace]:
-    """Patch the client's reads with a unit that answers with every register."""
+    """Patch the client with a unit that answers with every register and accepts every write."""
     data = {
         "firmware_version": "3.1.0",
         "modbus_register_version": "2.7.0",
@@ -48,8 +48,13 @@ def mock_api() -> Generator[SimpleNamespace]:
             AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=LOOKUP_REGISTERS)
         ) as get_lookup_registers,
         patch.object(AirfiApiClient, "async_get_data", AsyncMock(return_value=data)) as get_data,
+        patch.object(AirfiApiClient, "async_write_holding_register", AsyncMock()) as write_holding_register,
     ):
-        yield SimpleNamespace(get_lookup_registers=get_lookup_registers, get_data=get_data)
+        yield SimpleNamespace(
+            get_lookup_registers=get_lookup_registers,
+            get_data=get_data,
+            write_holding_register=write_holding_register,
+        )
 
 
 @pytest.fixture
