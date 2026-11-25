@@ -1,8 +1,11 @@
 """Test the Airfi API client."""
 
 import asyncio
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 import threading
 from unittest.mock import AsyncMock, MagicMock, patch
+import weakref
 
 from pymodbus.exceptions import ConnectionException, ModbusIOException
 import pytest
@@ -12,9 +15,17 @@ from custom_components.airfi.api.client import (
     AirfiApiClientConnectionError,
     AirfiApiClientError,
     AirfiApiClientModbusError,
+    _device_lock_for,
     _register_lengths,
 )
 from custom_components.airfi.utils import version_string, version_tuple
+
+
+@pytest.fixture(autouse=True)
+def isolated_device_locks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Give each test its own lock table, so a thread a failed test left blocked cannot hold back the next one."""
+    monkeypatch.setattr("custom_components.airfi.api.client._DEVICE_LOCKS", weakref.WeakValueDictionary())
+
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
@@ -826,6 +837,12 @@ async def test_clients_for_the_same_unit_share_one_connection_at_a_time() -> Non
 
 
 @pytest.mark.unit
+def test_host_spelling_does_not_split_the_device_lock() -> None:
+    """Test that the same hostname in another case or with stray whitespace shares the unit's lock."""
+    assert _device_lock_for("Airfi.local", 502) is _device_lock_for(" airfi.local", 502)
+
+
+@pytest.mark.unit
 async def test_clients_for_different_units_do_not_wait_for_each_other() -> None:
     """Test that a request to one unit does not hold back a request to another unit."""
     writer = AirfiApiClient(host="192.168.1.10", port=502)
@@ -840,6 +857,43 @@ async def test_clients_for_different_units_do_not_wait_for_each_other() -> None:
             await other.async_test_connection()
         release.set()
         await write
+
+    assert calls == ["write", "read"]
+
+
+@pytest.mark.unit
+async def test_abandoned_request_frees_its_worker_thread_while_the_unit_is_busy() -> None:
+    """Test that a request cancelled while it waits for the unit gives its worker thread back without waiting."""
+    loop = asyncio.get_running_loop()
+    executor = ThreadPoolExecutor(max_workers=2)
+    writer = AirfiApiClient(host="192.168.1.10", port=502)
+    checker = AirfiApiClient(host="192.168.1.10", port=502)
+    other = AirfiApiClient(host="192.168.1.20", port=502)
+    calls: list[str] = []
+    release, started = threading.Event(), threading.Event()
+
+    async def _two_worker_to_thread(func: Callable[[], object]) -> object:
+        return await loop.run_in_executor(executor, func)
+
+    with (
+        patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
+        patch("custom_components.airfi.api.client.asyncio.to_thread", _two_worker_to_thread),
+    ):
+        write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
+        await loop.run_in_executor(None, started.wait, 5)
+        abandoned = asyncio.create_task(checker.async_test_connection())
+        await asyncio.sleep(0.1)
+        abandoned.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await abandoned
+
+        try:
+            async with asyncio.timeout(1):
+                await other.async_test_connection()
+        finally:
+            release.set()
+            await write
+            executor.shutdown(wait=True)
 
     assert calls == ["write", "read"]
 
