@@ -211,5 +211,13 @@
         "name": "Tehostettu viilennys"
       }
     }
+  },
+  "selector": {
+    "discovered_device": {
+      "options": {
+        "scan_more": "Hae uudelleen",
+        "manual": "Lisää laite manuaalisesti"
+      }
+    }
   }
 }
