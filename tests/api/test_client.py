@@ -1,5 +1,7 @@
 """Test the Airfi API client."""
 
+import asyncio
+import threading
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pymodbus.exceptions import ConnectionException, ModbusIOException
@@ -109,7 +111,7 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
     holding = [1] * 59
     inputs = [0, 381, 300] + [0] * 39
     with (
-        patch.object(client, "async_get_lookup_registers", new=AsyncMock()) as lookup_mock,
+        patch.object(client, "_async_read_registers", new=AsyncMock()) as lookup_mock,
         patch.object(
             client,
             "_async_read_all_registers",
@@ -136,7 +138,7 @@ async def test_async_get_data_builds_register_profile_once() -> None:
     with (
         patch.object(
             client,
-            "async_get_lookup_registers",
+            "_async_read_registers",
             new=AsyncMock(return_value=[0, 381, 300]),
         ) as lookup_mock,
         patch.object(
@@ -571,7 +573,7 @@ async def test_ensure_register_profile_skips_when_cached() -> None:
         holding_register_length=59,
     )
 
-    with patch.object(client, "async_get_lookup_registers", new=AsyncMock()) as mock_lookup:
+    with patch.object(client, "_async_read_registers", new=AsyncMock()) as mock_lookup:
         await client._async_ensure_register_profile()  # noqa: SLF001
 
     mock_lookup.assert_not_awaited()
@@ -584,7 +586,7 @@ async def test_ensure_register_profile_fetches_when_not_cached() -> None:
 
     with patch.object(
         client,
-        "async_get_lookup_registers",
+        "_async_read_registers",
         new=AsyncMock(return_value=[0, 270, 270]),
     ):
         await client._async_ensure_register_profile()  # noqa: SLF001
@@ -643,6 +645,57 @@ async def test_write_timeout_raises_connection_error() -> None:
         pytest.raises(AirfiApiClientConnectionError, match="Timeout while writing"),
     ):
         await client.async_write_holding_register(address=1, value=3)
+
+
+# ---------------------------------------------------------------------------
+# Serialized device access
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+async def test_write_waits_until_in_flight_poll_finishes() -> None:
+    """Test that a write issued during a poll reaches the unit only after the poll has closed its connection."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+    client.set_register_profile(
+        firmware_version="3.8.1",
+        modbus_register_version="3.0.0",
+        input_register_length=3,
+        holding_register_length=3,
+    )
+    read_started = threading.Event()
+    release_read = threading.Event()
+    calls: list[str] = []
+
+    def _blocking_read(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("read")
+        read_started.set()
+        release_read.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0, 381, 300])
+
+    def _write(*_args: object, **_kwargs: object) -> MagicMock:
+        calls.append("write")
+        return MagicMock(isError=MagicMock(return_value=False))
+
+    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = _blocking_read
+        mock_instance.read_input_registers.side_effect = _blocking_read
+        mock_instance.write_register.side_effect = _write
+        mock_instance.close.side_effect = lambda: calls.append("close")
+
+        poll = asyncio.create_task(client.async_get_data())
+        await asyncio.to_thread(read_started.wait, 5)
+        write = asyncio.create_task(client.async_write_holding_register(address=12, value=1))
+        await asyncio.sleep(0.1)
+
+        assert calls == ["read"]
+        assert not write.done()
+
+        release_read.set()
+        await asyncio.gather(poll, write)
+
+    assert calls == ["read", "read", "close", "write", "close"]
 
 
 # ---------------------------------------------------------------------------
