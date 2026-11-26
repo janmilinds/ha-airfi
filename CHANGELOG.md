@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/janmilinds/ha-airfi/compare/v1.1.0...v1.2.0) (2026-11-26)
+
+
+### 🎉 What's new
+
+* **diagnostics:** include the raw register values ([5ece255](https://github.com/janmilinds/ha-airfi/commit/5ece255c4cc919a1a3169f2f00e901d1d6412d4d))
+
+
+### 🐛 Fixed
+
+* **api:** count a write the unit never answers as unreachable ([2f8487c](https://github.com/janmilinds/ha-airfi/commit/2f8487c81874b19fc9e3926aa3b0f880a645604b))
+* **api:** free a waiting thread as soon as its request is abandoned ([4728f04](https://github.com/janmilinds/ha-airfi/commit/4728f04dc5283a1c8c3f746dbd1c43b010e67ab5))
+* **api:** keep a timed-out request from overlapping the next one ([ab9e0a8](https://github.com/janmilinds/ha-airfi/commit/ab9e0a87d513cafa9626a5f369a126c97a30b5c0))
+* **api:** serialize Modbus access to the device ([acadbfc](https://github.com/janmilinds/ha-airfi/commit/acadbfc9ef40b7d48ba44b2158e8ba4cb2fe899b))
+* **api:** share the connection lock between clients for the same unit ([7001133](https://github.com/janmilinds/ha-airfi/commit/7001133d981bc0a0cf81472a109638fc7d83c070))
+* **config-flow:** describe every setup field ([5c47ef5](https://github.com/janmilinds/ha-airfi/commit/5c47ef5ace74fdd415fc60be4a191a8ce9ff0287))
+* **config-flow:** keep the setup help true when the search cannot reach the device ([0d24dff](https://github.com/janmilinds/ha-airfi/commit/0d24dffb1651ea14114c82183993e4f70032fef9))
+* **config-flow:** name the search option for what it does ([64b8adf](https://github.com/janmilinds/ha-airfi/commit/64b8adf33f7c7d09599101f6cfa2cc31c837f5d7))
+* **config-flow:** say the model forms the device name and entity IDs ([4bac934](https://github.com/janmilinds/ha-airfi/commit/4bac9347c71fafe0599fc11f447ffae5d21a8dfc))
+* **config-flow:** say the serial must match and explain the extra list entries ([70ace41](https://github.com/janmilinds/ha-airfi/commit/70ace41bd8e315d21156a2d6151b33032615dcfe))
+* **config-flow:** say what the model choice changes ([fceacdd](https://github.com/janmilinds/ha-airfi/commit/fceacddf7d7719c6e8d9d0e378f4d65b58bac35c))
+* **config-flow:** set the entry up once after reconfiguring ([f60e216](https://github.com/janmilinds/ha-airfi/commit/f60e2165776cfcee8fbddf00d3ef1f38e79bb28f))
+* **config-flow:** translate the device list options ([f0d9533](https://github.com/janmilinds/ha-airfi/commit/f0d9533bc9c1e9d6b32b8173c846c119fecb50d6))
+* **config-flow:** word the manual option the same way everywhere in Swedish ([a29f0dd](https://github.com/janmilinds/ha-airfi/commit/a29f0dd2c2c553bf96e6f476c66131c589b7b62b))
+* **coordinator:** mask the serial number in logs ([aa1cd1a](https://github.com/janmilinds/ha-airfi/commit/aa1cd1a2314d888cc7a03fce686b4f9b09abe939))
+* **coordinator:** mask the serial number in the startup log ([1311258](https://github.com/janmilinds/ha-airfi/commit/1311258a5742c5e8db6cfe14ef614ee30a3b4872))
+* **coordinator:** report failed writes as translated errors ([45592f4](https://github.com/janmilinds/ha-airfi/commit/45592f4dbe5b014f887f9de698aba92b728f841d))
+* **coordinator:** update the device firmware version when it changes ([5a7310c](https://github.com/janmilinds/ha-airfi/commit/5a7310cb014c76cd757b9edeb08b24ef20fcf105))
+* **diagnostics:** list each device's entities in a fixed order ([79a0416](https://github.com/janmilinds/ha-airfi/commit/79a0416464fb360a296ae312655e2b99ecdc6897))
+* **diagnostics:** list entities that are disabled by default ([a885575](https://github.com/janmilinds/ha-airfi/commit/a8855755e184459cf878e6448681f70f971d2759))
+* **discovery:** close the socket when its setup fails ([433a906](https://github.com/janmilinds/ha-airfi/commit/433a9062aadcfc1de4f11730ff22890a0f5d850e))
+* **discovery:** listen only to the multicast group ([3c59794](https://github.com/janmilinds/ha-airfi/commit/3c5979421bf21b585912bedd06ebe91553ca2094))
+* **entity:** confirm writes promptly ([a3740ee](https://github.com/janmilinds/ha-airfi/commit/a3740ee17b85cf89fa294beabc3bc0ecfce13aab))
+* **manifest:** declare the integration category ([181d8e2](https://github.com/janmilinds/ha-airfi/commit/181d8e234529467568f8387c6f74d22cf045f44b))
+* **repairs:** open the address repair without an error ([14a8d49](https://github.com/janmilinds/ha-airfi/commit/14a8d4949d846593c6b6d1023f129966e5cd3918))
+* **repairs:** set the entry up once after the address is fixed ([dc5a4fd](https://github.com/janmilinds/ha-airfi/commit/dc5a4fd220bf85352d1ed773a539eae5dc375004))
+* **sensor:** swap the supply and extract air temperature icons ([a991494](https://github.com/janmilinds/ha-airfi/commit/a9914949e916b16eeab800d46f6794789bc043ec))
+* **switch:** offer boosted cooling from register map 2.1 ([05cb949](https://github.com/janmilinds/ha-airfi/commit/05cb949c41ce1bb335be9d2ac042e894a8d1145d))
+
 ## [1.1.0](https://github.com/janmilinds/ha-airfi/compare/v1.0.0...v1.1.0) (2026-11-25)
 
 
