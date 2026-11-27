@@ -142,7 +142,7 @@ is organized modularly to support complex flows without becoming monolithic.
 Provides common functionality for all entities in the integration:
 
 - Device information
-- Unique ID generation
+- Unique IDs `<serial>_<key>` and the device identifier `(airfi, <serial>)`, so a unit added again gets its registry settings back
 - Coordinator integration
 - Availability tracking
 

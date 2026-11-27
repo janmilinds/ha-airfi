@@ -348,10 +348,11 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
 
     def _update_device_sw_version(self, firmware_version: str) -> None:
         """Record the firmware the unit reports on its device, which Home Assistant reads only when it is created."""
+        serial = self.config_entry.unique_id
+        if TYPE_CHECKING:
+            assert serial is not None
         device_registry = dr.async_get(self.hass)
-        device = device_registry.async_get_device_by_identifier(
-            (DOMAIN, self.config_entry.entry_id), self.config_entry.entry_id
-        )
+        device = device_registry.async_get_device_by_identifier((DOMAIN, serial), self.config_entry.entry_id)
         if device is not None and device.sw_version != firmware_version:
             device_registry.async_update_device(device.id, sw_version=firmware_version)
 

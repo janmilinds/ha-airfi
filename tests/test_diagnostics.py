@@ -122,9 +122,7 @@ async def test_diagnostics_list_only_this_entrys_entities(
 ) -> None:
     """A helper from another integration attached to the unit stays out of the list, enabled or disabled."""
     assert await async_setup_component(hass, "diagnostics", {})
-    device = device_registry.async_get_device_by_identifier(
-        (DOMAIN, init_integration.entry_id), init_integration.entry_id
-    )
+    device = device_registry.async_get_device_by_identifier((DOMAIN, "12345678"), init_integration.entry_id)
     assert device is not None
     helper_entry = MockConfigEntry(domain="derivative")
     helper_entry.add_to_hass(hass)

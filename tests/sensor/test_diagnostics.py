@@ -16,6 +16,7 @@ def _build_coordinator(
     """Build a coordinator mock suitable for Airfi diagnostic entities."""
     config_entry = MagicMock()
     config_entry.entry_id = "entry-1"
+    config_entry.unique_id = "12345678"
     config_entry.domain = "airfi"
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
@@ -96,7 +97,7 @@ def test_firmware_sensor_unique_id() -> None:
     coordinator = _build_coordinator()
     sensor = AirfiDiagnosticSensor(coordinator, _desc("firmware_version"))
 
-    assert sensor.unique_id == "entry-1_firmware_version"
+    assert sensor.unique_id == "12345678_firmware_version"
 
 
 @pytest.mark.unit
@@ -105,7 +106,7 @@ def test_modbus_map_sensor_unique_id() -> None:
     coordinator = _build_coordinator()
     sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
 
-    assert sensor.unique_id == "entry-1_modbus_register_version"
+    assert sensor.unique_id == "12345678_modbus_register_version"
 
 
 @pytest.mark.unit

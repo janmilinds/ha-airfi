@@ -221,6 +221,8 @@ To remove the integration:
 
 This removes the integration, its device, and all associated entities. No manual cleanup is needed — the integration does not create any files outside of Home Assistant's database.
 
+If you add the same unit again within 30 days, Home Assistant restores what you had set: the device's area and name, and each entity's ID, name, icon, and hidden or disabled state. History and automations then carry on as before.
+
 ## Next Steps
 
 - See [CONFIGURATION.md](./CONFIGURATION.md) for detailed configuration options
