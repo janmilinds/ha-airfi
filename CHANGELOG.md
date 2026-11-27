@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/janmilinds/ha-airfi/compare/v1.2.0...v1.2.1) (2026-11-27)
+
+
+### 🐛 Fixed
+
+* **config-flow:** add the confirmed unit when several are found ([e358996](https://github.com/janmilinds/ha-airfi/commit/e35899669f76c711bb92f61004bb0ebf53f088fd))
+* **config-flow:** show the unit on the confirm form after a failed check ([95d81bb](https://github.com/janmilinds/ha-airfi/commit/95d81bb5bd017b36af5160b419196b16d98e953a))
+
 ## [1.2.0](https://github.com/janmilinds/ha-airfi/compare/v1.1.0...v1.2.0) (2026-11-26)
 
 
