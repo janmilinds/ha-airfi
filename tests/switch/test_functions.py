@@ -6,8 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
-from custom_components.airfi.switch.functions import ENTITY_DESCRIPTIONS, AirfiFunctionSwitch
+from custom_components.airfi_home.const import DOMAIN
+from custom_components.airfi_home.coordinator.data_processing import AirfiDeviceData
+from custom_components.airfi_home.switch.functions import ENTITY_DESCRIPTIONS, AirfiFunctionSwitch
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -16,7 +17,7 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     """Build a coordinator mock with holding register data."""
     config_entry = MagicMock()
     config_entry.entry_id = "entry-1"
-    config_entry.domain = "airfi"
+    config_entry.domain = DOMAIN
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
 

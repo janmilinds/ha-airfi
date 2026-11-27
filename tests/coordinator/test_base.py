@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api.client import (
+from custom_components.airfi_home.api.client import (
     AirfiApiClientConnectionError,
     AirfiApiClientError,
     AirfiApiClientModbusError,
 )
-from custom_components.airfi.const import (
+from custom_components.airfi_home.const import (
     CONF_SERIAL_NUMBER,
     DOMAIN,
     ISSUE_DEVICE_UNREACHABLE,
@@ -22,15 +22,15 @@ from custom_components.airfi.const import (
     RECOVERY_ISSUE_SECONDS,
     RECOVERY_TRIGGER_SECONDS,
 )
-from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
-from custom_components.airfi.coordinator.base import RecoveryState
-from custom_components.airfi.coordinator.feature_manager import (
+from custom_components.airfi_home.coordinator import AirfiDataUpdateCoordinator
+from custom_components.airfi_home.coordinator.base import RecoveryState
+from custom_components.airfi_home.coordinator.feature_manager import (
     AirfiDeviceError,
     InvalidDeviceDataError,
     UnsupportedFirmwareError,
 )
-from custom_components.airfi.data import AirfiData
-from custom_components.airfi.utils.discovery import (
+from custom_components.airfi_home.data import AirfiData
+from custom_components.airfi_home.utils.discovery import (
     DATA_DISCOVERY_LISTENER,
     AirfiDiscoveredDevice,
     AirfiDiscoveryListener,
@@ -352,7 +352,7 @@ async def test_async_update_data_does_not_rediscover_before_recovery_threshold(
     )
 
     with patch(
-        "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+        "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
         new=AsyncMock(return_value=[]),
     ) as scan_mock:
         update_method = AirfiDataUpdateCoordinator.__dict__["_async_update_data"].__get__(
@@ -411,7 +411,7 @@ async def test_async_update_data_recovers_after_device_ip_change_once_recovery_t
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered_device]),
         ),
         patch.object(hass.config_entries, "async_update_entry") as update_entry_mock,
@@ -458,11 +458,11 @@ async def test_async_update_data_does_not_rediscover_on_modbus_error(hass, confi
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[]),
         ) as scan_mock,
         patch(
-            "custom_components.airfi.coordinator.base.should_try_rediscovery",
+            "custom_components.airfi_home.coordinator.base.should_try_rediscovery",
             return_value=False,
         ),
     ):
@@ -532,7 +532,7 @@ async def test_async_setup_raises_config_entry_not_ready_on_api_error(hass, conf
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[]),
         ),
         pytest.raises(ConfigEntryNotReady),
@@ -551,7 +551,7 @@ async def test_async_setup_rediscovers_on_connection_error(hass, config_entry, m
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered]),
         ),
         patch.object(hass.config_entries, "async_update_entry"),
@@ -575,7 +575,7 @@ async def test_async_setup_rediscovery_succeeds_but_retry_fails(hass, config_ent
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered]),
         ),
         patch.object(hass.config_entries, "async_update_entry"),
@@ -625,7 +625,7 @@ async def test_async_update_data_recovery_retry_fails_with_connection_error(
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered]),
         ),
         patch.object(hass.config_entries, "async_update_entry"),
@@ -650,7 +650,7 @@ async def test_async_update_data_recovery_retry_fails_with_modbus_error(hass, co
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered]),
         ),
         patch.object(hass.config_entries, "async_update_entry"),
@@ -851,7 +851,9 @@ async def test_recover_host_uses_the_address_the_listener_heard(
     announce("192.168.1.99", 12345678)
 
     with (
-        patch("custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan", new=AsyncMock()) as scan,
+        patch(
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan", new=AsyncMock()
+        ) as scan,
         patch.object(hass.config_entries, "async_update_entry"),
     ):
         assert await coordinator._async_try_recover_host()  # noqa: SLF001
@@ -869,7 +871,7 @@ async def test_recover_host_returns_false_same_ip(hass, config_entry, mock_integ
     discovered = AirfiDiscoveredDevice(host="192.168.1.10", serial=12345678, model_id=1)
 
     with patch(
-        "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+        "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
         new=AsyncMock(return_value=[discovered]),
     ):
         result = await coordinator._async_try_recover_host()  # noqa: SLF001
@@ -886,7 +888,7 @@ async def test_recover_host_returns_false_no_match(hass, config_entry, mock_inte
     discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=99999, model_id=1)
 
     with patch(
-        "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+        "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
         new=AsyncMock(return_value=[discovered]),
     ):
         result = await coordinator._async_try_recover_host()  # noqa: SLF001
@@ -922,7 +924,7 @@ async def test_recover_host_log_masks_the_serial_number(
 
     with (
         patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[discovered]),
         ),
         patch.object(hass.config_entries, "async_update_entry"),
@@ -940,7 +942,7 @@ async def test_recover_host_returns_false_on_oserror(hass, config_entry, mock_in
     coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
 
     with patch(
-        "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
+        "custom_components.airfi_home.coordinator.base.AirfiDiscoveryService.async_scan",
         new=AsyncMock(side_effect=OSError("Address already in use")),
     ):
         result = await coordinator._async_try_recover_host()  # noqa: SLF001

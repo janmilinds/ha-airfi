@@ -8,7 +8,7 @@ ROOT = Path(__file__).parents[1]
 
 IMPORT_EVERY_MODULE = """
 import importlib, pkgutil
-import custom_components.airfi as package
+import custom_components.airfi_home as package
 for module in pkgutil.walk_packages(package.__path__, f"{package.__name__}."):
     importlib.import_module(module.name)
 """

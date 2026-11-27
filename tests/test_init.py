@@ -7,11 +7,11 @@ from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.airfi import async_reload_entry, async_setup, async_setup_entry, async_unload_entry
+from custom_components.airfi_home import async_reload_entry, async_setup, async_setup_entry, async_unload_entry
 
 # Force coverage of re-export shim
-import custom_components.airfi.config_flow  # noqa: F401
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN, UPDATE_INTERVAL
+import custom_components.airfi_home.config_flow  # noqa: F401
+from custom_components.airfi_home.const import CONF_SERIAL_NUMBER, DOMAIN, UPDATE_INTERVAL
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -45,14 +45,14 @@ async def test_async_setup_entry_creates_runtime_data(hass, entry) -> None:
     """Test that async_setup_entry initialises client, coordinator and platforms."""
     with (
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_initial_setup",
             new=AsyncMock(),
         ),
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
-        patch("custom_components.airfi.async_get_loaded_integration", return_value=MagicMock()),
+        patch("custom_components.airfi_home.async_get_loaded_integration", return_value=MagicMock()),
         patch.object(hass.config_entries, "async_forward_entry_setups", new=AsyncMock()) as fwd,
     ):
         result = await async_setup_entry(hass, entry)
@@ -69,14 +69,14 @@ async def test_async_unload_entry_unloads_platforms(hass, entry) -> None:
     """Test that async_unload_entry delegates to async_unload_platforms."""
     with (
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_initial_setup",
             new=AsyncMock(),
         ),
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(),
         ),
-        patch("custom_components.airfi.async_get_loaded_integration", return_value=MagicMock()),
+        patch("custom_components.airfi_home.async_get_loaded_integration", return_value=MagicMock()),
         patch.object(hass.config_entries, "async_forward_entry_setups", new=AsyncMock()),
     ):
         await async_setup_entry(hass, entry)
@@ -102,14 +102,14 @@ async def test_async_setup_entry_raises_on_first_refresh_failure(hass, entry) ->
     """Test that async_setup_entry raises ConfigEntryNotReady when first refresh fails."""
     with (
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_initial_setup",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_initial_setup",
             new=AsyncMock(),
         ),
         patch(
-            "custom_components.airfi.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
+            "custom_components.airfi_home.AirfiDataUpdateCoordinator.async_config_entry_first_refresh",
             new=AsyncMock(side_effect=ConfigEntryNotReady()),
         ),
-        patch("custom_components.airfi.async_get_loaded_integration", return_value=MagicMock()),
+        patch("custom_components.airfi_home.async_get_loaded_integration", return_value=MagicMock()),
         pytest.raises(ConfigEntryNotReady) as exc,
     ):
         await async_setup_entry(hass, entry)

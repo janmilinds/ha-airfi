@@ -24,14 +24,14 @@ touch. See [`blueprint-tooling`](.agents/skills/blueprint-tooling/SKILL.md).
 
 **Identity — use these everywhere, never a variant:**
 
-- **Domain:** `airfi`
+- **Domain:** `airfi_home`
 - **Title:** Airfi
 - **Class prefix:** `Airfi`
 - **Repository:** janmilinds/ha-airfi
 
 **Key directories:**
 
-- `custom_components/airfi/` — integration code
+- `custom_components/airfi_home/` — integration code
 - `config/` — Home Assistant configuration for local testing
 - `tests/` — mirrors the integration structure
 - `script/` — development and validation scripts

@@ -10,8 +10,8 @@ from pytest_homeassistant.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
 from syrupy.filters import paths
 
-from custom_components.airfi.api import AirfiApiClientModbusError
-from custom_components.airfi.const import DOMAIN
+from custom_components.airfi_home.api import AirfiApiClientModbusError
+from custom_components.airfi_home.const import DOMAIN
 from homeassistant.components.homeassistant import DOMAIN as HOMEASSISTANT_DOMAIN, SERVICE_UPDATE_ENTITY
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST

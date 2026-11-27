@@ -71,7 +71,7 @@ from pymodbus.constants import ExcCodes
 from pymodbus.server import ModbusTcpServer
 from pymodbus.simulator import DataType, SimData, SimDevice
 
-from custom_components.airfi.const import AIRFI_MODELS
+from custom_components.airfi_home.const import AIRFI_MODELS
 
 logging.basicConfig(
     level=logging.INFO,

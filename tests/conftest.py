@@ -10,15 +10,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api import AirfiApiClient
-from custom_components.airfi.const import (
+from custom_components.airfi_home.api import AirfiApiClient
+from custom_components.airfi_home.const import (
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_DEVICE_PORT,
     DISCOVERY_MULTICAST_PORT,
     DOMAIN,
 )
-from custom_components.airfi.utils.discovery import DATA_DISCOVERY_LISTENER
+from custom_components.airfi_home.utils.discovery import DATA_DISCOVERY_LISTENER
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
@@ -55,7 +55,7 @@ def _unconnected_socket() -> socket.socket:
 def discovery_socket() -> Generator[MagicMock]:
     """Keep the discovery listener and the scans off the network; `announce` feeds the listener instead."""
     with patch(
-        "custom_components.airfi.utils.discovery.create_discovery_socket",
+        "custom_components.airfi_home.utils.discovery.create_discovery_socket",
         side_effect=_unconnected_socket,
     ) as create:
         yield create

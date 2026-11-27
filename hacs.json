@@ -1,7 +1,7 @@
 {
   "name": "Airfi",
   "zip_release": true,
-  "filename": "airfi.zip",
+  "filename": "airfi_home.zip",
   "hide_default_branch": true,
   "homeassistant": "2026.11.0",
   "hacs": "2.0.5"

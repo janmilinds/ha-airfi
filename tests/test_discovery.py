@@ -11,13 +11,13 @@ from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.airfi.const import (
+from custom_components.airfi_home.const import (
     DISCOVERY_LISTENER_RETRY_SECONDS,
     DISCOVERY_MULTICAST_GROUP,
     DISCOVERY_MULTICAST_PORT,
     DOMAIN,
 )
-from custom_components.airfi.utils.discovery import (
+from custom_components.airfi_home.utils.discovery import (
     AirfiDiscoveredDevice,
     AirfiDiscoveryService,
     announced_device_at,
@@ -130,7 +130,7 @@ def test_parse_packet_wrong_port_returns_none() -> None:
 @pytest.mark.unit
 def test_parse_packet_struct_error_returns_none() -> None:
     """Test that malformed packet data returns None on struct error."""
-    with patch("custom_components.airfi.utils.discovery.struct.unpack_from", side_effect=struct.error("bad")):
+    with patch("custom_components.airfi_home.utils.discovery.struct.unpack_from", side_effect=struct.error("bad")):
         assert parse_announcement(b"\x00" * 12, "1.2.3.4") is None
 
 
@@ -192,7 +192,9 @@ async def test_async_scan_socket_creation_failure() -> None:
     service = AirfiDiscoveryService()
 
     with (
-        patch("custom_components.airfi.utils.discovery.create_discovery_socket", side_effect=OSError("bind failed")),
+        patch(
+            "custom_components.airfi_home.utils.discovery.create_discovery_socket", side_effect=OSError("bind failed")
+        ),
         pytest.raises(OSError, match="bind failed"),
     ):
         await service.async_scan(timeout_seconds=1)
@@ -205,7 +207,7 @@ async def test_async_scan_timeout_with_no_devices() -> None:
     mock_sock = MagicMock()
 
     with (
-        patch("custom_components.airfi.utils.discovery.create_discovery_socket", return_value=mock_sock),
+        patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
         patch.object(service, "_async_receive", new=AsyncMock(side_effect=TimeoutError)),
     ):
         result = await service.async_scan(timeout_seconds=0.1, quiet_period_seconds=0.05)
@@ -231,7 +233,7 @@ async def test_async_scan_finds_device() -> None:
         raise TimeoutError
 
     with (
-        patch("custom_components.airfi.utils.discovery.create_discovery_socket", return_value=mock_sock),
+        patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
         patch.object(service, "_async_receive", side_effect=_fake_receive),
     ):
         result = await service.async_scan(timeout_seconds=0.3, quiet_period_seconds=0.1)
@@ -258,7 +260,7 @@ async def test_async_scan_deduplicates_same_device() -> None:
         raise TimeoutError
 
     with (
-        patch("custom_components.airfi.utils.discovery.create_discovery_socket", return_value=mock_sock),
+        patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
         patch.object(service, "_async_receive", side_effect=_fake_receive),
     ):
         result = await service.async_scan(timeout_seconds=0.3, quiet_period_seconds=0.1)
@@ -273,7 +275,7 @@ async def test_async_scan_generic_error() -> None:
     mock_sock = MagicMock()
 
     with (
-        patch("custom_components.airfi.utils.discovery.create_discovery_socket", return_value=mock_sock),
+        patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
         patch.object(service, "_async_receive", new=AsyncMock(side_effect=RuntimeError("boom"))),
     ):
         result = await service.async_scan(timeout_seconds=0.1)
@@ -362,7 +364,7 @@ async def test_unit_set_up_at_the_address_it_announces_opens_no_flow(
     init_integration: MockConfigEntry,
 ) -> None:
     """A unit already set up that announces itself from its stored address, as after every restart, starts nothing."""
-    with patch("custom_components.airfi.discovery_flow.async_create_flow") as create_flow:
+    with patch("custom_components.airfi_home.discovery_flow.async_create_flow") as create_flow:
         announce(init_integration.data[CONF_HOST], 12345678)
 
     create_flow.assert_not_called()

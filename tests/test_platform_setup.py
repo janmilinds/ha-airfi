@@ -4,12 +4,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi.binary_sensor import async_setup_entry as binary_sensor_setup
-from custom_components.airfi.data import AirfiData
-from custom_components.airfi.fan import async_setup_entry as fan_setup
-from custom_components.airfi.number import async_setup_entry as number_setup
-from custom_components.airfi.sensor import async_setup_entry as sensor_setup
-from custom_components.airfi.switch import async_setup_entry as switch_setup
+from custom_components.airfi_home.binary_sensor import async_setup_entry as binary_sensor_setup
+from custom_components.airfi_home.data import AirfiData
+from custom_components.airfi_home.fan import async_setup_entry as fan_setup
+from custom_components.airfi_home.number import async_setup_entry as number_setup
+from custom_components.airfi_home.sensor import async_setup_entry as sensor_setup
+from custom_components.airfi_home.switch import async_setup_entry as switch_setup
 
 
 def _make_entry(hass, *, features: dict[str, bool] | None = None) -> MagicMock:

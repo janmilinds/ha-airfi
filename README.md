@@ -47,6 +47,21 @@ The integration includes model mapping for Airfi model families and variants (L/
 
 In the Marketplace, open this repository and select **Download**.
 
+### Moving from version 1.x
+
+Version 2.0.0 gives the integration a domain of its own, `airfi_home`, so it can be listed in the default catalog.
+Home Assistant cannot move a unit from the old domain to the new one, and the Marketplace does not update an
+integration whose domain changes, so the move takes a few steps:
+
+1. Before you start, note each unit's name and one of its entity IDs, and any entity ID you changed by hand.
+2. Delete each unit, ignored ones included: **Settings** > **Devices & services** > **Airfi** > ⋮ > **Delete**.
+3. In the Marketplace, uninstall Airfi, then download it again, and restart Home Assistant.
+4. Add each unit again with the same name it had, or leave the name empty if it had the default.
+
+Entity IDs Home Assistant formed itself, history, automations and dashboards carry on. Areas, custom names and icons,
+labels, hidden or disabled entities, and entity IDs you changed by hand are set again. The full steps are in
+[Getting Started](docs/user/GETTING_STARTED.md#moving-from-version-1x).
+
 <!-- ha-marketplace:exclude-start -->
 
 Airfi is not in the Marketplace catalog, so the button below adds it as a custom repository first:
@@ -58,8 +73,8 @@ Airfi 1.0.0 is the last release for Home Assistant 2026.4 to 2026.10. There, ins
 <details>
 <summary><strong>Manual installation</strong></summary>
 
-1. Download `airfi.zip` from the [latest release](https://github.com/janmilinds/ha-airfi/releases/latest).
-2. Extract it into `custom_components/airfi/` in your Home Assistant configuration directory.
+1. Download `airfi_home.zip` from the [latest release](https://github.com/janmilinds/ha-airfi/releases/latest).
+2. Extract it into `custom_components/airfi_home/` in your Home Assistant configuration directory.
 3. Restart Home Assistant.
 
 </details>
@@ -72,7 +87,7 @@ Airfi 1.0.0 is the last release for Home Assistant 2026.4 to 2026.10. There, ins
 
 Install the integration first.
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=airfi)
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=airfi_home)
 
 Or open: Settings -> Devices & Services -> Add Integration -> Airfi.
 
@@ -195,7 +210,7 @@ Enable debug logging in [config/configuration.yaml](config/configuration.yaml):
 logger:
   default: info
   logs:
-    custom_components.airfi: debug
+    custom_components.airfi_home: debug
 ```
 
 ## Documentation

@@ -2,12 +2,12 @@
 
 import pytest
 
-from custom_components.airfi.coordinator.feature_manager import (
+from custom_components.airfi_home.coordinator.feature_manager import (
     AirfiFeatureManager,
     InvalidDeviceDataError,
     UnsupportedFirmwareError,
 )
-from custom_components.airfi.utils import version_string
+from custom_components.airfi_home.utils import version_string
 
 
 @pytest.mark.unit

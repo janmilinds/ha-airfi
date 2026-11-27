@@ -4,7 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi.binary_sensor.connectivity import ENTITY_DESCRIPTIONS, AirfiConnectivitySensor
+from custom_components.airfi_home.binary_sensor.connectivity import ENTITY_DESCRIPTIONS, AirfiConnectivitySensor
+from custom_components.airfi_home.const import DOMAIN
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.const import EntityCategory
 
@@ -13,7 +14,7 @@ def _build_coordinator(*, last_update_success: bool = True) -> MagicMock:
     """Build a coordinator mock for binary sensor tests."""
     config_entry = MagicMock()
     config_entry.entry_id = "entry-1"
-    config_entry.domain = "airfi"
+    config_entry.domain = DOMAIN
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
 

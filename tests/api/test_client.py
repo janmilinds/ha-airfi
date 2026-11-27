@@ -10,7 +10,7 @@ import weakref
 from pymodbus.exceptions import ConnectionException, ModbusIOException
 import pytest
 
-from custom_components.airfi.api.client import (
+from custom_components.airfi_home.api.client import (
     AirfiApiClient,
     AirfiApiClientConnectionError,
     AirfiApiClientError,
@@ -18,13 +18,13 @@ from custom_components.airfi.api.client import (
     _device_lock_for,
     _register_lengths,
 )
-from custom_components.airfi.utils import version_string, version_tuple
+from custom_components.airfi_home.utils import version_string, version_tuple
 
 
 @pytest.fixture(autouse=True)
 def isolated_device_locks(monkeypatch: pytest.MonkeyPatch) -> None:
     """Give each test its own lock table, so a thread a failed test left blocked cannot hold back the next one."""
-    monkeypatch.setattr("custom_components.airfi.api.client._DEVICE_LOCKS", weakref.WeakValueDictionary())
+    monkeypatch.setattr("custom_components.airfi_home.api.client._DEVICE_LOCKS", weakref.WeakValueDictionary())
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +211,7 @@ async def test_read_chunk_input_registers() -> None:
     """Test that _async_read_chunk reads input registers correctly."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
@@ -231,7 +231,7 @@ async def test_read_chunk_holding_registers() -> None:
     """Test that _async_read_chunk reads holding registers correctly."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
@@ -250,7 +250,7 @@ async def test_read_chunk_connection_failure() -> None:
     """Test that failed TCP connection raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
@@ -263,7 +263,7 @@ async def test_read_chunk_modbus_error_response() -> None:
     """Test that Modbus error response raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
@@ -279,7 +279,7 @@ async def test_read_chunk_unexpected_response_length() -> None:
     """Test that mismatched register count raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_response = MagicMock()
@@ -296,7 +296,7 @@ async def test_read_chunk_unexpected_exception() -> None:
     """Test that unexpected exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = OSError("unexpected")
 
@@ -338,7 +338,7 @@ async def test_read_all_registers_success() -> None:
     """Test that _async_read_all_registers reads holding and input in one connection."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
@@ -367,7 +367,7 @@ async def test_read_all_registers_connection_failure() -> None:
     """Test that connection failure raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
@@ -382,7 +382,7 @@ async def test_read_all_registers_modbus_error() -> None:
     """Test that Modbus error in holding read raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
@@ -401,7 +401,7 @@ async def test_read_all_registers_unexpected_response_length() -> None:
     """Test that mismatched register count in input read raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
@@ -440,7 +440,7 @@ async def test_read_all_registers_unexpected_exception() -> None:
     """Test that unexpected exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = RuntimeError("unexpected")
 
@@ -455,7 +455,7 @@ async def test_read_all_registers_chunks_large_reads() -> None:
     """Test that reads larger than MODBUS_READ_LIMIT are properly chunked."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
 
@@ -494,7 +494,7 @@ async def test_async_write_holding_register_calls_modbus_write() -> None:
     """Test that async_write_holding_register writes the correct register and value."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=False))
@@ -510,7 +510,7 @@ async def test_async_write_holding_register_raises_connection_error_on_tcp_failu
     """Test that a failed TCP connection raises AirfiApiClientConnectionError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = False
 
@@ -523,7 +523,7 @@ async def test_async_write_holding_register_raises_modbus_error_on_error_respons
     """Test that a Modbus error response raises AirfiApiClientModbusError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=True))
@@ -543,7 +543,7 @@ async def test_async_write_holding_register_raises_connection_error_when_unit_do
     """Test that a unit that takes the connection but never answers the write counts as unreachable."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.write_register.side_effect = error
@@ -560,7 +560,7 @@ async def test_async_write_unexpected_exception() -> None:
     """Test that unexpected write exceptions are wrapped in AirfiApiClientError."""
     client = AirfiApiClient(host="192.168.1.10", port=502)
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.side_effect = OSError("unexpected")
 
@@ -687,7 +687,7 @@ async def test_write_waits_until_in_flight_poll_finishes() -> None:
         calls.append("write")
         return MagicMock(isError=MagicMock(return_value=False))
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.read_holding_registers.side_effect = _blocking_read
@@ -731,7 +731,7 @@ async def test_write_waits_for_read_thread_that_outlived_its_timeout() -> None:
         calls.append("write")
         return MagicMock(isError=MagicMock(return_value=False))
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.read_holding_registers.side_effect = _blocking_read
@@ -770,7 +770,7 @@ async def test_write_abandoned_while_waiting_for_device_never_reaches_unit() -> 
         release_read.wait(timeout=5)
         return MagicMock(isError=MagicMock(return_value=False), registers=[0, 381, 300])
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient") as mock_tcp_client:
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
         mock_instance = mock_tcp_client.return_value
         mock_instance.connect.return_value = True
         mock_instance.read_holding_registers.side_effect = _blocking_read
@@ -821,7 +821,9 @@ async def test_clients_for_the_same_unit_share_one_connection_at_a_time() -> Non
     calls: list[str] = []
     release, started = threading.Event(), threading.Event()
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)):
+    with patch(
+        "custom_components.airfi_home.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)
+    ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await asyncio.to_thread(started.wait, 5)
         check = asyncio.create_task(checker.async_test_connection())
@@ -852,7 +854,9 @@ async def test_clients_for_different_units_do_not_wait_for_each_other() -> None:
     calls: list[str] = []
     release, started = threading.Event(), threading.Event()
 
-    with patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)):
+    with patch(
+        "custom_components.airfi_home.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)
+    ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await asyncio.to_thread(started.wait, 5)
         async with asyncio.timeout(1):
@@ -878,8 +882,8 @@ async def test_abandoned_request_frees_its_worker_thread_while_the_unit_is_busy(
         return await loop.run_in_executor(executor, func)
 
     with (
-        patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
-        patch("custom_components.airfi.api.client.asyncio.to_thread", _two_worker_to_thread),
+        patch("custom_components.airfi_home.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
+        patch("custom_components.airfi_home.api.client.asyncio.to_thread", _two_worker_to_thread),
     ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await loop.run_in_executor(None, started.wait, 5)
@@ -914,9 +918,9 @@ async def test_request_abandoned_just_before_the_unit_comes_free_never_reaches_u
         return await loop.run_in_executor(executor, func)
 
     with (
-        patch("custom_components.airfi.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
-        patch("custom_components.airfi.api.client.asyncio.to_thread", _two_worker_to_thread),
-        patch("custom_components.airfi.api.client.DEVICE_LOCK_POLL_SECONDS", 30),
+        patch("custom_components.airfi_home.api.client.ModbusTcpClient", _blocking_write_unit(calls, release, started)),
+        patch("custom_components.airfi_home.api.client.asyncio.to_thread", _two_worker_to_thread),
+        patch("custom_components.airfi_home.api.client.DEVICE_LOCK_POLL_SECONDS", 30),
     ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await loop.run_in_executor(None, started.wait, 5)
