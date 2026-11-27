@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-beta.1](https://github.com/janmilinds/ha-airfi/compare/v1.2.1...v2.0.0-beta.1) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **manifest:** the Marketplace cannot update from 1.x: delete every unit, uninstall Airfi and download it again, then add each unit again with the same name; see "Moving from version 1.x" in the README
+* **entity:** entities and the device are identified by the unit's serial number instead of the entry; this takes effect with the move to the new domain, where every unit is added again
+* the update interval option is gone and every unit is read every 10 seconds; to read it on your own schedule, turn off polling in the entry's system options and refresh the unit from an automation
+
+### 🎉 What's new
+
+* **config-flow:** ask for a name in manual setup and key the unit by its announced serial ([12766fb](https://github.com/janmilinds/ha-airfi/commit/12766fb78b9922631640eed18700e780dfe9b867))
+* **config-flow:** discover Airfi units automatically ([8e1d7e5](https://github.com/janmilinds/ha-airfi/commit/8e1d7e5c6b8ca093ba1cdbb092d04bb973868d24))
+* **entity:** key entities and the device by the unit's serial number ([ce4c577](https://github.com/janmilinds/ha-airfi/commit/ce4c5777e36e01e26a21eb5bbe64da5da36fa9bc))
+* **manifest:** install into its own domain, airfi_home ([a828245](https://github.com/janmilinds/ha-airfi/commit/a82824586c776e5e0f9eb24b1a163312ecb22323))
+* poll the unit at a fixed interval ([434e68a](https://github.com/janmilinds/ha-airfi/commit/434e68aba0e67fc92649288370865096dc5bd95b))
+
+
+### 🐛 Fixed
+
+* **config-flow:** check a unit's serial number before storing its address ([2dbaba3](https://github.com/janmilinds/ha-airfi/commit/2dbaba3bcaf8d2bc4e7f714136d36ab46ecbf83d))
+
+
 ## [1.2.1](https://github.com/janmilinds/ha-airfi/compare/v1.2.0...v1.2.1) (2026-11-27)
 
 
