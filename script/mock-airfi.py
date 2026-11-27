@@ -63,7 +63,7 @@ from typing import Self
 
 sys.path.insert(0, str(Path(__file__).parent / ".."))
 
-from custom_components.airfi_home.api.client import REGISTER_LENGTHS_BY_MAP_VERSION
+from custom_components.airfi_home.api.register_map import REGISTER_LENGTHS_BY_MAP_VERSION
 from custom_components.airfi_home.const import (
     AIRFI_MODELS,
     DEFAULT_MODBUS_ID,

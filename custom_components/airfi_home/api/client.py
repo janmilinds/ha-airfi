@@ -13,6 +13,8 @@ from pymodbus.exceptions import ConnectionException, ModbusIOException
 from custom_components.airfi_home.const import DEFAULT_MODBUS_ID, LOGGER
 from custom_components.airfi_home.utils import version_string, version_tuple
 
+from .register_map import register_lengths
+
 _LOGGER = logging.getLogger(__name__)
 _MODBUS_DUMP_LOGGER = LOGGER.getChild("modbus")
 
@@ -20,13 +22,6 @@ _DEVICE_LOCKS: weakref.WeakValueDictionary[tuple[str, int], threading.Lock] = we
 
 DEVICE_LOCK_POLL_SECONDS = 0.1
 MODBUS_READ_LIMIT = 30
-REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[tuple[int, int, int], tuple[int, int]], ...] = (
-    ((2, 7, 0), (42, 59)),
-    ((2, 5, 0), (40, 58)),
-    ((2, 3, 0), (40, 55)),
-    ((2, 1, 0), (40, 51)),
-    ((2, 0, 0), (40, 34)),
-)
 
 
 class AirfiApiClientError(Exception):
@@ -57,16 +52,6 @@ class AirfiApiClientModbusError(AirfiApiClientError):
     example due to an error response or unexpected register count. The
     device is reachable, so rediscovery is not warranted.
     """
-
-
-def _register_lengths(map_version_raw: int) -> tuple[int, int]:
-    """Return input/holding register lengths based on modbus map version."""
-    map_version = version_tuple(map_version_raw)
-    for min_version, lengths in REGISTER_LENGTHS_BY_MAP_VERSION:
-        if map_version >= min_version:
-            return lengths
-
-    return REGISTER_LENGTHS_BY_MAP_VERSION[-1][1]
 
 
 def _device_lock_for(host: str, port: int) -> threading.Lock:
@@ -157,7 +142,7 @@ class AirfiApiClient:
         input_lookup = await self._async_read_registers(start_address=1, length=3, register_type="input")
         firmware_raw = input_lookup[1] if len(input_lookup) > 1 else 0
         modbus_map_raw = input_lookup[2] if len(input_lookup) > 2 else 0
-        input_length, holding_length = _register_lengths(modbus_map_raw)
+        input_length, holding_length = register_lengths(version_tuple(modbus_map_raw))
         self.set_register_profile(
             firmware_version=version_string(firmware_raw),
             modbus_register_version=version_string(modbus_map_raw),

@@ -6,8 +6,9 @@ capability detection based on the Modbus map version.
 
 from packaging import version
 
+from custom_components.airfi_home.api.register_map import register_lengths
 from custom_components.airfi_home.const import LOGGER
-from custom_components.airfi_home.utils import version_string
+from custom_components.airfi_home.utils import version_string, version_tuple
 
 
 class AirfiDeviceError(Exception):
@@ -31,16 +32,6 @@ class AirfiFeatureManager:
     # Firmware versions with known issues (not supported)
     UNSUPPORTED_FIRMWARE_VERSIONS = {"3.2.0"}
 
-    # Register count mapping by Modbus map version
-    # Format: (input_register_count, holding_register_count)
-    REGISTER_LENGTHS_BY_MAP_VERSION = {
-        "2.7.0": (42, 59),
-        "2.5.0": (40, 58),
-        "2.3.0": (40, 55),
-        "2.1.0": (40, 51),
-        "2.0.0": (40, 34),
-    }
-
     # Feature flags gated by minimum Modbus map version
     _FEATURE_VERSION_MAP: dict[str, str] = {
         "minimum_temperature_set": "2.1.0",
@@ -54,6 +45,7 @@ class AirfiFeatureManager:
         self.firmware_version = ""
         self.modbus_register_version = ""
         self.hw_version = ""
+        self._modbus_register_raw = 0
         self._feature_flags: dict[str, bool] = dict.fromkeys(self._FEATURE_VERSION_MAP, False)
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
@@ -77,6 +69,7 @@ class AirfiFeatureManager:
         self.hw_version = version_string(lookup_registers[0])
         self.firmware_version = version_string(lookup_registers[1])
         self.modbus_register_version = version_string(lookup_registers[2])
+        self._modbus_register_raw = lookup_registers[2]
 
         self.check_supported(lookup_registers)
         self._set_feature_flags()
@@ -89,19 +82,7 @@ class AirfiFeatureManager:
             Tuple of (input_register_count, holding_register_count).
 
         """
-        parsed = version.parse(self.modbus_register_version)
-        input_len, holding_len = next(
-            (
-                lengths
-                for map_version_str, lengths in sorted(
-                    self.REGISTER_LENGTHS_BY_MAP_VERSION.items(),
-                    key=lambda x: version.parse(x[0]),
-                    reverse=True,
-                )
-                if parsed >= version.parse(map_version_str)
-            ),
-            self.REGISTER_LENGTHS_BY_MAP_VERSION[self.MIN_MODBUS_VERSION],
-        )
+        input_len, holding_len = register_lengths(version_tuple(self._modbus_register_raw))
         LOGGER.debug(
             "Setting input register length to %d and holding register length to %d",
             input_len,
