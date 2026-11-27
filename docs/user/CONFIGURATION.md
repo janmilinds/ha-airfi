@@ -34,28 +34,6 @@ To change the device IP address after setup:
 
 This is useful when the ventilation unit gets a new IP address (e.g., DHCP lease change). Consider assigning a static IP or DHCP reservation to avoid this.
 
-## Options (Runtime Settings)
-
-After initial setup, you can modify runtime options:
-
-1. Go to **Settings** → **Devices & Services**
-2. Find "Airfi"
-3. Click **Configure**
-
-| Option              | Type              | Range | Default | Description                              |
-| ------------------- | ----------------- | ----- | ------- | ---------------------------------------- |
-| **Update interval** | integer (seconds) | 5–60  | 10      | How often to poll the device for updates |
-
-### Choosing an Update Interval
-
-The integration polls the ventilation unit via Modbus TCP at the configured interval:
-
-- **5 seconds** — Near real-time monitoring, higher network usage
-- **10 seconds** (default) — Good balance for most setups
-- **30–60 seconds** — Lower resource usage, suitable for slow-changing values
-
-Modbus TCP is lightweight, so even 5-second polling is fine for local network use. Increase the interval only if you notice issues with multiple Modbus devices sharing the same unit.
-
 ## Entities
 
 The integration creates one device with the following entities:
@@ -195,12 +173,30 @@ The integration supports all Airfi ventilation unit models with Modbus register 
 
 ## Data Update Mechanism
 
-The integration polls the ventilation unit via Modbus TCP at the configured update interval (default: 10 seconds). Each poll cycle reads:
+The integration polls the ventilation unit via Modbus TCP every 10 seconds. The interval is fixed; there is no option for it. Each poll cycle reads:
 
 - **Input registers** — Sensor values (temperatures, humidity, device status)
 - **Holding registers** — Configuration state (fan speed, operating mode)
 
 All entity states are updated together in a single coordinator cycle. The poll is synchronous Modbus TCP executed in an executor thread to avoid blocking the Home Assistant event loop.
+
+**Reading the unit on your own schedule:** turn off the fixed polling and refresh the unit from an automation instead.
+
+1. Go to **Settings** > **Devices & services** > **Airfi**.
+2. Select the three-dot menu (⋮) of the unit's entry > **System options**, and turn off **Enable polling for changes**.
+3. Create an automation that runs the `homeassistant.update_entity` action, with a time pattern trigger or whatever trigger suits you. Target any one of the unit's entities; a single read updates every entity of that unit.
+
+```yaml
+triggers:
+  - trigger: time_pattern
+    minutes: "/1"
+actions:
+  - action: homeassistant.update_entity
+    target:
+      entity_id: sensor.airfi_model_60_l_supply_air
+```
+
+Home Assistant's [custom polling interval guide](https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval) describes the same steps.
 
 **Recovery behavior:** If the device becomes unreachable for more than 90 seconds, the integration attempts to rediscover the device via UDP multicast (the device may have changed IP). If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
 
@@ -209,7 +205,7 @@ All entity states are updated together in a single coordinator cycle. The poll i
 - **Single device per config entry** — Each ventilation unit requires its own config entry (multiple units are supported, but each is added separately).
 - **No write-back for all registers** — Currently only fan speed and at-home/away mode can be controlled. Other unit settings must be configured via the unit's own interface.
 - **Local network only** — Modbus TCP requires direct network access; remote access needs a VPN or similar solution.
-- **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. Very short polling intervals (5 seconds) with an unstable connection may cause brief delays.
+- **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. On an unstable connection, a poll can briefly delay the next one.
 - **No authentication** — Modbus TCP has no built-in security. Ensure the ventilation unit is on a trusted network.
 
 ## Related Documentation

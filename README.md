@@ -28,7 +28,7 @@ Also included: a guided repair when the unit stays unreachable, a warning for un
 - Relative humidity sensor
 - Diagnostic sensors: firmware version, modbus register version, connectivity (disabled by default)
 - Reconfigure flow for host updates without removing the integration
-- Configurable polling interval in options flow (`update_interval_seconds`)
+- Reads the unit every 10 seconds; all entities update together
 
 ## Supported Models
 
@@ -93,11 +93,9 @@ If no device is selected from discovery, you can add manually with:
 
 Reconfigure updates host only. Serial number and model remain fixed for the configured device entry.
 
-### Options
+### Update interval
 
-Options flow currently provides:
-
-- Update interval in seconds (`update_interval_seconds`, range 5-60)
+The integration reads the unit every 10 seconds. There is no option for it; to read the unit on your own schedule instead, see [Data update mechanism](docs/user/CONFIGURATION.md#data-update-mechanism).
 
 ## Created Entities
 

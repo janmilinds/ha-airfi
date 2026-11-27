@@ -78,20 +78,6 @@
       "invalid_selection": "The selected device is no longer available."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Configure integration options",
-        "description": "Customize how this integration operates.",
-        "data": {
-          "update_interval_seconds": "Update interval (seconds)"
-        },
-        "data_description": {
-          "update_interval_seconds": "How often to refresh data from the device (5 to 60 seconds)"
-        }
-      }
-    }
-  },
   "exceptions": {
     "device_unreachable": {
       "message": "Unable to connect to device at {host}."

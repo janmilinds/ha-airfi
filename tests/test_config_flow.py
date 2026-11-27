@@ -12,7 +12,6 @@ from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.api import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
 from custom_components.airfi.config_flow_handler.config_flow import AirfiConfigFlowHandler
-from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow
 from custom_components.airfi.config_flow_handler.schemas import get_discovery_select_schema
 from custom_components.airfi.const import (
     CONF_MODEL_NAME,
@@ -722,56 +721,6 @@ async def test_run_discovery_accumulate_mode(hass) -> None:
     serials = {d.serial for d in result}
     assert 11111 in serials
     assert 22222 in serials
-
-
-# ---------------------------------------------------------------------------
-# Options flow
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-async def test_options_flow_shows_form(hass, config_entry) -> None:
-    """Test that options flow shows a form with current options."""
-    config_entry.add_to_hass(hass)
-    flow = AirfiOptionsFlow()
-    flow.hass = hass
-    flow.handler = config_entry.entry_id
-    flow.flow_id = "test-flow"
-    flow._options_flow_lock = asyncio.Lock()  # noqa: SLF001
-
-    result = await flow.async_step_init()
-
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "init"
-
-
-@pytest.mark.unit
-async def test_options_flow_creates_entry(hass, config_entry) -> None:
-    """Test that options flow creates entry with user-provided values."""
-    config_entry.add_to_hass(hass)
-    flow = AirfiOptionsFlow()
-    flow.hass = hass
-    flow.handler = DOMAIN
-    flow.flow_id = "test-flow"
-    flow._options_flow_lock = asyncio.Lock()  # noqa: SLF001
-
-    result = await flow.async_step_init({"update_interval_seconds": 30})
-
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"]["update_interval_seconds"] == 30
-
-
-# ---------------------------------------------------------------------------
-# async_get_options_flow
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-def test_get_options_flow_returns_options_flow(hass, config_entry) -> None:
-    """Test that async_get_options_flow returns an AirfiOptionsFlow instance."""
-    result = AirfiConfigFlowHandler.async_get_options_flow(config_entry)
-
-    assert isinstance(result, AirfiOptionsFlow)
 
 
 # ---------------------------------------------------------------------------

@@ -150,15 +150,9 @@ automation:
 - **Dashboard monitoring** — display real-time ventilation status, temperatures, and humidity on Lovelace dashboards
 - **Alert on problems** — get notified when the ventilation unit becomes unreachable or humidity rises above a threshold
 
-## Configuration Options
+## Update interval
 
-After setup, you can adjust the polling interval:
-
-1. Go to **Settings** → **Devices & Services**
-2. Find **Airfi** and click **Configure**
-3. Set **Update interval** (5–60 seconds, default 10)
-
-See [CONFIGURATION.md](./CONFIGURATION.md) for full details.
+The integration reads the unit every 10 seconds, and there is nothing to configure after setup. To read the unit on your own schedule, see [Data update mechanism](./CONFIGURATION.md#data-update-mechanism).
 
 ## Troubleshooting
 

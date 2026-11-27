@@ -78,20 +78,6 @@
       "invalid_selection": "Wybrane urządzenie nie jest już dostępne."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Skonfiguruj opcje integracji",
-        "description": "Dostosuj sposób działania tej integracji.",
-        "data": {
-          "update_interval_seconds": "Interwał aktualizacji (sekundy)"
-        },
-        "data_description": {
-          "update_interval_seconds": "Jak często odświeżać dane z urządzenia (5 do 60 sekund)"
-        }
-      }
-    }
-  },
   "exceptions": {
     "device_unreachable": {
       "message": "Nie udało się połączyć z urządzeniem pod adresem {host}."

@@ -14,7 +14,6 @@ from pytest_homeassistant.common import MockConfigEntry
 from custom_components.airfi.config_flow_handler.schemas import (
     get_discovery_confirm_schema,
     get_discovery_select_schema,
-    get_options_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
@@ -154,7 +153,6 @@ FORMS: dict[tuple[str, str], tuple[str, Callable[..., probatio.Schema], tuple[An
         get_discovery_confirm_schema,
         (AirfiDiscoveredDevice(host="192.0.2.1", serial=1, model_id=1),),
     ),
-    ("AirfiOptionsFlow", "init"): ("options.step.init", get_options_schema, ()),
     ("DeviceUnreachableRepairFlow", "init"): (
         "issues.device_unreachable.fix_flow.step.init",
         get_reconfigure_schema,
@@ -199,7 +197,7 @@ def test_every_shown_form_is_checked() -> None:
     [pytest.param(path, factory(*args), id=path) for path, factory, args in FORMS.values()],
 )
 def test_every_form_field_has_a_label_and_a_description(path: str, schema: probatio.Schema) -> None:
-    """Every field of a setup, options or repair form has a label and a help line, and en.json names no other."""
+    """Every field of a setup, reconfigure or repair form has a label and a help line, and en.json names no other."""
     step = reduce(lambda block, key: block.get(key, {}), path.split("."), _load(TRANSLATIONS / "en.json"))
     fields = {str(key) for key in schema.schema}
 
