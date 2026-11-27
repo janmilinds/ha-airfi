@@ -347,7 +347,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             user_input: Confirmed data with optional custom name.
 
         Returns:
-            The config flow result (entry creation or next device, or abort).
+            The config flow result (entry creation or abort).
 
         """
         if self.selected_device is None:
@@ -376,8 +376,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(slugify(str(self.selected_device.serial)))
                 self._abort_if_unique_id_configured()
 
-                # Create entry with user-provided name
-                entry_result = self.async_create_entry(
+                return self.async_create_entry(
                     title=user_input.get("name") or f"Airfi {self.selected_device.model_name}",
                     data={
                         CONF_HOST: self.selected_device.host,
@@ -385,14 +384,6 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_MODEL_NAME: self.selected_device.model_name,
                     },
                 )
-
-                # If more devices remain, cascade to next
-                if len(self.discovered_devices) > 1:
-                    self.discovered_devices.remove(self.selected_device)
-                    self.selected_device = None
-                    return await self.async_step_discovery_select()
-
-                return entry_result
 
         # Show confirmation form
         return self.async_show_form(

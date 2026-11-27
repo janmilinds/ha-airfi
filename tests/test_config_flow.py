@@ -1,6 +1,7 @@
 """Test the Airfi config flow."""
 
 import asyncio
+from contextlib import AbstractContextManager
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,8 +21,8 @@ from custom_components.airfi.const import (
     DISCOVERY_OPTION_SCAN_MORE,
     DOMAIN,
 )
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
-from homeassistant.config_entries import ConfigEntryState
+from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
+from homeassistant.config_entries import SOURCE_USER, ConfigEntryState, ConfigFlowResult
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -50,39 +51,49 @@ def _discovered_device(
     return AirfiDiscoveredDevice(host=host, serial=serial, model_id=model_id)
 
 
+def _scan_finds(*devices: AirfiDiscoveredDevice) -> AbstractContextManager[AsyncMock]:
+    """Patch the network scan to find the given units."""
+    return patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=list(devices)))
+
+
+async def _start_user_flow(hass: HomeAssistant) -> ConfigFlowResult:
+    """Start the setup from the UI and return the step shown once the scan has finished."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    await hass.async_block_till_done()
+    return await hass.config_entries.flow.async_configure(result["flow_id"])
+
+
 # ---------------------------------------------------------------------------
 # async_step_user (manual path)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
-async def test_user_flow_creates_entry(hass) -> None:
-    """Test that the user flow creates an entry with host and serial number."""
-    handler = _make_handler(hass)
-
-    with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
-    ):
-        result = await handler.async_step_user(
-            {
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_user_flow_with_input_adds_the_unit(hass: HomeAssistant) -> None:
+    """A setup started with the address and serial adds the unit under its serial."""
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_USER},
+            data={
                 CONF_HOST: "192.168.1.10",
                 CONF_SERIAL_NUMBER: "AIRFI-12345",
                 CONF_MODEL_NAME: "Model 60 L",
             },
         )
+        await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Airfi Model 60 L"
-    assert result["data"] == {
+    entries = hass.config_entries.async_entries(DOMAIN)
+    assert len(entries) == 1
+    assert entries[0].title == "Airfi Model 60 L"
+    assert entries[0].unique_id == "airfi-12345"
+    assert entries[0].data == {
         CONF_HOST: "192.168.1.10",
         CONF_MODEL_NAME: "Model 60 L",
         CONF_SERIAL_NUMBER: "AIRFI-12345",
     }
-    handler.async_set_unique_id.assert_awaited_once_with("airfi-12345")
 
 
 @pytest.mark.unit
@@ -265,29 +276,37 @@ async def test_manual_step_shows_form_without_input(hass) -> None:
     assert result["errors"] == {}
 
 
-@pytest.mark.unit
-async def test_manual_step_creates_entry_on_success(hass) -> None:
-    """Test that manual step creates an entry after successful validation."""
-    handler = _make_handler(hass)
-
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistant) -> None:
+    """When the scan finds nothing, the unit entered by hand is added."""
     with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
+        _scan_finds(),
+        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
     ):
-        result = await handler.async_step_manual(
+        result = await _start_user_flow(hass)
+        assert result["step_id"] == "fallback"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "manual"})
+        assert result["step_id"] == "manual"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
             {
                 CONF_HOST: "192.168.1.10",
                 CONF_SERIAL_NUMBER: "12345",
                 CONF_MODEL_NAME: "Model 100 L",
             },
         )
+        await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_HOST] == "192.168.1.10"
-    assert result["data"][CONF_SERIAL_NUMBER] == "12345"
+    entries = hass.config_entries.async_entries(DOMAIN)
+    assert len(entries) == 1
+    assert entries[0].unique_id == "12345"
+    assert entries[0].data == {
+        CONF_HOST: "192.168.1.10",
+        CONF_SERIAL_NUMBER: "12345",
+        CONF_MODEL_NAME: "Model 100 L",
+    }
 
 
 @pytest.mark.unit
@@ -555,28 +574,31 @@ async def test_discovery_confirm_shows_form(hass) -> None:
     assert result["description_placeholders"]["serial"] == "12345"
 
 
-@pytest.mark.unit
-async def test_discovery_confirm_creates_entry(hass) -> None:
-    """Test that confirming a device creates an entry."""
-    handler = _make_handler(hass)
-    handler.selected_device = _discovered_device()
-    handler.discovered_devices = [handler.selected_device]
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_confirming_the_only_found_unit_adds_it(hass: HomeAssistant) -> None:
+    """Selecting and confirming the one unit found adds it under the given name."""
+    device = _discovered_device()
 
     with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
+        _scan_finds(device),
+        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
     ):
-        result = await handler.async_step_discovery_confirm(
-            {"name": "My Airfi Unit"},
-        )
+        result = await _start_user_flow(hass)
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"device": device.unique_key})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "My Airfi Unit"})
+        await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "My Airfi Unit"
-    assert result["data"][CONF_HOST] == "192.168.1.50"
-    assert result["data"][CONF_SERIAL_NUMBER] == 12345
+    entries = hass.config_entries.async_entries(DOMAIN)
+    assert len(entries) == 1
+    assert entries[0].title == "My Airfi Unit"
+    assert entries[0].unique_id == "12345"
+    assert entries[0].data == {
+        CONF_HOST: "192.168.1.50",
+        CONF_SERIAL_NUMBER: 12345,
+        CONF_MODEL_NAME: "Model 60 L",
+    }
 
 
 @pytest.mark.unit
@@ -631,31 +653,40 @@ async def test_discovery_confirm_aborts_without_selected_device(hass) -> None:
     assert result["reason"] == "invalid_selection"
 
 
-@pytest.mark.unit
-async def test_discovery_confirm_cascades_to_next_device(hass) -> None:
-    """Test that confirming with remaining devices cascades to next selection."""
-    device1 = _discovered_device(host="192.168.1.50", serial=12345)
-    device2 = _discovered_device(host="192.168.1.51", serial=67890, model_id=3)
-    handler = _make_handler(hass)
-    handler.selected_device = device1
-    handler.discovered_devices = [device1, device2]
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_confirming_one_of_two_found_units_adds_it(hass: HomeAssistant) -> None:
+    """The confirmed unit is added, and the next setup offers only the other one."""
+    first = _discovered_device(host="192.168.1.50", serial=12345)
+    second = _discovered_device(host="192.168.1.51", serial=67890, model_id=3)
 
     with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
+        _scan_finds(first, second),
+        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
     ):
-        result = await handler.async_step_discovery_confirm(
-            {"name": "Unit 1"},
-        )
+        result = await _start_user_flow(hass)
+        assert result["step_id"] == "discovery_select"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"device": first.unique_key})
+        assert result["step_id"] == "discovery_confirm"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Upstairs"})
+        await hass.async_block_till_done()
 
-    # Should show the discovery_select form for the remaining device
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "discovery_select"
-    assert len(handler.discovered_devices) == 1
-    assert handler.discovered_devices[0] is device2
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        entries = hass.config_entries.async_entries(DOMAIN)
+        assert len(entries) == 1
+        assert entries[0].title == "Upstairs"
+        assert entries[0].unique_id == "12345"
+        assert entries[0].data == {
+            CONF_HOST: "192.168.1.50",
+            CONF_SERIAL_NUMBER: 12345,
+            CONF_MODEL_NAME: "Model 60 L",
+        }
+
+        result = await _start_user_flow(hass)
+
+    device_row, *_ = result["data_schema"].schema["device"].config["options"]
+    assert result["description_placeholders"]["count"] == "1"
+    assert device_row["value"] == second.unique_key
 
 
 # ---------------------------------------------------------------------------
