@@ -19,7 +19,7 @@
 - [x] `docs-installation-instructions` — GETTING_STARTED.md: HACS + manual install steps
 - [x] `docs-removal-instructions` — GETTING_STARTED.md: "Removing the Integration" section
 - [ ] `entity-event-setup` — N/A: no event subscriptions (CoordinatorEntity handles lifecycle)
-- [x] `entity-unique-id` — `{entry_id}_{description.key}` in entity/base.py
+- [x] `entity-unique-id` — `{serial}_{description.key}` in entity/base.py
 - [x] `has-entity-name` — `_attr_has_entity_name = True` in entity/base.py
 - [x] `runtime-data` — `AirfiData` dataclass stored as `entry.runtime_data`
 - [x] `test-before-configure` — Config flow calls `validate_connection()` before creating entry

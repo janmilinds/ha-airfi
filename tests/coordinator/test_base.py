@@ -281,9 +281,7 @@ async def test_device_shows_firmware_the_unit_reports_after_an_update(
     init_integration: MockConfigEntry,
 ) -> None:
     """Test that a firmware update on the unit reaches the device page without a reload."""
-    device = device_registry.async_get_device_by_identifier(
-        (DOMAIN, init_integration.entry_id), init_integration.entry_id
-    )
+    device = device_registry.async_get_device_by_identifier((DOMAIN, "12345678"), init_integration.entry_id)
     assert device is not None
     assert device.sw_version == "3.1.0"
     entity_id = next(
@@ -325,9 +323,7 @@ async def test_device_shows_firmware_from_the_lookup_after_a_failed_poll(
         HOMEASSISTANT_DOMAIN, SERVICE_UPDATE_ENTITY, {ATTR_ENTITY_ID: entity_id}, blocking=True
     )
 
-    device = device_registry.async_get_device_by_identifier(
-        (DOMAIN, init_integration.entry_id), init_integration.entry_id
-    )
+    device = device_registry.async_get_device_by_identifier((DOMAIN, "12345678"), init_integration.entry_id)
     assert device is not None
     assert device.sw_version == "3.8.1"
 

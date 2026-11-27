@@ -11,7 +11,7 @@ https://developers.home-assistant.io/docs/core/entity/index/#common-properties
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi.const import ATTRIBUTION, CONF_MODEL_NAME, CONF_SERIAL_NUMBER
+from custom_components.airfi.const import ATTRIBUTION, CONF_MODEL_NAME
 from custom_components.airfi.coordinator import AirfiDataUpdateCoordinator
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -53,19 +53,16 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
         """
         super().__init__(coordinator)
         self.entity_description = entity_description
-        # Include entity description key in unique_id to support multiple entities
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
+        serial = coordinator.config_entry.unique_id
+        if TYPE_CHECKING:
+            assert serial is not None
+        self._attr_unique_id = f"{serial}_{entity_description.key}"
         self._attr_device_info = DeviceInfo(
-            identifiers={
-                (
-                    coordinator.config_entry.domain,
-                    coordinator.config_entry.entry_id,
-                ),
-            },
+            identifiers={(coordinator.config_entry.domain, serial)},
             name=coordinator.config_entry.title,
             manufacturer="Airfi",
             model=coordinator.config_entry.data.get(CONF_MODEL_NAME, "Airfi"),
-            serial_number=str(coordinator.config_entry.data.get(CONF_SERIAL_NUMBER, "")),
+            serial_number=serial,
             hw_version=coordinator.hw_version or None,
             sw_version=coordinator.data.firmware_version if coordinator.data else "Unknown",
         )

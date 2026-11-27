@@ -119,7 +119,7 @@ Once one unit is set up, further units are offered under **Settings** > **Device
 3. Search for **Airfi**.
 4. The search finds any new units on the network.
 
-Each unit is identified by its serial number, so re-adding an already-configured unit is prevented automatically.
+Each unit is identified by its serial number, so re-adding an already-configured unit is prevented automatically. The device and its entities are keyed by the serial number too, so a unit deleted and added again within 30 days gets back its area, names, entity IDs, and hidden or disabled entities.
 
 ## Diagnostic Data
 
