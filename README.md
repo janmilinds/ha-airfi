@@ -54,17 +54,30 @@ In the Marketplace, open this repository and select **Download**.
 
 ### Moving from version 1.x
 
-⚠️ Version 2.0.0 gives the integration a domain of its own, `airfi_home`, so it can be listed in the default catalog.
-Home Assistant cannot move a unit from the old domain to the new one, and the Marketplace does not update an
-integration whose domain changes, so the move takes a few steps:
+⚠️ Version 2.0.0 changes the integration's domain from `airfi` to `airfi_home`, and the Marketplace cannot update it in
+place. The move takes a few steps:
 
-1. Before you start, note each unit's name and one of its entity IDs, and any entity ID you changed by hand.
-2. Delete each unit, ignored ones included: **Settings** > **Devices & services** > **Airfi** > ⋮ > **Delete**.
-3. In the Marketplace, uninstall Airfi, then download it again, and restart Home Assistant.
-4. Add each unit again with the same name it had, or leave the name empty if it had the default.
+1. Take a backup of Home Assistant.
+2. Note each unit's name and one of its entity IDs, any entity ID you changed by hand, the entities you turned on
+   yourself, and the settings of any helper that uses the unit's entities.
+3. Delete each unit, ignored ones included: **Settings** > **Devices & services** > **Airfi** > ⋮ > **Delete**. When
+   you delete the last one, Home Assistant asks whether to uninstall Airfi too: select **Uninstall**. If it does not
+   ask, uninstall Airfi in the Marketplace.
+4. Uninstalling also removes Airfi from the Marketplace, so open it again with this button, download Airfi, and
+   restart Home Assistant.
 
-Entity IDs Home Assistant formed itself, history, automations and dashboards carry on. Areas, custom names and icons,
-labels, hidden or disabled entities, and entity IDs you changed by hand are set again. The full steps are in
+   [![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=janmilinds&repository=ha-airfi&category=integration)
+
+5. Add each unit again with the same name it had, or leave the name empty if it had the default: **Settings** >
+   **Devices & services** > **Add integration** > **Airfi**.
+6. Compare the entity IDs with the ones you noted, and change any that differ back in the entity's settings.
+7. Turn on again the entities you had turned on yourself. The fireplace, sauna and boosted cooling switches are off by
+   default.
+8. Create again the helpers that used the unit's entities, with the entity IDs they had. Statistics, Trend, History
+   stats and Change device type helpers are deleted together with the entity they follow.
+
+Once the entity IDs are the same as before, history, automations and dashboards carry on. Areas, custom names and
+icons, labels and hidden entities are set again. The full steps are in
 [Getting Started](docs/user/GETTING_STARTED.md#moving-from-version-1x).
 
 <!-- ha-marketplace:exclude-start -->
