@@ -8,6 +8,7 @@ as the integration grows.
 Package structure:
 -----------------
 - connection.py: Connection validators (e.g., testing Device connection)
+- identity.py: Which unit announced itself from an address
 
 When validators grow (>300 lines per file), split further:
  - connection/modbus.py, connection/discovery.py
@@ -16,8 +17,11 @@ All validators are re-exported from this __init__.py for convenient imports.
 """
 
 from custom_components.airfi.config_flow_handler.validators.connection import validate_connection
+from custom_components.airfi.config_flow_handler.validators.identity import AddressIdentity, check_address_identity
 
 # Re-export all validators for convenient imports
 __all__ = [
+    "AddressIdentity",
+    "check_address_identity",
     "validate_connection",
 ]

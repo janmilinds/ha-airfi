@@ -12,6 +12,7 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.config_flow_handler.schemas import (
+    get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
     get_reconfigure_schema,
@@ -152,6 +153,16 @@ FORMS: dict[tuple[str, str], tuple[str, Callable[..., probatio.Schema], tuple[An
         "config.step.discovery_confirm",
         get_discovery_confirm_schema,
         (AirfiDiscoveredDevice(host="192.0.2.1", serial=1, model_id=1),),
+    ),
+    ("AirfiConfigFlowHandler", "reconfigure_unverified"): (
+        "config.step.reconfigure_unverified",
+        get_confirm_schema,
+        (),
+    ),
+    ("DeviceUnreachableRepairFlow", "unverified"): (
+        "issues.device_unreachable.fix_flow.step.unverified",
+        get_confirm_schema,
+        (),
     ),
     ("DeviceUnreachableRepairFlow", "init"): (
         "issues.device_unreachable.fix_flow.step.init",

@@ -7,17 +7,17 @@
       },
       "fallback": {
         "title": "Inga enheter hittades",
-        "description": "Inga Airfi-enheter hittades automatiskt. Du kan försöka upptäcka enheter igen eller lägga till en enhet manuellt.",
+        "description": "Inga Airfi-enheter hittades i ditt nätverk. Du kan söka igen eller lägga till en enhet manuellt.",
         "menu_options": {
-          "scan": "Försök upptäcka enheter igen",
+          "scan": "Sök igen",
           "manual": "Lägg till en enhet manuellt"
         }
       },
       "fallback_error": {
-        "title": "Sökningen misslyckades",
-        "description": "Det gick inte att starta enhetssökningen eftersom nätverksporten inte är tillgänglig (porten kan användas av en annan process). Du kan försöka igen eller lägga till en enhet manuellt.",
+        "title": "Sökningen kunde inte starta",
+        "description": "Home Assistant kunde inte söka efter Airfi-enheter i ditt nätverk. Försök igen om en stund eller lägg till en enhet manuellt.",
         "menu_options": {
-          "scan": "Försök upptäcka enheter igen",
+          "scan": "Sök igen",
           "manual": "Lägg till en enhet manuellt"
         }
       },
@@ -32,14 +32,14 @@
         },
         "data_description": {
           "host": "Airfi-enhetens IP-adress i ditt lokala nätverk.",
-          "serial_number": "Siffrorna som står på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över upptäckta enheter om sökningen hittade enheten. Home Assistant använder det för att hitta enheten igen om dess IP-adress ändras och sökningen når den.",
+          "serial_number": "Siffrorna som står på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över hittade enheter. Home Assistant använder serienumret för att hitta enheten igen om dess IP-adress ändras.",
           "model_name": "Välj modellen på enhetens typskylt, till exempel Model 60, eller det exakta modellnamnet från Airfi-appen. Om du inte anger något namn ger modellen enheten dess namn i Home Assistant.",
           "name": "Lämna tomt för att ge enheten namnet Airfi och modellen. Entiteternas ID:n bildas av det här namnet, så när du lägger till en enhet igen ska du ge den samma namn som tidigare."
         }
       },
       "discovery_select": {
         "title": "Välj upptäckt enhet",
-        "description": "Hittade {count} Airfi-enhet(er). Välj en för att fortsätta.",
+        "description": "Hittade Airfi-enheter: {count}. Välj en för att fortsätta.",
         "data": {
           "device": "Upptäckt enhet"
         },
@@ -49,38 +49,42 @@
       },
       "discovery_confirm": {
         "title": "Bekräfta enhet",
-        "description": "**{model}** på {host} (serienummer: {serial})\n\nDu kan ge enheten ett anpassat namn om du vill.",
+        "description": "**{model}** på {host} (serienummer {serial})\n\nDu kan ge enheten ett eget namn.",
         "data": {
           "name": "Namn"
         },
         "data_description": {
-          "name": "Lämna tomt för att använda standardnamnet."
+          "name": "Airfi och modellen om du inte ändrar det. Entiteternas ID:n bildas av det här namnet, så när du lägger till en enhet igen ska du ge den samma namn som tidigare."
         }
       },
       "reconfigure": {
-        "description": "Uppdatera anslutningsinställningarna för denna integration.",
+        "description": "Ange IP-adressen där {name} nås nu.",
         "data": {
           "host": "IP-adress"
         },
         "data_description": {
-          "host": "IP-adressen där Airfi-enheten nu kan nås."
+          "host": "Airfi-enhetens IP-adress i ditt lokala nätverk."
         }
+      },
+      "reconfigure_unverified": {
+        "title": "Använda den här IP-adressen?",
+        "description": "Home Assistant kunde inte bekräfta att enheten på {host} är {name}. Det kan hända i vissa nätverk även när adressen är rätt. Om du är säker på att adressen stämmer väljer du Skicka."
       }
     },
     "progress": {
       "discovering_devices": "Söker efter Airfi-enheter i ditt nätverk. Detta kan ta 5–15 sekunder."
     },
     "error": {
-      "cannot_connect": "Det gick inte att ansluta till enheten.",
-      "cannot_retrieve_data": "Det gick inte att hämta data från enheten.",
-      "invalid_serial": "Ange serienumret med enbart siffror."
+      "cannot_connect": "Det gick inte att ansluta till enheten. Kontrollera IP-adressen och att enheten är påslagen.",
+      "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
+      "invalid_serial": "Ange serienumret med enbart siffror.",
+      "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen.",
+      "serial_mismatch": "Enheten på den här IP-adressen har ett annat serienummer. Kontrollera IP-adressen och serienumret."
     },
     "abort": {
-      "already_configured": "Denna enhet är redan konfigurerad.",
-      "discovery_failed": "Upptäckten av enheter misslyckades.",
-      "discovery_no_devices": "Inga Airfi-enheter hittades.",
+      "already_configured": "Den här enheten är redan tillagd.",
       "invalid_selection": "Den valda enheten är inte längre tillgänglig.",
-      "already_in_progress": "Konfigurationsflödet pågår redan.",
+      "already_in_progress": "Den här enheten håller redan på att läggas till.",
       "not_airfi_device": "Den här enheten är inte en Airfi-enhet."
     }
   },
@@ -115,19 +119,24 @@
       "title": "{name} kan inte nås",
       "fix_flow": {
         "error": {
-          "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen.",
-          "cannot_retrieve_data": "Anslutning till enheten lyckades, men nödvändiga data kunde inte läsas."
+          "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen. Kontrollera adressen och att enheten är påslagen.",
+          "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
+          "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen."
         },
         "step": {
           "init": {
             "title": "{name} kan inte nås",
-            "description": "Uppdatera IP-adressen för {name} om den har ändrats. Om IP-adressen inte har ändrats, behåll det aktuella värdet och kontrollera enhetens eller nätverkets anslutning.",
+            "description": "Home Assistant når inte {name}. Om IP-adressen har ändrats anger du den nya. Annars behåller du den nuvarande adressen och kontrollerar att enheten är påslagen och ansluten till ditt nätverk.",
             "data": {
               "host": "IP-adress"
             },
             "data_description": {
               "host": "IP-adressen där Airfi-enheten nu kan nås."
             }
+          },
+          "unverified": {
+            "title": "Använda den här IP-adressen?",
+            "description": "Home Assistant kunde inte bekräfta att enheten på {host} är {name}. Det kan hända i vissa nätverk även när adressen är rätt. Om du är säker på att adressen stämmer väljer du Skicka."
           }
         }
       }

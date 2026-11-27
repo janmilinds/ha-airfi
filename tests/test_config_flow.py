@@ -1,6 +1,7 @@
 """Test the Airfi config flow."""
 
 import asyncio
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 import json
 from pathlib import Path
@@ -309,6 +310,30 @@ async def test_manual_serial_with_letters_is_refused_until_corrected(hass: HomeA
 
 
 @pytest.mark.integration
+async def test_manual_serial_of_another_unit_at_the_address_is_refused(
+    hass: HomeAssistant,
+    announce: Callable[..., None],
+    init_integration: MockConfigEntry,
+) -> None:
+    """A serial that differs from the one announced from the typed address is refused until it matches."""
+    announce("192.168.1.60", 67890, 3)
+    await hass.async_block_till_done()
+    result = await _open_manual_form(hass)
+    form = {CONF_HOST: "192.168.1.60", CONF_SERIAL_NUMBER: "11111", CONF_MODEL_NAME: "Model 100 L"}
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
+        assert result["errors"] == {"base": "serial_mismatch"}
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**form, CONF_SERIAL_NUMBER: "67890"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id == "67890"
+
+
+@pytest.mark.integration
 @pytest.mark.usefixtures("mock_api")
 @pytest.mark.parametrize(
     ("error", "key"),
@@ -362,12 +387,16 @@ async def test_reconfigure_sets_a_loaded_entry_up_once(
     mock_api: SimpleNamespace,
     init_integration: MockConfigEntry,
 ) -> None:
-    """A new address is stored and the running entry is set up again exactly once."""
+    """A new address no unit was heard from is stored once confirmed, and the entry is set up again exactly once."""
     result = await init_integration.start_reconfigure_flow(hass)
     setups_before = mock_api.get_lookup_registers.await_count
 
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+    assert result["step_id"] == "reconfigure_unverified"
+    assert result["description_placeholders"] == {"host": "10.0.0.1", "name": "Airfi Model 60 L"}
+    assert init_integration.data[CONF_HOST] != "10.0.0.1"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.ABORT
@@ -394,7 +423,8 @@ async def test_reconfigure_sets_up_an_entry_that_is_retrying(
     result = await config_entry.start_reconfigure_flow(hass)
 
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
-        await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
 
     assert config_entry.state is ConfigEntryState.LOADED
@@ -417,6 +447,35 @@ async def test_reconfigure_keeps_the_address_when_the_new_one_fails(
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
     assert init_integration.data[CONF_HOST] == original_host
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("serial", "stored", "errors"),
+    [
+        pytest.param(12345678, True, None, id="same-unit"),
+        pytest.param(67890, False, {"base": "wrong_device"}, id="other-unit"),
+    ],
+)
+async def test_reconfigure_checks_which_unit_announced_from_the_address(
+    hass: HomeAssistant,
+    announce: Callable[..., None],
+    init_integration: MockConfigEntry,
+    serial: int,
+    stored: bool,
+    errors: dict[str, str] | None,
+) -> None:
+    """The unit's own address is stored without confirmation; one another unit announced from is refused."""
+    announce("10.0.0.1", serial)
+    await hass.async_block_till_done()
+    result = await init_integration.start_reconfigure_flow(hass)
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.async_block_till_done()
+
+    assert result.get("errors") == errors
+    assert (init_integration.data[CONF_HOST] == "10.0.0.1") is stored
 
 
 # ---------------------------------------------------------------------------

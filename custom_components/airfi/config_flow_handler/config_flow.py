@@ -11,15 +11,20 @@ https://developers.home-assistant.io/docs/config_entries_config_flow_handler
 """
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from custom_components.airfi.config_flow_handler.schemas import (
+    get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
-from custom_components.airfi.config_flow_handler.validators import validate_connection
+from custom_components.airfi.config_flow_handler.validators import (
+    AddressIdentity,
+    check_address_identity,
+    validate_connection,
+)
 from custom_components.airfi.const import (
     AIRFI_MAC_PREFIX,
     CONF_MODEL_NAME,
@@ -65,6 +70,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.selected_device: AirfiDiscoveredDevice | None = None
         self.discovery_task: asyncio.Task[list[AirfiDiscoveredDevice]] | None = None
         self._discovery_accumulate: bool = False
+        self._unverified_host: str | None = None
 
     async def async_step_user(
         self,
@@ -184,6 +190,8 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 errors[CONF_SERIAL_NUMBER] = "invalid_serial"
             elif error := await self._async_connection_error(user_input[CONF_HOST]):
                 errors["base"] = error
+            elif check_address_identity(self.hass, user_input[CONF_HOST], serial) is AddressIdentity.OTHER_UNIT:
+                errors["base"] = "serial_mismatch"
             else:
                 return await self._async_create_unit_entry(
                     user_input[CONF_HOST], serial, user_input[CONF_MODEL_NAME], user_input.get(CONF_NAME)
@@ -218,17 +226,23 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            host = user_input[CONF_HOST]
             try:
                 await validate_connection(
                     self.hass,
-                    host=user_input[CONF_HOST],
+                    host=host,
                 )
             except Exception as exception:  # noqa: BLE001
                 errors["base"] = self._map_exception_to_error(exception)
             else:
-                if entry.state is config_entries.ConfigEntryState.LOADED:
-                    return self.async_update_and_abort(entry, data={**entry.data, **user_input})
-                return self.async_update_reload_and_abort(entry, data={**entry.data, **user_input})
+                identity = check_address_identity(self.hass, host, entry.data[CONF_SERIAL_NUMBER])
+                if identity is AddressIdentity.OTHER_UNIT:
+                    errors["base"] = "wrong_device"
+                elif identity is AddressIdentity.UNHEARD:
+                    self._unverified_host = host
+                    return await self.async_step_reconfigure_unverified()
+                else:
+                    return self._async_store_reconfigured_host(host)
 
         return self.async_show_form(
             step_id="reconfigure",
@@ -237,7 +251,31 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 serial_number=entry.data.get(CONF_SERIAL_NUMBER),
             ),
             errors=errors,
+            description_placeholders={"name": entry.title},
         )
+
+    async def async_step_reconfigure_unverified(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Ask the user to confirm an address no unit was heard announcing itself from."""
+        if TYPE_CHECKING:
+            assert self._unverified_host is not None
+        if user_input is not None:
+            return self._async_store_reconfigured_host(self._unverified_host)
+        return self.async_show_form(
+            step_id="reconfigure_unverified",
+            data_schema=get_confirm_schema(),
+            description_placeholders={"host": self._unverified_host, "name": self._get_reconfigure_entry().title},
+        )
+
+    def _async_store_reconfigured_host(self, host: str) -> config_entries.ConfigFlowResult:
+        """Store the new address; a loaded entry reloads through its update listener."""
+        entry = self._get_reconfigure_entry()
+        data = {**entry.data, CONF_HOST: host}
+        if entry.state is config_entries.ConfigEntryState.LOADED:
+            return self.async_update_and_abort(entry, data=data)
+        return self.async_update_reload_and_abort(entry, data=data)
 
     async def async_step_integration_discovery(
         self,

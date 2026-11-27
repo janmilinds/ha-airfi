@@ -1,5 +1,6 @@
 """Tests for the Airfi repairs module."""
 
+from collections.abc import Callable
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -94,13 +95,16 @@ async def test_repair_saves_the_new_address_and_reloads(
     init_integration: MockConfigEntry,
     repair_issue: str,
 ) -> None:
-    """A reachable new address is stored, the issue goes away and the entry is set up again once."""
+    """A reachable new address no unit was heard from is stored once confirmed; the issue goes away, one setup."""
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
     setups_before = mock_api.get_lookup_registers.await_count
 
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
         result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
+    assert result["step_id"] == "unverified"
+    assert result["description_placeholders"] == {"host": "10.0.0.1", "name": "Airfi Model 60 L"}
+    result = await process_repair_fix_flow(client, flow["flow_id"], {})
     await hass.async_block_till_done()
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
@@ -161,6 +165,39 @@ async def test_repair_sets_up_an_entry_that_is_retrying(
 
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
         await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await process_repair_fix_flow(client, flow["flow_id"], {})
     await hass.async_block_till_done()
 
     assert config_entry.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("serial", "stored", "errors"),
+    [
+        pytest.param(12345678, True, None, id="same-unit"),
+        pytest.param(67890, False, {"base": "wrong_device"}, id="other-unit"),
+    ],
+)
+async def test_repair_checks_which_unit_announced_from_the_address(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    announce: Callable[..., None],
+    init_integration: MockConfigEntry,
+    serial: int,
+    stored: bool,
+    errors: dict[str, str] | None,
+) -> None:
+    """The unit's own address is stored at once; one another unit announced from is refused."""
+    announce("10.0.0.1", serial)
+    await hass.async_block_till_done()
+    repair_issue = await _raise_unreachable_issue(hass, init_integration)
+    client = await hass_client()
+    flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
+    await hass.async_block_till_done()
+
+    assert result.get("errors") == errors
+    assert (init_integration.data[CONF_HOST] == "10.0.0.1") is stored

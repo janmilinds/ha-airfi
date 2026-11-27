@@ -7,17 +7,17 @@
       },
       "fallback": {
         "title": "Nie znaleziono urządzeń",
-        "description": "Nie znaleziono automatycznie żadnych urządzeń Airfi. Możesz spróbować wykrywania ponownie lub dodać urządzenie ręcznie.",
+        "description": "W Twojej sieci nie znaleziono urządzeń Airfi. Możesz wyszukać ponownie lub dodać urządzenie ręcznie.",
         "menu_options": {
-          "scan": "Spróbuj wykrywania ponownie",
+          "scan": "Wyszukaj ponownie",
           "manual": "Dodaj urządzenie ręcznie"
         }
       },
       "fallback_error": {
-        "title": "Wyszukiwanie nie powiodło się",
-        "description": "Nie można uruchomić wyszukiwania urządzeń, ponieważ port sieciowy jest niedostępny (port może być używany przez inny proces). Możesz spróbować ponownie lub dodać urządzenie ręcznie.",
+        "title": "Nie można rozpocząć wyszukiwania",
+        "description": "Home Assistant nie mógł wyszukać urządzeń Airfi w Twojej sieci. Spróbuj ponownie za chwilę lub dodaj urządzenie ręcznie.",
         "menu_options": {
-          "scan": "Spróbuj wykrywania ponownie",
+          "scan": "Wyszukaj ponownie",
           "manual": "Dodaj urządzenie ręcznie"
         }
       },
@@ -32,14 +32,14 @@
         },
         "data_description": {
           "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej.",
-          "serial_number": "Cyfry widoczne na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie. Home Assistant używa go, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP, a wyszukiwanie może do niego dotrzeć.",
+          "serial_number": "Cyfry widoczne na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście znalezionych urządzeń. Home Assistant używa numeru seryjnego, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP.",
           "model_name": "Wybierz model widoczny na tabliczce znamionowej urządzenia, na przykład Model 60, lub dokładną nazwę modelu z aplikacji Airfi. Jeśli nie podasz nazwy, model nadaje urządzeniu nazwę w Home Assistant.",
           "name": "Pozostaw puste, aby urządzenie otrzymało nazwę Airfi i model. Identyfikatory encji są tworzone z tej nazwy, więc przy ponownym dodawaniu urządzenia nadaj mu tę samą nazwę co wcześniej."
         }
       },
       "discovery_select": {
         "title": "Wybierz wykryte urządzenie",
-        "description": "Znaleziono {count} urządzenie(a) Airfi. Wybierz jedno, aby kontynuować.",
+        "description": "Znalezione urządzenia Airfi: {count}. Wybierz jedno, aby kontynuować.",
         "data": {
           "device": "Wykryte urządzenie"
         },
@@ -49,38 +49,42 @@
       },
       "discovery_confirm": {
         "title": "Potwierdź urządzenie",
-        "description": "**{model}** w {host} (numer seryjny: {serial})\n\nOpcjonalnie możesz nadać urządzeniu niestandardową nazwę.",
+        "description": "**{model}** pod adresem {host} (numer seryjny {serial})\n\nMożesz nadać urządzeniu własną nazwę.",
         "data": {
           "name": "Nazwa"
         },
         "data_description": {
-          "name": "Pozostaw puste, aby użyć domyślnej nazwy."
+          "name": "Airfi i model, jeśli jej nie zmienisz. Identyfikatory encji są tworzone z tej nazwy, więc przy ponownym dodawaniu urządzenia nadaj mu tę samą nazwę co wcześniej."
         }
       },
       "reconfigure": {
-        "description": "Zaktualizuj ustawienia połączenia dla tej integracji.",
+        "description": "Wpisz adres IP, pod którym {name} jest teraz dostępne.",
         "data": {
           "host": "Adres IP"
         },
         "data_description": {
-          "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
+          "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej."
         }
+      },
+      "reconfigure_unverified": {
+        "title": "Użyć tego adresu IP?",
+        "description": "Home Assistant nie mógł potwierdzić, że urządzenie pod adresem {host} to {name}. Może się tak zdarzyć w niektórych sieciach, nawet gdy adres jest poprawny. Jeśli masz pewność, że adres jest poprawny, wybierz Zatwierdź."
       }
     },
     "progress": {
       "discovering_devices": "Wyszukiwanie urządzeń Airfi w sieci. Może to potrwać 5–15 sekund."
     },
     "error": {
-      "cannot_connect": "Nie można połączyć się z urządzeniem.",
-      "cannot_retrieve_data": "Nie można pobrać danych z urządzenia.",
-      "invalid_serial": "Wpisz numer seryjny, używając wyłącznie cyfr."
+      "cannot_connect": "Nie można połączyć się z urządzeniem. Sprawdź adres IP i czy urządzenie jest włączone.",
+      "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
+      "invalid_serial": "Wpisz numer seryjny, używając wyłącznie cyfr.",
+      "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie.",
+      "serial_mismatch": "Urządzenie pod tym adresem IP ma inny numer seryjny. Sprawdź adres IP i numer seryjny."
     },
     "abort": {
-      "already_configured": "Ten wpis jest już skonfigurowany.",
-      "discovery_failed": "Skanowanie wykrywania nie powiodło się.",
-      "discovery_no_devices": "Nie znaleziono żadnych urządzeń Airfi.",
+      "already_configured": "To urządzenie jest już dodane.",
       "invalid_selection": "Wybrane urządzenie nie jest już dostępne.",
-      "already_in_progress": "Konfiguracja jest już w toku.",
+      "already_in_progress": "To urządzenie jest już dodawane.",
       "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi."
     }
   },
@@ -115,19 +119,24 @@
       "title": "{name} jest niedostępne",
       "fix_flow": {
         "error": {
-          "cannot_connect": "Nie udało się połączyć z urządzeniem pod tym adresem IP.",
-          "cannot_retrieve_data": "Połączono z urządzeniem, ale nie udało się odczytać wymaganych danych."
+          "cannot_connect": "Nie można połączyć się z urządzeniem pod tym adresem IP. Sprawdź adres i czy urządzenie jest włączone.",
+          "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
+          "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie."
         },
         "step": {
           "init": {
             "title": "{name} jest niedostępne",
-            "description": "Zaktualizuj adres IP urządzenia {name}, jeśli się zmienił. Jeśli adres IP się nie zmienił, pozostaw bieżącą wartość i sprawdź połączenie urządzenia lub sieci.",
+            "description": "Home Assistant nie może połączyć się z {name}. Jeśli adres IP się zmienił, wpisz nowy. Jeśli nie, pozostaw obecny adres i sprawdź, czy urządzenie jest włączone i podłączone do sieci.",
             "data": {
               "host": "Adres IP"
             },
             "data_description": {
               "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
             }
+          },
+          "unverified": {
+            "title": "Użyć tego adresu IP?",
+            "description": "Home Assistant nie mógł potwierdzić, że urządzenie pod adresem {host} to {name}. Może się tak zdarzyć w niektórych sieciach, nawet gdy adres jest poprawny. Jeśli masz pewność, że adres jest poprawny, wybierz Zatwierdź."
           }
         }
       }

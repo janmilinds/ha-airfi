@@ -7,17 +7,17 @@
       },
       "fallback": {
         "title": "No devices found",
-        "description": "No Airfi devices were found automatically. You can try discovery again or add a device manually.",
+        "description": "No Airfi devices were found on your network. You can search again or add a device manually.",
         "menu_options": {
-          "scan": "Try discovery again",
+          "scan": "Search again",
           "manual": "Add device manually"
         }
       },
       "fallback_error": {
-        "title": "Discovery failed",
-        "description": "Could not start device discovery because the network socket is unavailable (port may be in use by another process). You can try again or add a device manually.",
+        "title": "Search could not start",
+        "description": "Home Assistant could not search your network for Airfi devices. Try again in a moment, or add a device manually.",
         "menu_options": {
-          "scan": "Try discovery again",
+          "scan": "Search again",
           "manual": "Add device manually"
         }
       },
@@ -32,55 +32,59 @@
         },
         "data_description": {
           "host": "The IP address of the Airfi device on your local network.",
-          "serial_number": "The digits shown on the device's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the device. Home Assistant uses it to find the device again if its IP address changes and the search can reach it.",
+          "serial_number": "The digits shown on the device's type plate, in the Airfi app or web interface, or in the list of found devices. Home Assistant uses the serial number to find the device again if its IP address changes.",
           "model_name": "Pick the model shown on the device's type plate, such as Model 60, or the exact model name from the Airfi app. Unless you enter a name, the model names the device in Home Assistant.",
           "name": "Leave empty to name the device Airfi and its model. The entity IDs are formed from this name, so when you add a device again, give it the name it had before."
         }
       },
       "discovery_select": {
         "title": "Select discovered device",
-        "description": "Found {count} Airfi device(s). Select one to continue.",
+        "description": "Airfi devices found: {count}. Select one to continue.",
         "data": {
           "device": "Discovered device"
         },
         "data_description": {
-          "device": "Each device is listed with its model, IP address, and serial number. The last two entries search for more devices or let you add a device manually."
+          "device": "Each device is listed with its model, IP address, and serial number. The last two options search for more devices or let you add a device manually."
         }
       },
       "discovery_confirm": {
         "title": "Confirm device",
-        "description": "**{model}** at {host} (serial: {serial})\n\nOptionally give the device a custom name.",
+        "description": "**{model}** at {host} (serial number {serial})\n\nYou can give the device a name of your own.",
         "data": {
           "name": "Name"
         },
         "data_description": {
-          "name": "Leave empty to use the default name."
+          "name": "Airfi and its model unless you change it. The entity IDs are formed from this name, so when you add a device again, give it the name it had before."
         }
       },
       "reconfigure": {
-        "description": "Update the connection settings for this integration.",
+        "description": "Enter the IP address at which {name} can be reached now.",
         "data": {
           "host": "IP address"
         },
         "data_description": {
-          "host": "The IP address at which the Airfi device can be reached now."
+          "host": "The IP address of the Airfi device on your local network."
         }
+      },
+      "reconfigure_unverified": {
+        "title": "Use this IP address?",
+        "description": "Home Assistant could not confirm that the device at {host} is {name}. This can happen on some networks even when the address is right. If you are sure the address is correct, select Submit."
       }
     },
     "progress": {
       "discovering_devices": "Searching your network for Airfi devices. This may take 5 to 15 seconds."
     },
     "error": {
-      "cannot_connect": "Unable to connect to the device.",
-      "cannot_retrieve_data": "Unable to retrieve data from the device.",
-      "invalid_serial": "Enter the serial number as digits only."
+      "cannot_connect": "Could not connect to the device. Check the IP address and that the device is powered on.",
+      "cannot_retrieve_data": "Connected, but could not read the device's data. Check that the IP address belongs to an Airfi device.",
+      "invalid_serial": "Enter the serial number as digits only.",
+      "wrong_device": "This IP address belongs to a different Airfi device. Check the address and try again.",
+      "serial_mismatch": "The device at this IP address has a different serial number. Check the IP address and the serial number."
     },
     "abort": {
-      "already_configured": "This entry is already configured.",
-      "discovery_failed": "Discovery scan failed.",
-      "discovery_no_devices": "No Airfi devices were found.",
+      "already_configured": "This device is already set up.",
       "invalid_selection": "The selected device is no longer available.",
-      "already_in_progress": "Configuration flow is already in progress.",
+      "already_in_progress": "This device is already being set up.",
       "not_airfi_device": "This device is not an Airfi unit."
     }
   },
@@ -115,19 +119,24 @@
       "title": "{name} is unreachable",
       "fix_flow": {
         "error": {
-          "cannot_connect": "Could not connect to the device at this IP address.",
-          "cannot_retrieve_data": "Connected to the device but could not read required data."
+          "cannot_connect": "Could not connect to the device at this IP address. Check the address and that the device is powered on.",
+          "cannot_retrieve_data": "Connected, but could not read the device's data. Check that the IP address belongs to an Airfi device.",
+          "wrong_device": "This IP address belongs to a different Airfi device. Check the address and try again."
         },
         "step": {
           "init": {
             "title": "{name} is unreachable",
-            "description": "Update the IP address for {name} if it has changed. If the IP address has not changed, keep the current value and verify the device/network connection.",
+            "description": "Home Assistant cannot reach {name}. If its IP address has changed, enter the new one. If not, keep the current address and check that the device is powered on and connected to your network.",
             "data": {
               "host": "IP address"
             },
             "data_description": {
               "host": "The IP address at which the Airfi device can be reached now."
             }
+          },
+          "unverified": {
+            "title": "Use this IP address?",
+            "description": "Home Assistant could not confirm that the device at {host} is {name}. This can happen on some networks even when the address is right. If you are sure the address is correct, select Submit."
           }
         }
       }
