@@ -13,15 +13,26 @@ https://developers.home-assistant.io/docs/creating_integration_manifest
 
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_HOST, Platform
+from homeassistant.config_entries import (
+    SIGNAL_CONFIG_ENTRY_CHANGED,
+    SOURCE_INTEGRATION_DISCOVERY,
+    ConfigEntry,
+    ConfigEntryChange,
+    DiscoveryKey,
+)
+from homeassistant.const import CONF_HOST, EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import discovery_flow
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import AirfiApiClient
 from .const import DEFAULT_MODBUS_PORT, DOMAIN, LOGGER, UPDATE_INTERVAL
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
+from .utils.discovery import DATA_DISCOVERY_LISTENER, AirfiDiscoveredDevice, AirfiDiscoveryListener
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -41,7 +52,39 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the integration."""
+    """
+    Set up the integration: listen for unit announcements until Home Assistant stops.
+
+    A unit that announces itself is offered under Discovered, or, when it is already set up and its address has
+    changed, has the new address stored. A unit whose entry is removed, or no longer ignored, is offered again.
+    Home Assistant runs this once the first entry exists; before that, the DHCP matcher in the manifest finds the
+    first unit.
+    """
+
+    @callback
+    def _async_announced(device: AirfiDiscoveredDevice) -> None:
+        entry = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device.unique_key)
+        if entry is not None and entry.data.get(CONF_HOST) == device.host:
+            return
+        discovery_flow.async_create_flow(
+            hass,
+            DOMAIN,
+            context={"source": SOURCE_INTEGRATION_DISCOVERY},
+            data=device,
+            discovery_key=DiscoveryKey(domain=DOMAIN, key=device.unique_key, version=1),
+        )
+
+    listener = AirfiDiscoveryListener(hass, _async_announced)
+    hass.data[DATA_DISCOVERY_LISTENER] = listener
+
+    @callback
+    def _async_entry_changed(change: ConfigEntryChange, entry: ConfigEntry) -> None:
+        if change is ConfigEntryChange.REMOVED and entry.domain == DOMAIN and entry.unique_id:
+            listener.async_forget(entry.unique_id)
+
+    async_dispatcher_connect(hass, SIGNAL_CONFIG_ENTRY_CHANGED, _async_entry_changed)
+    await listener.async_start()
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, listener.async_stop)
     return True
 
 

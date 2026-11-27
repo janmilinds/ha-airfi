@@ -1,6 +1,7 @@
 """Test the airfi coordinator."""
 
 import asyncio
+from collections.abc import Callable
 import contextlib
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -29,7 +30,11 @@ from custom_components.airfi.coordinator.feature_manager import (
     UnsupportedFirmwareError,
 )
 from custom_components.airfi.data import AirfiData
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
+from custom_components.airfi.utils.discovery import (
+    DATA_DISCOVERY_LISTENER,
+    AirfiDiscoveredDevice,
+    AirfiDiscoveryListener,
+)
 from homeassistant.components.fan import ATTR_PERCENTAGE, DOMAIN as FAN_DOMAIN, SERVICE_SET_PERCENTAGE
 from homeassistant.components.homeassistant import SERVICE_UPDATE_ENTITY
 from homeassistant.components.number import ATTR_VALUE, DOMAIN as NUMBER_DOMAIN, SERVICE_SET_VALUE
@@ -76,7 +81,7 @@ async def test_async_setup_uses_serial_number_and_caches_profile(hass, config_en
         )
         await setup_method()
 
-    initialize_mock.assert_called_once_with("Airfi ***2345", [0, 381, 300])
+    initialize_mock.assert_called_once_with("Airfi ***5678", [0, 381, 300])
     client.set_register_profile.assert_called_once_with(
         firmware_version="3.8.1",
         modbus_register_version="3.0.0",
@@ -546,7 +551,7 @@ async def test_async_setup_rediscovers_on_connection_error(hass, config_entry, m
     # First call fails, second succeeds after rediscovery
     client.async_get_lookup_registers = AsyncMock(side_effect=[AirfiApiClientConnectionError("timeout"), [0, 381, 300]])
 
-    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345, model_id=1)
+    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345678, model_id=1)
 
     with (
         patch(
@@ -570,7 +575,7 @@ async def test_async_setup_rediscovery_succeeds_but_retry_fails(hass, config_ent
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_lookup_registers = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
-    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345, model_id=1)
+    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345678, model_id=1)
 
     with (
         patch(
@@ -619,7 +624,7 @@ async def test_async_update_data_recovery_retry_fails_with_connection_error(
     coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
     client.async_get_data = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
-    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345, model_id=1)
+    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345678, model_id=1)
     coordinator._connection_lost_at = asyncio.get_running_loop().time() - RECOVERY_TRIGGER_SECONDS - 1  # noqa: SLF001
 
     with (
@@ -644,7 +649,7 @@ async def test_async_update_data_recovery_retry_fails_with_modbus_error(hass, co
         ]
     )
 
-    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345, model_id=1)
+    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345678, model_id=1)
     coordinator._connection_lost_at = asyncio.get_running_loop().time() - RECOVERY_TRIGGER_SECONDS - 1  # noqa: SLF001
 
     with (
@@ -837,12 +842,35 @@ async def test_recover_host_respects_cooldown(hass, config_entry, mock_integrati
 
 
 @pytest.mark.unit
+async def test_recover_host_uses_the_address_the_listener_heard(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_integration: MagicMock,
+    announce: Callable[..., None],
+) -> None:
+    """When the running listener heard the unit at a new address, recovery takes it from there without a scan."""
+    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
+    coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
+    hass.data[DATA_DISCOVERY_LISTENER] = AirfiDiscoveryListener(hass, lambda _device: None)
+    announce("192.168.1.99", 12345678)
+
+    with (
+        patch("custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan", new=AsyncMock()) as scan,
+        patch.object(hass.config_entries, "async_update_entry"),
+    ):
+        assert await coordinator._async_try_recover_host()  # noqa: SLF001
+
+    scan.assert_not_awaited()
+    client.update_host.assert_called_once_with("192.168.1.99")
+
+
+@pytest.mark.unit
 async def test_recover_host_returns_false_same_ip(hass, config_entry, mock_integration) -> None:
     """Test that recover_host returns False when discovered IP matches current."""
     coordinator, _ = _make_coordinator(hass, config_entry, mock_integration)
     coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
 
-    discovered = AirfiDiscoveredDevice(host="192.168.1.10", serial=12345, model_id=1)
+    discovered = AirfiDiscoveredDevice(host="192.168.1.10", serial=12345678, model_id=1)
 
     with patch(
         "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
@@ -868,27 +896,6 @@ async def test_recover_host_returns_false_no_match(hass, config_entry, mock_inte
         result = await coordinator._async_try_recover_host()  # noqa: SLF001
 
     assert result is False
-
-
-@pytest.mark.unit
-async def test_recover_host_matches_numeric_serial(hass, config_entry, mock_integration) -> None:
-    """Test that recover_host matches numeric serial digits from 'AIRFI-12345'."""
-    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
-    coordinator._recovery_state = RecoveryState.RECOVERING  # noqa: SLF001
-
-    discovered = AirfiDiscoveredDevice(host="192.168.1.99", serial=12345, model_id=1)
-
-    with (
-        patch(
-            "custom_components.airfi.coordinator.base.AirfiDiscoveryService.async_scan",
-            new=AsyncMock(return_value=[discovered]),
-        ),
-        patch.object(hass.config_entries, "async_update_entry"),
-    ):
-        result = await coordinator._async_try_recover_host()  # noqa: SLF001
-
-    assert result is True
-    client.update_host.assert_called_once_with("192.168.1.99")
 
 
 @pytest.mark.unit

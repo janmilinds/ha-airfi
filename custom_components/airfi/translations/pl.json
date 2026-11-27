@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Skonfiguruj Airfi"
@@ -8,7 +9,7 @@
         "title": "Nie znaleziono urządzeń",
         "description": "Nie znaleziono automatycznie żadnych urządzeń Airfi. Możesz spróbować wykrywania ponownie lub dodać urządzenie ręcznie.",
         "menu_options": {
-          "discovery": "Spróbuj wykrywania ponownie",
+          "scan": "Spróbuj wykrywania ponownie",
           "manual": "Dodaj urządzenie ręcznie"
         }
       },
@@ -16,7 +17,7 @@
         "title": "Wyszukiwanie nie powiodło się",
         "description": "Nie można uruchomić wyszukiwania urządzeń, ponieważ port sieciowy jest niedostępny (port może być używany przez inny proces). Możesz spróbować ponownie lub dodać urządzenie ręcznie.",
         "menu_options": {
-          "discovery": "Spróbuj wykrywania ponownie",
+          "scan": "Spróbuj wykrywania ponownie",
           "manual": "Dodaj urządzenie ręcznie"
         }
       },
@@ -78,7 +79,9 @@
       "already_configured": "Ten wpis jest już skonfigurowany.",
       "discovery_failed": "Skanowanie wykrywania nie powiodło się.",
       "discovery_no_devices": "Nie znaleziono żadnych urządzeń Airfi.",
-      "invalid_selection": "Wybrane urządzenie nie jest już dostępne."
+      "invalid_selection": "Wybrane urządzenie nie jest już dostępne.",
+      "already_in_progress": "Konfiguracja jest już w toku.",
+      "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi."
     }
   },
   "exceptions": {

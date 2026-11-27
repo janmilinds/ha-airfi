@@ -2,7 +2,8 @@
 Config flow for Airfi.
 
 This module implements the main configuration flow including:
-- Initial user setup
+- Initial user setup, searching the network first
+- Units found by the discovery listener or by Home Assistant's DHCP watcher
 - Reconfiguration of existing entries
 
 For more information:
@@ -20,6 +21,7 @@ from custom_components.airfi.config_flow_handler.schemas import (
 )
 from custom_components.airfi.config_flow_handler.validators import validate_connection
 from custom_components.airfi.const import (
+    AIRFI_MAC_PREFIX,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_INITIAL_SCAN_TIMEOUT_SECONDS,
@@ -30,10 +32,11 @@ from custom_components.airfi.const import (
     LOGGER,
 )
 from custom_components.airfi.utils import normalized_serial
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
+from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService, announced_device_at
 from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_NAME
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -44,7 +47,9 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     initial setup and reconfiguration.
 
     Supported flows:
-    - user: Initial setup via UI
+    - user: Initial setup via UI, searching the network first
+    - integration_discovery: A unit the discovery listener heard
+    - dhcp: A unit Home Assistant saw on the network by its MAC address
     - reconfigure: Update existing configuration
 
     For more details:
@@ -144,7 +149,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.discovery_task = None
         return self.async_show_menu(
             step_id="fallback",
-            menu_options=["discovery", "manual"],
+            menu_options=["scan", "manual"],
         )
 
     async def async_step_fallback_error(
@@ -155,7 +160,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.discovery_task = None
         return self.async_show_menu(
             step_id="fallback_error",
-            menu_options=["discovery", "manual"],
+            menu_options=["scan", "manual"],
         )
 
     async def async_step_manual(
@@ -234,18 +239,54 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_discovery(
+    async def async_step_integration_discovery(
+        self,
+        discovery_info: AirfiDiscoveredDevice,
+    ) -> config_entries.ConfigFlowResult:
+        """Store the new address of a unit already set up, or ask the user to add the unit."""
+        await self.async_set_unique_id(discovery_info.unique_key)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host}, reload_on_update=False)
+        self.selected_device = discovery_info
+        self.context["title_placeholders"] = {"name": f"Airfi {discovery_info.model_name}"}
+        return await self.async_step_discovery_confirm()
+
+    async def async_step_dhcp(
+        self,
+        discovery_info: DhcpServiceInfo,
+    ) -> config_entries.ConfigFlowResult:
+        """
+        Offer a unit Home Assistant saw on the network by its MAC address.
+
+        The manifest's matcher can only compare the first six hex digits, which other vendors share, so the seventh is
+        checked here, and the unit must announce itself from that address to give its serial number and model.
+        """
+        if not discovery_info.macaddress.lower().startswith(AIRFI_MAC_PREFIX):
+            return self.async_abort(reason="not_airfi_device")
+        self._async_abort_entries_match({CONF_HOST: discovery_info.ip})
+        if (device := await self._async_find_announcement(discovery_info.ip)) is None:
+            return self.async_abort(reason="not_airfi_device")
+        return await self.async_step_integration_discovery(device)
+
+    async def _async_find_announcement(self, host: str) -> AirfiDiscoveredDevice | None:
+        """Return the unit announcing itself from this address, from the listener or a short scan."""
+        if device := announced_device_at(self.hass, host):
+            return device
+        try:
+            devices = await AirfiDiscoveryService().async_scan(timeout_seconds=DISCOVERY_INITIAL_SCAN_TIMEOUT_SECONDS)
+        except OSError as err:
+            LOGGER.debug("Could not scan for the unit at %s: %s", host, err)
+            return None
+        return next((device for device in devices if device.host == host), None)
+
+    async def async_step_scan(
         self,
         user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """
-        Handle discovery initiated by user or flow.
-
-        Scans for Airfi devices on the network using UDP multicast and presents
-        a list to the user for selection.
+        Search the network again after a search that found nothing or failed.
 
         Args:
-            user_input: Not used for discovery scan.
+            user_input: Unused; the step is a menu choice.
 
         Returns:
             The config flow result showing discovered devices or error.
@@ -355,7 +396,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self, host: str, serial: str, model_name: str, name: str | None
     ) -> config_entries.ConfigFlowResult:
         """Add the unit under its serial number, named by the user or by Airfi and its model."""
-        await self.async_set_unique_id(serial)
+        await self.async_set_unique_id(serial, raise_on_progress=False)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(
             title=name or f"Airfi {model_name}",

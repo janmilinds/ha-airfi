@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Set up Airfi"
@@ -8,7 +9,7 @@
         "title": "No devices found",
         "description": "No Airfi devices were found automatically. You can try discovery again or add a device manually.",
         "menu_options": {
-          "discovery": "Try discovery again",
+          "scan": "Try discovery again",
           "manual": "Add device manually"
         }
       },
@@ -16,7 +17,7 @@
         "title": "Discovery failed",
         "description": "Could not start device discovery because the network socket is unavailable (port may be in use by another process). You can try again or add a device manually.",
         "menu_options": {
-          "discovery": "Try discovery again",
+          "scan": "Try discovery again",
           "manual": "Add device manually"
         }
       },
@@ -78,7 +79,9 @@
       "already_configured": "This entry is already configured.",
       "discovery_failed": "Discovery scan failed.",
       "discovery_no_devices": "No Airfi devices were found.",
-      "invalid_selection": "The selected device is no longer available."
+      "invalid_selection": "The selected device is no longer available.",
+      "already_in_progress": "Configuration flow is already in progress.",
+      "not_airfi_device": "This device is not an Airfi unit."
     }
   },
   "exceptions": {

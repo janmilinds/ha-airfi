@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Konfigurera Airfi"
@@ -8,7 +9,7 @@
         "title": "Inga enheter hittades",
         "description": "Inga Airfi-enheter hittades automatiskt. Du kan försöka upptäcka enheter igen eller lägga till en enhet manuellt.",
         "menu_options": {
-          "discovery": "Försök upptäcka enheter igen",
+          "scan": "Försök upptäcka enheter igen",
           "manual": "Lägg till en enhet manuellt"
         }
       },
@@ -16,7 +17,7 @@
         "title": "Sökningen misslyckades",
         "description": "Det gick inte att starta enhetssökningen eftersom nätverksporten inte är tillgänglig (porten kan användas av en annan process). Du kan försöka igen eller lägga till en enhet manuellt.",
         "menu_options": {
-          "discovery": "Försök upptäcka enheter igen",
+          "scan": "Försök upptäcka enheter igen",
           "manual": "Lägg till en enhet manuellt"
         }
       },
@@ -78,7 +79,9 @@
       "already_configured": "Denna enhet är redan konfigurerad.",
       "discovery_failed": "Upptäckten av enheter misslyckades.",
       "discovery_no_devices": "Inga Airfi-enheter hittades.",
-      "invalid_selection": "Den valda enheten är inte längre tillgänglig."
+      "invalid_selection": "Den valda enheten är inte längre tillgänglig.",
+      "already_in_progress": "Konfigurationsflödet pågår redan.",
+      "not_airfi_device": "Den här enheten är inte en Airfi-enhet."
     }
   },
   "exceptions": {
