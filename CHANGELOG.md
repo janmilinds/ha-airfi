@@ -28,10 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **config-flow:** check a unit's serial number before storing its address ([2dbaba3](https://github.com/janmilinds/ha-airfi/commit/2dbaba3bcaf8d2bc4e7f714136d36ab46ecbf83d))
 
 
-### Maintenance
-
-* tell the release notes how this integration's notes read ([#105](https://github.com/janmilinds/ha-airfi/issues/105)) ([6f188db](https://github.com/janmilinds/ha-airfi/commit/6f188db339fe863ddc6360f926ee0fc13fc196a8))
-
 ## [1.2.1](https://github.com/janmilinds/ha-airfi/compare/v1.2.0...v1.2.1) (2026-11-27)
 
 
