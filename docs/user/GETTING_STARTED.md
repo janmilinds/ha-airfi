@@ -10,7 +10,7 @@ Airfi is a Home Assistant integration for **Airfi ventilation units** (heat reco
 - **Temperature sensors** — outdoor, extract, exhaust, and supply air temperatures
 - **Humidity sensor** — relative humidity measurement
 - **Connectivity monitoring** — device reachability status
-- **Automatic device discovery** — finds Airfi units on your network via UDP multicast
+- **Automatic device discovery** — finds Airfi units on your network
 
 ## Prerequisites
 
@@ -41,35 +41,49 @@ Airfi is not in the Marketplace catalog, so add it as a custom repository:
 
 ## Moving from version 1.x
 
-Version 2.0.0 gives the integration a domain of its own, `airfi_home`, so it can be listed in the default catalog. It
-now installs into `custom_components/airfi_home/` instead of `custom_components/airfi/`. Home Assistant cannot move a
-unit from one domain to another, and the Marketplace does not update an integration whose domain changes: its update
-stops with a message asking you to uninstall and install again. So each unit is deleted, the integration is installed
-again, and each unit is added again. Done in this order, the new entities take over the entity IDs Home Assistant
-formed for the old ones, so history, long-term statistics, automations and dashboards carry on.
+Version 2.0.0 changes the integration's domain from `airfi` to `airfi_home`, so it now installs into
+`custom_components/airfi_home/` instead of `custom_components/airfi/`. Home Assistant cannot move a unit from one
+domain to another, and the Marketplace does not update an integration whose domain changes: its update stops with a
+message asking you to uninstall and install again. So each unit is deleted, the integration is installed again, and
+each unit is added again. Done in this order, the new entities take over the entity IDs of the old ones, so history,
+long-term statistics, automations and dashboards carry on.
 
-1. **Before you start, write down each unit's name and one of its entity IDs**, for example
-   `fan.airfi_model_60_l_ventilation`. The entity IDs were formed from the name the unit got when it was first added:
-   Airfi and its model, or the name you typed then. Renaming the device later did not change them, so the entity ID
-   shows which name to use. Also write down every entity ID you changed by hand.
-2. **Delete each unit:** go to **Settings** > **Devices & services** > **Airfi**, open the unit's ⋮ menu and select
+1. **Take a backup** of Home Assistant: **Settings** > **System** > **Backups**.
+2. **Write down each unit's name and one of its entity IDs**, for example `fan.airfi_model_60_l_ventilation`. The
+   entity IDs were formed from the name the unit got when it was first added: Airfi and its model, or the name you
+   typed then. Renaming the device later did not change them, so the entity ID shows which name to use. Also write
+   down:
+   - every entity ID you changed by hand
+   - the entities you turned on yourself: the fireplace, sauna and boosted cooling switches and the diagnostic
+     sensors are off by default
+   - the settings of every helper that uses the unit's entities, such as a Statistics helper for a daily mean
+     temperature
+3. **Delete each unit:** go to **Settings** > **Devices & services** > **Airfi**, open the unit's ⋮ menu and select
    **Delete**. Delete units you chose to ignore too: the Marketplace does not uninstall an integration while any of
    its entries remain. Delete first: if the old unit is still there when the new one is added, the new entities get
    IDs ending in `_2`, and history and automations do not follow.
-3. **Install again:** in the Marketplace, open Airfi, uninstall it, then download it again, and restart Home
-   Assistant. Uninstalling removes `custom_components/airfi/`. If you installed manually, delete that folder yourself
-   and extract `airfi_home.zip` into `custom_components/airfi_home/`.
-4. **Add each unit again:** **Settings** > **Devices & services** > **Add integration** > **Airfi**, or select it under
-   **Discovered** when Home Assistant offers it. **Give the unit the same name it had**: leave the name empty if its
-   entity IDs start with `airfi_model_`, and type the custom name otherwise. A different name gives different entity
-   IDs.
-5. **Set again** what belonged to the old entries, since Home Assistant keeps it per domain:
+4. **Install again:** when you delete the last unit, Home Assistant asks whether to uninstall Airfi too. Select
+   **Uninstall**; if it does not ask, open Airfi in the Marketplace and uninstall it there. Uninstalling also removes
+   Airfi from the Marketplace, so open it again with the button under [Installation](#via-the-marketplace-recommended),
+   download it, and restart Home Assistant. Uninstalling removes `custom_components/airfi/`. If you installed
+   manually, delete that folder yourself and extract `airfi_home.zip` into `custom_components/airfi_home/`.
+5. **Add each unit again:** **Settings** > **Devices & services** > **Add integration** > **Airfi**. The search finds
+   the unit at once; you can also select it under **Discovered** if Home Assistant already offers it there. **Give the
+   unit the same name it had**: leave the name empty if its entity IDs start with `airfi_model_`, and type the custom
+   name otherwise. A different name gives different entity IDs.
+6. **Check the entity IDs** against your notes, and change any that differ back in the entity's settings (⚙️ >
+   **Entity ID**); history, automations and dashboards follow the ID.
+7. **Set again** what belonged to the old entries, since Home Assistant keeps it per domain:
    - entity IDs you changed by hand: rename the new entity to the old ID
+   - entities you turned on yourself: turn them on again on the device page, under the entities that are not shown
    - areas, labels, custom entity names and icons
-   - hidden or disabled entities
+   - hidden entities
    - unit and display precision you chose for an entity
    - which entities are exposed to voice assistants, and their aliases
    - the logger key, if you enabled debug logging: `custom_components.airfi_home`
+8. **Create the helpers again** that used the unit's entities, and give each the entity ID it had. Statistics, Trend,
+   History stats and Change device type helpers are deleted together with the entity they follow; other helpers stay,
+   and work again once the entity IDs are the same as before.
 
 ## Initial Setup
 
