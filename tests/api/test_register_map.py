@@ -9,6 +9,8 @@ from custom_components.airfi_home.api.register_map import MapVersion, register_l
 @pytest.mark.parametrize(
     ("map_version", "expected"),
     [
+        ((3, 4, 0), (50, 68)),
+        ((2, 9, 0), (47, 65)),
         ((2, 7, 0), (42, 59)),
         ((2, 5, 0), (40, 58)),
         ((2, 3, 0), (40, 55)),
@@ -26,6 +28,9 @@ def test_register_lengths_by_version(map_version: MapVersion, expected: tuple[in
     ("map_version", "expected"),
     [
         ((2, 6, 0), (40, 58)),
+        ((3, 0, 0), (47, 65)),
+        ((3, 3, 0), (47, 65)),
+        ((3, 6, 0), (50, 68)),
     ],
 )
 def test_register_lengths_between_known_versions_take_the_lower_one(

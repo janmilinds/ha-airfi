@@ -3,6 +3,8 @@
 type MapVersion = tuple[int, int, int]
 
 REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[MapVersion, tuple[int, int]], ...] = (
+    ((3, 4, 0), (50, 68)),
+    ((2, 9, 0), (47, 65)),
     ((2, 7, 0), (42, 59)),
     ((2, 5, 0), (40, 58)),
     ((2, 3, 0), (40, 55)),

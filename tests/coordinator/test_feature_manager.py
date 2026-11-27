@@ -19,7 +19,7 @@ def test_feature_manager_initializes_supported_device() -> None:
 
     assert manager.firmware_version == "3.8.1"
     assert manager.modbus_register_version == "3.0.0"
-    assert manager.get_register_lengths() == (42, 59)
+    assert manager.get_register_lengths() == (47, 65)
 
 
 @pytest.mark.unit

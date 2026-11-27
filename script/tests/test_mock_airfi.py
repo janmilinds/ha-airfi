@@ -82,10 +82,10 @@ def test_write_stores_the_value_and_echoes_it() -> None:
     ("function", "address", "value"),
     [
         pytest.param(4, 0, 1, id="input address 0"),
-        pytest.param(4, 42, 2, id="input past the end"),
-        pytest.param(3, 59, 2, id="holding past the end"),
+        pytest.param(4, 47, 2, id="input past the end"),
+        pytest.param(3, 65, 2, id="holding past the end"),
         pytest.param(3, 1, 0, id="zero registers"),
-        pytest.param(6, 60, 1, id="write past the end"),
+        pytest.param(6, 66, 1, id="write past the end"),
     ],
 )
 def test_out_of_range_is_an_illegal_address(function: int, address: int, value: int) -> None:
@@ -162,7 +162,10 @@ def test_firmware_320_hides_input_register_10(address: int, count: int, *, fails
 @pytest.mark.parametrize(
     ("map_version", "counts"),
     [
-        pytest.param((3, 0, 0), (42, 59), id="3.0 reads 2.7"),
+        pytest.param((3, 4, 0), (50, 68), id="3.4"),
+        pytest.param((3, 0, 0), (47, 65), id="3.0 reads 2.9"),
+        pytest.param((2, 9, 0), (47, 65), id="2.9"),
+        pytest.param((2, 8, 0), (42, 59), id="2.8 reads 2.7"),
         pytest.param((2, 7, 0), (42, 59), id="2.7"),
         pytest.param((2, 6, 0), (40, 58), id="2.6 reads 2.5"),
         pytest.param((2, 0, 0), (40, 34), id="2.0"),
