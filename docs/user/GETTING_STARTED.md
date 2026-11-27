@@ -41,16 +41,25 @@ Airfi is not in the Marketplace catalog, so add it as a custom repository:
 
 ## Initial Setup
 
-After installation, add the integration:
+### Found by Home Assistant
 
-1. Go to **Settings** → **Devices & Services**
-2. Click **+ Add Integration**
-3. Search for **Airfi**
-4. The integration will automatically scan your network for Airfi devices
+After installation and a restart, Home Assistant offers Airfi units under **Settings** > **Devices & services** > **Discovered**:
 
-### Automatic Discovery
+- The first unit appears when Home Assistant sees it on your network. This happens when the unit gets its IP address from your router, or at the latest within an hour.
+- Once one unit is set up, further units appear within seconds, and a unit that gets a new IP address is followed at once.
 
-If an Airfi unit is found on your network, you will see a list of discovered devices showing the serial number and model. Select your device and click **Submit**.
+Select **Add**, give the unit a name if you want one, and select **Submit**.
+
+A unit with a static IP address may not be offered on its own. Add it as below; the search finds it without the IP address.
+
+### Adding a unit yourself
+
+1. Go to **Settings** > **Devices & services**.
+2. Select **Add integration**.
+3. Search for **Airfi**.
+4. The integration searches your network for Airfi units.
+
+If an Airfi unit is found, you will see a list of discovered devices showing the serial number and model. Select your device and select **Submit**.
 
 ### Manual Configuration
 
@@ -178,7 +187,16 @@ If entities show "Unavailable" or don't update:
 
 ### Device Unreachable Repair
 
-If the unit is unreachable for more than 10 minutes, a **repair issue** is created in Home Assistant. You can resolve it by fixing the network issue and clicking **Fix** in the repairs panel — the integration will re-test connectivity.
+If the unit is unreachable for more than 10 minutes, a **repair issue** is created in Home Assistant. Select **Fix** in the repairs panel and enter the unit's IP address; the integration tests the connection before saving.
+
+- If the address belongs to another Airfi unit, it is refused.
+- If Home Assistant cannot tell which unit is at the address, it asks you to confirm. This is normal on networks where the units' announcements do not reach Home Assistant.
+
+### A unit is not offered under Discovered
+
+- A unit with a static IP address does not ask your router for an address, so Home Assistant may not see it. Add it from **Add integration**.
+- Home Assistant must be on the same network as the unit. In a container, use host networking.
+- If the search in **Add integration** finds nothing either, the units' announcements do not reach Home Assistant; see [Network requirements](./CONFIGURATION.md#network-requirements), or add the unit manually.
 
 ### Debug Logging
 

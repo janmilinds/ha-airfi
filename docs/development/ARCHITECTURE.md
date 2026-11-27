@@ -58,7 +58,7 @@ custom_components/airfi/
 │   └── sv.json              # Swedish
 └── utils/                   # Integration-wide utilities
     ├── __init__.py
-    ├── discovery.py         # UDP multicast device discovery
+    ├── discovery.py         # UDP multicast scan and long-lived listener
     ├── error_mapping.py     # Modbus error code mapping
     ├── fan.py               # Fan speed conversion helpers
     ├── number.py            # Number register address constants
@@ -91,7 +91,7 @@ and distributes updates to all entities. It is organized as a package with separ
 - Shared data access for all entities
 - Automatic retry on transient failures
 - Data validation and transformation before distribution
-- Device recovery via UDP rediscovery when unreachable
+- Device recovery via UDP rediscovery when unreachable, as a fallback to the discovery listener
 - Feature flag system gating entity availability by Modbus map version
 
 **Key class:** `AirfiDataUpdateCoordinator` (exported from `coordinator/__init__.py`)
@@ -124,7 +124,8 @@ is organized modularly to support complex flows without becoming monolithic.
 
 **Supported flows:**
 
-- Automatic discovery via UDP multicast
+- Automatic discovery: a listener started in `async_setup()` opens `integration_discovery` flows for new units and stores a known unit's new address; a `dhcp` matcher on the MAC prefix finds the first unit, before any entry has loaded the integration
+- Search via UDP multicast when the user starts setup
 - Manual user setup with host entry
 - Reconfigure flow for changing device IP
 
