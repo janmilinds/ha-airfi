@@ -85,11 +85,10 @@ async def test_user_flow_with_input_adds_the_unit(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    entries = hass.config_entries.async_entries(DOMAIN)
-    assert len(entries) == 1
-    assert entries[0].title == "Airfi Model 60 L"
-    assert entries[0].unique_id == "airfi-12345"
-    assert entries[0].data == {
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.title == "Airfi Model 60 L"
+    assert entry.unique_id == "airfi-12345"
+    assert entry.data == {
         CONF_HOST: "192.168.1.10",
         CONF_MODEL_NAME: "Model 60 L",
         CONF_SERIAL_NUMBER: "AIRFI-12345",
@@ -299,38 +298,31 @@ async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistan
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    entries = hass.config_entries.async_entries(DOMAIN)
-    assert len(entries) == 1
-    assert entries[0].unique_id == "12345"
-    assert entries[0].data == {
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.unique_id == "12345"
+    assert entry.data == {
         CONF_HOST: "192.168.1.10",
         CONF_SERIAL_NUMBER: "12345",
         CONF_MODEL_NAME: "Model 100 L",
     }
 
 
-@pytest.mark.unit
-async def test_manual_step_uses_default_model_name(hass) -> None:
-    """Test that manual step defaults to 'Airfi' when model name is omitted."""
-    handler = _make_handler(hass)
-
-    with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
-    ):
-        result = await handler.async_step_manual(
-            {
-                CONF_HOST: "192.168.1.10",
-                CONF_SERIAL_NUMBER: "12345",
-            },
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_manual_setup_without_a_model_adds_the_unit_as_airfi(hass: HomeAssistant) -> None:
+    """A unit added without a model is stored as model 'Airfi' and titled by its serial."""
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_USER},
+            data={CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345"},
         )
+        await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_MODEL_NAME] == "Airfi"
-    assert result["title"] == "Airfi 12345"
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.title == "Airfi 12345"
+    assert entry.data[CONF_MODEL_NAME] == "Airfi"
 
 
 @pytest.mark.unit
@@ -576,8 +568,8 @@ async def test_discovery_confirm_shows_form(hass) -> None:
 
 @pytest.mark.integration
 @pytest.mark.usefixtures("mock_api")
-async def test_confirming_the_only_found_unit_adds_it(hass: HomeAssistant) -> None:
-    """Selecting and confirming the one unit found adds it under the given name."""
+async def test_confirming_without_a_name_titles_the_unit_by_model(hass: HomeAssistant) -> None:
+    """A unit confirmed with an empty name is titled after its model."""
     device = _discovered_device()
 
     with (
@@ -586,41 +578,12 @@ async def test_confirming_the_only_found_unit_adds_it(hass: HomeAssistant) -> No
     ):
         result = await _start_user_flow(hass)
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"device": device.unique_key})
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "My Airfi Unit"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": ""})
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    entries = hass.config_entries.async_entries(DOMAIN)
-    assert len(entries) == 1
-    assert entries[0].title == "My Airfi Unit"
-    assert entries[0].unique_id == "12345"
-    assert entries[0].data == {
-        CONF_HOST: "192.168.1.50",
-        CONF_SERIAL_NUMBER: 12345,
-        CONF_MODEL_NAME: "Model 60 L",
-    }
-
-
-@pytest.mark.unit
-async def test_discovery_confirm_uses_default_name(hass) -> None:
-    """Test that confirming without a name uses the model name."""
-    handler = _make_handler(hass)
-    handler.selected_device = _discovered_device()
-    handler.discovered_devices = [handler.selected_device]
-
-    with (
-        patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-            new=AsyncMock(return_value=None),
-        ),
-        patch.object(AirfiConfigFlowHandler, "_abort_if_unique_id_configured", return_value=None),
-    ):
-        result = await handler.async_step_discovery_confirm(
-            {"name": ""},
-        )
-
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Airfi Model 60 L"
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.title == "Airfi Model 60 L"
 
 
 @pytest.mark.unit
@@ -639,6 +602,7 @@ async def test_discovery_confirm_shows_error_on_failure(hass) -> None:
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
+    assert result["description_placeholders"] == {"host": "192.168.1.50", "serial": "12345", "model": "Model 60 L"}
 
 
 @pytest.mark.unit
@@ -672,11 +636,10 @@ async def test_confirming_one_of_two_found_units_adds_it(hass: HomeAssistant) ->
         await hass.async_block_till_done()
 
         assert result["type"] is FlowResultType.CREATE_ENTRY
-        entries = hass.config_entries.async_entries(DOMAIN)
-        assert len(entries) == 1
-        assert entries[0].title == "Upstairs"
-        assert entries[0].unique_id == "12345"
-        assert entries[0].data == {
+        (entry,) = hass.config_entries.async_entries(DOMAIN)
+        assert entry.title == "Upstairs"
+        assert entry.unique_id == "12345"
+        assert entry.data == {
             CONF_HOST: "192.168.1.50",
             CONF_SERIAL_NUMBER: 12345,
             CONF_MODEL_NAME: "Model 60 L",

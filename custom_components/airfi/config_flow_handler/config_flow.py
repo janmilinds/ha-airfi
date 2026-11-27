@@ -353,9 +353,9 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if self.selected_device is None:
             return self.async_abort(reason="invalid_selection")
 
+        errors: dict[str, str] = {}
+        suggested_name: str | None = None
         if user_input is not None:
-            # Validate connection to discovered host
-            errors: dict[str, str] = {}
             try:
                 await validate_connection(
                     self.hass,
@@ -363,16 +363,8 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             except Exception as exception:  # noqa: BLE001
                 errors["base"] = self._map_exception_to_error(exception)
-                return self.async_show_form(
-                    step_id="discovery_confirm",
-                    data_schema=get_discovery_confirm_schema(
-                        self.selected_device,
-                        suggested_name=user_input.get("name", ""),
-                    ),
-                    errors=errors,
-                )
+                suggested_name = user_input.get("name", "")
             else:
-                # Set unique_id to prevent duplicates
                 await self.async_set_unique_id(slugify(str(self.selected_device.serial)))
                 self._abort_if_unique_id_configured()
 
@@ -385,10 +377,10 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-        # Show confirmation form
         return self.async_show_form(
             step_id="discovery_confirm",
-            data_schema=get_discovery_confirm_schema(self.selected_device),
+            data_schema=get_discovery_confirm_schema(self.selected_device, suggested_name=suggested_name),
+            errors=errors,
             description_placeholders={
                 "host": self.selected_device.host,
                 "serial": str(self.selected_device.serial),
