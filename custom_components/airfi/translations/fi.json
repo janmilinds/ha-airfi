@@ -7,17 +7,17 @@
       },
       "fallback": {
         "title": "Laitteita ei löytynyt",
-        "description": "Airfi-laitteita ei löytynyt automaattisesti. Voit yrittää etsiä laitteita uudelleen tai lisätä laitteen manuaalisesti.",
+        "description": "Verkostasi ei löytynyt Airfi-laitteita. Voit etsiä uudelleen tai lisätä laitteen manuaalisesti.",
         "menu_options": {
-          "scan": "Yritä etsiä laitteita uudelleen",
+          "scan": "Etsi uudelleen",
           "manual": "Lisää laite manuaalisesti"
         }
       },
       "fallback_error": {
-        "title": "Haku epäonnistui",
-        "description": "Laitehakua ei voitu käynnistää, koska verkkoportti ei ole käytettävissä (portti voi olla toisen prosessin käytössä). Voit yrittää uudelleen tai lisätä laitteen manuaalisesti.",
+        "title": "Hakua ei voitu aloittaa",
+        "description": "Home Assistant ei voinut etsiä Airfi-laitteita verkostasi. Yritä hetken kuluttua uudelleen tai lisää laite manuaalisesti.",
         "menu_options": {
-          "scan": "Yritä etsiä laitteita uudelleen",
+          "scan": "Etsi uudelleen",
           "manual": "Lisää laite manuaalisesti"
         }
       },
@@ -32,14 +32,14 @@
         },
         "data_description": {
           "host": "Airfi-laitteen IP-osoite lähiverkossasi.",
-          "serial_number": "Numerot, jotka näkyvät laitteen tyyppikilvessä, Airfi-sovelluksessa tai web-käyttöliittymässä tai löydettyjen laitteiden listassa, jos haku löysi laitteen. Home Assistant löytää laitteen sen avulla uudelleen, jos sen IP-osoite muuttuu ja haku tavoittaa sen.",
+          "serial_number": "Numerot, jotka näkyvät laitteen tyyppikilvessä, Airfi-sovelluksessa tai web-käyttöliittymässä tai löydettyjen laitteiden listassa. Home Assistant löytää laitteen sarjanumeron avulla uudelleen, jos sen IP-osoite muuttuu.",
           "model_name": "Valitse tyyppikilvessä näkyvä malli, esimerkiksi Model 60, tai tarkka mallinimi Airfi-sovelluksesta. Jos et anna nimeä, malli antaa laitteelle sen nimen Home Assistantissa.",
           "name": "Jätä tyhjäksi, niin laitteen nimeksi tulee Airfi ja malli. Entiteettien tunnukset muodostetaan tästä nimestä, joten kun lisäät laitteen uudelleen, anna sille sama nimi kuin aiemmin."
         }
       },
       "discovery_select": {
         "title": "Valitse löydetty laite",
-        "description": "Löydettiin {count} Airfi-laite(tta). Valitse laite jatkaaksesi.",
+        "description": "Löydettyjä Airfi-laitteita: {count}. Valitse laite jatkaaksesi.",
         "data": {
           "device": "Löydetty laite"
         },
@@ -49,38 +49,42 @@
       },
       "discovery_confirm": {
         "title": "Vahvista laite",
-        "description": "**{model}** osoitteessa {host} (sarja: {serial})\n\nVoit halutessasi antaa laitteelle mukautetun nimen.",
+        "description": "**{model}** osoitteessa {host} (sarjanumero {serial})\n\nVoit antaa laitteelle oman nimen.",
         "data": {
           "name": "Nimi"
         },
         "data_description": {
-          "name": "Jätä tyhjäksi käyttääksesi oletusnimeä."
+          "name": "Airfi ja malli, ellet muuta sitä. Entiteettien tunnukset muodostetaan tästä nimestä, joten kun lisäät laitteen uudelleen, anna sille sama nimi kuin aiemmin."
         }
       },
       "reconfigure": {
-        "description": "Päivitä tämän integraation yhteysasetukset.",
+        "description": "Syötä IP-osoite, josta {name} tavoitetaan nyt.",
         "data": {
           "host": "IP-osoite"
         },
         "data_description": {
-          "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
+          "host": "Airfi-laitteen IP-osoite lähiverkossasi."
         }
+      },
+      "reconfigure_unverified": {
+        "title": "Käytetäänkö tätä IP-osoitetta?",
+        "description": "Home Assistant ei pystynyt varmistamaan, että osoitteessa {host} oleva laite on {name}. Näin voi käydä joissakin verkoissa, vaikka osoite olisi oikea. Jos olet varma, että osoite on oikea, valitse Lähetä."
       }
     },
     "progress": {
       "discovering_devices": "Etsitään Airfi-laitteita verkostasi. Tämä voi kestää 5–15 sekuntia."
     },
     "error": {
-      "cannot_connect": "Yhteyden muodostaminen laitteeseen epäonnistui.",
-      "cannot_retrieve_data": "Tietojen hakeminen laitteesta epäonnistui.",
-      "invalid_serial": "Syötä sarjanumero pelkkinä numeroina."
+      "cannot_connect": "Laitteeseen ei saatu yhteyttä. Tarkista IP-osoite ja että laite on päällä.",
+      "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
+      "invalid_serial": "Syötä sarjanumero pelkkinä numeroina.",
+      "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen.",
+      "serial_mismatch": "Tässä IP-osoitteessa olevalla laitteella on eri sarjanumero. Tarkista IP-osoite ja sarjanumero."
     },
     "abort": {
-      "already_configured": "Tämä laite on jo määritetty.",
-      "discovery_failed": "Laitteiden etsintä epäonnistui.",
-      "discovery_no_devices": "Airfi-laitteita ei löytynyt.",
+      "already_configured": "Tämä laite on jo lisätty.",
       "invalid_selection": "Valittu laite ei ole enää saatavilla.",
-      "already_in_progress": "Määritys on jo käynnissä.",
+      "already_in_progress": "Tämän laitteen lisääminen on jo käynnissä.",
       "not_airfi_device": "Tämä laite ei ole Airfi-laite."
     }
   },
@@ -115,19 +119,24 @@
       "title": "{name} ei ole tavoitettavissa",
       "fix_flow": {
         "error": {
-          "cannot_connect": "Laitteeseen ei saatu yhteyttä tällä IP-osoitteella.",
-          "cannot_retrieve_data": "Yhteys laitteeseen muodostui, mutta tarvittuja tietoja ei voitu lukea."
+          "cannot_connect": "Laitteeseen ei saatu yhteyttä tästä IP-osoitteesta. Tarkista osoite ja että laite on päällä.",
+          "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
+          "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen."
         },
         "step": {
           "init": {
             "title": "{name} ei ole tavoitettavissa",
-            "description": "Päivitä laitteen {name} IP-osoite, jos se on muuttunut. Jos IP-osoite ei ole muuttunut, jätä nykyinen arvo ja tarkista laitteen tai verkon yhteys.",
+            "description": "Home Assistant ei tavoita laitetta {name}. Jos sen IP-osoite on muuttunut, syötä uusi osoite. Jos ei, pidä nykyinen osoite ja tarkista, että laite on päällä ja yhdistetty verkkoosi.",
             "data": {
               "host": "IP-osoite"
             },
             "data_description": {
               "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
             }
+          },
+          "unverified": {
+            "title": "Käytetäänkö tätä IP-osoitetta?",
+            "description": "Home Assistant ei pystynyt varmistamaan, että osoitteessa {host} oleva laite on {name}. Näin voi käydä joissakin verkoissa, vaikka osoite olisi oikea. Jos olet varma, että osoite on oikea, valitse Lähetä."
           }
         }
       }

@@ -16,6 +16,7 @@ All schemas are re-exported from this __init__.py for convenient imports.
 """
 
 from custom_components.airfi.config_flow_handler.schemas.config import (
+    get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
     get_reconfigure_schema,
@@ -24,6 +25,7 @@ from custom_components.airfi.config_flow_handler.schemas.config import (
 
 # Re-export all schemas for convenient imports
 __all__ = [
+    "get_confirm_schema",
     "get_discovery_confirm_schema",
     "get_discovery_select_schema",
     "get_reconfigure_schema",

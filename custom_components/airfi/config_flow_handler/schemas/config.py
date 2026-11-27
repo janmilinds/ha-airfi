@@ -175,7 +175,19 @@ def get_discovery_confirm_schema(
     )
 
 
+def get_confirm_schema() -> probatio.Schema:
+    """
+    Get schema for a step that only asks the user to confirm.
+
+    Returns:
+        An empty schema; the step's description says what is confirmed.
+
+    """
+    return probatio.Schema({})
+
+
 __all__ = [
+    "get_confirm_schema",
     "get_discovery_confirm_schema",
     "get_discovery_select_schema",
     "get_reconfigure_schema",
