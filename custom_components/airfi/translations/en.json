@@ -26,12 +26,14 @@
         "data": {
           "host": "IP address",
           "serial_number": "Serial number",
-          "model_name": "Model"
+          "model_name": "Model",
+          "name": "Name"
         },
         "data_description": {
           "host": "The IP address of the Airfi device on your local network.",
-          "serial_number": "Enter it exactly as shown on the device's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the device. Home Assistant uses it to find the device again if its IP address changes and the search can reach it.",
-          "model_name": "Pick the model shown on the device's type plate, such as Model 60, or the exact model name from the Airfi app. The model names the device in Home Assistant, and its entity IDs are formed from that name."
+          "serial_number": "The digits shown on the device's type plate, in the Airfi app or web interface, or in the list of discovered devices if the search found the device. Home Assistant uses it to find the device again if its IP address changes and the search can reach it.",
+          "model_name": "Pick the model shown on the device's type plate, such as Model 60, or the exact model name from the Airfi app. Unless you enter a name, the model names the device in Home Assistant.",
+          "name": "Leave empty to name the device Airfi and its model. The entity IDs are formed from this name, so when you add a device again, give it the name it had before."
         }
       },
       "discovery_select": {
@@ -69,7 +71,8 @@
     },
     "error": {
       "cannot_connect": "Unable to connect to the device.",
-      "cannot_retrieve_data": "Unable to retrieve data from the device."
+      "cannot_retrieve_data": "Unable to retrieve data from the device.",
+      "invalid_serial": "Enter the serial number as digits only."
     },
     "abort": {
       "already_configured": "This entry is already configured.",

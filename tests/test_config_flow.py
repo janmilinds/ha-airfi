@@ -22,7 +22,7 @@ from custom_components.airfi.const import (
 )
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from homeassistant.config_entries import SOURCE_USER, ConfigEntryState, ConfigFlowResult
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -62,76 +62,11 @@ async def _start_user_flow(hass: HomeAssistant) -> ConfigFlowResult:
     return await hass.config_entries.flow.async_configure(result["flow_id"])
 
 
-# ---------------------------------------------------------------------------
-# async_step_user (manual path)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("mock_api")
-async def test_user_flow_with_input_adds_the_unit(hass: HomeAssistant) -> None:
-    """A setup started with the address and serial adds the unit under its serial."""
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_USER},
-            data={
-                CONF_HOST: "192.168.1.10",
-                CONF_SERIAL_NUMBER: "AIRFI-12345",
-                CONF_MODEL_NAME: "Model 60 L",
-            },
-        )
-        await hass.async_block_till_done()
-
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    (entry,) = hass.config_entries.async_entries(DOMAIN)
-    assert entry.title == "Airfi Model 60 L"
-    assert entry.unique_id == "airfi-12345"
-    assert entry.data == {
-        CONF_HOST: "192.168.1.10",
-        CONF_MODEL_NAME: "Model 60 L",
-        CONF_SERIAL_NUMBER: "AIRFI-12345",
-    }
-
-
-@pytest.mark.unit
-async def test_user_flow_shows_cannot_connect_error(hass) -> None:
-    """Test that a TCP connection error is mapped to the cannot_connect error key."""
-    handler = _make_handler(hass)
-
-    with patch(
-        "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-        new=AsyncMock(side_effect=AirfiApiClientConnectionError("timeout")),
-    ):
-        result = await handler.async_step_user(
-            {
-                CONF_HOST: "192.168.1.10",
-                CONF_SERIAL_NUMBER: "AIRFI-12345",
-            },
-        )
-
-    assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"base": "cannot_connect"}
-
-
-@pytest.mark.unit
-async def test_user_flow_shows_cannot_retrieve_data_error(hass) -> None:
-    """Test that a Modbus protocol error maps to cannot_retrieve_data."""
-    handler = _make_handler(hass)
-
-    with patch(
-        "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-        new=AsyncMock(side_effect=AirfiApiClientModbusError("bad response")),
-    ):
-        result = await handler.async_step_user(
-            {
-                CONF_HOST: "192.168.1.10",
-                CONF_SERIAL_NUMBER: "AIRFI-12345",
-            },
-        )
-
-    assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"base": "cannot_retrieve_data"}
+async def _open_manual_form(hass: HomeAssistant) -> ConfigFlowResult:
+    """Start the setup from the UI, find nothing, and open the manual form."""
+    with _scan_finds():
+        result = await _start_user_flow(hass)
+    return await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "manual"})
 
 
 # ---------------------------------------------------------------------------
@@ -308,40 +243,95 @@ async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistan
 
 @pytest.mark.integration
 @pytest.mark.usefixtures("mock_api")
-async def test_manual_setup_without_a_model_adds_the_unit_as_airfi(hass: HomeAssistant) -> None:
-    """A unit added without a model is stored as model 'Airfi' and titled by its serial."""
+@pytest.mark.parametrize(
+    ("name", "title"),
+    [
+        pytest.param("", "Airfi Model 100 L", id="empty-name"),
+        pytest.param("Upstairs", "Upstairs", id="typed-name"),
+    ],
+)
+async def test_manual_setup_names_the_unit(hass: HomeAssistant, name: str, title: str) -> None:
+    """A unit added by hand takes the typed name, or Airfi and its model when the name is left empty."""
+    result = await _open_manual_form(hass)
     with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_USER},
-            data={CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345"},
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345", CONF_MODEL_NAME: "Model 100 L", CONF_NAME: name},
         )
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     (entry,) = hass.config_entries.async_entries(DOMAIN)
-    assert entry.title == "Airfi 12345"
-    assert entry.data[CONF_MODEL_NAME] == "Airfi"
+    assert entry.title == title
 
 
-@pytest.mark.unit
-async def test_manual_step_shows_error_on_connection_failure(hass) -> None:
-    """Test that manual step shows form with error when connection fails."""
-    handler = _make_handler(hass)
-
-    with patch(
-        "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
-        new=AsyncMock(side_effect=AirfiApiClientConnectionError("refused")),
-    ):
-        result = await handler.async_step_manual(
-            {
-                CONF_HOST: "192.168.1.10",
-                CONF_SERIAL_NUMBER: "12345",
-            },
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_manual_serial_is_keyed_like_an_announced_one(hass: HomeAssistant) -> None:
+    """Leading zeros and surrounding spaces are dropped, so the unit gets the serial its announcement carries."""
+    result = await _open_manual_form(hass)
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: " 0012345 ", CONF_MODEL_NAME: "Model 100 L"},
         )
+        await hass.async_block_till_done()
 
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.unique_id == "12345"
+    assert entry.data[CONF_SERIAL_NUMBER] == "12345"
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_manual_serial_with_letters_is_refused_until_corrected(hass: HomeAssistant) -> None:
+    """A serial that is not all digits shows an error on its field, and the corrected one adds the unit."""
+    result = await _open_manual_form(hass)
+    form = {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "AIRFI-12345", CONF_MODEL_NAME: "Model 100 L"}
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)) as test_connection:
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {CONF_SERIAL_NUMBER: "invalid_serial"}
+        test_connection.assert_not_awaited()
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**form, CONF_SERIAL_NUMBER: "12345"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+@pytest.mark.parametrize(
+    ("error", "key"),
+    [
+        pytest.param(AirfiApiClientConnectionError("refused"), "cannot_connect", id="unreachable"),
+        pytest.param(AirfiApiClientModbusError("bad response"), "cannot_retrieve_data", id="no-modbus-answer"),
+    ],
+)
+async def test_manual_setup_recovers_from_a_failed_check(hass: HomeAssistant, error: Exception, key: str) -> None:
+    """A failed connection check shows its error and keeps the typed values; the next attempt adds the unit."""
+    result = await _open_manual_form(hass)
+    form = {
+        CONF_HOST: "192.168.1.10",
+        CONF_SERIAL_NUMBER: "12345",
+        CONF_MODEL_NAME: "Model 100 L",
+        CONF_NAME: "Upstairs",
+    }
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(side_effect=error)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"base": "cannot_connect"}
+    assert result["errors"] == {"base": key}
+    suggested = {str(field): field.description for field in result["data_schema"].schema}
+    assert suggested[CONF_NAME] == {"suggested_value": "Upstairs"}
+
+    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
 # ---------------------------------------------------------------------------
@@ -640,7 +630,7 @@ async def test_confirming_one_of_two_found_units_adds_it(hass: HomeAssistant) ->
         assert entry.unique_id == "12345"
         assert entry.data == {
             CONF_HOST: "192.168.1.50",
-            CONF_SERIAL_NUMBER: 12345,
+            CONF_SERIAL_NUMBER: "12345",
             CONF_MODEL_NAME: "Model 60 L",
         }
 

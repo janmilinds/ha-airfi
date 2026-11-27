@@ -26,7 +26,7 @@ from custom_components.airfi.const import (
     DISCOVERY_OPTION_SCAN_MORE,
 )
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, get_model_name
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.helpers import selector
 
 
@@ -76,6 +76,10 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schem
                     sort=False,
                 ),
             ),
+            probatio.Optional(
+                CONF_NAME,
+                description={"suggested_value": defaults.get(CONF_NAME)},
+            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         },
     )
 
@@ -164,7 +168,7 @@ def get_discovery_confirm_schema(
 
     return probatio.Schema(
         {
-            probatio.Optional("name", default=default_name): selector.TextSelector(
+            probatio.Optional(CONF_NAME, default=default_name): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
             ),
         },

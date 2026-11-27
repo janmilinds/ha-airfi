@@ -86,8 +86,9 @@ When setup starts, Airfi automatically scans your network for devices.
 If no device is selected from discovery, you can add manually with:
 
 - Host (IP or hostname)
-- Serial number
+- Serial number (digits only)
 - Model
+- Name (optional; Airfi and the model when left empty)
 
 ### Reconfigure
 

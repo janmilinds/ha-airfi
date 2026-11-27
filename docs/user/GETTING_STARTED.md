@@ -57,8 +57,9 @@ If an Airfi unit is found on your network, you will see a list of discovered dev
 If automatic discovery does not find your device (e.g., the unit is on a different subnet), choose **Configure manually** and enter:
 
 - **Host/IP Address** — the IP address of your Airfi ventilation unit
-- **Serial Number** — the device serial number (found on the unit's type plate, or in the Airfi app or web interface)
+- **Serial Number** — the device serial number, digits only (found on the unit's type plate, or in the Airfi app or web interface)
 - **Model** — select your model from the dropdown list
+- **Name** — optional; left empty, the device is named Airfi and its model. The entity IDs are formed from this name, so when you add a unit again, give it the name it had before
 
 Modbus TCP port 502 is used automatically. Click **Submit** to test the connection and complete setup.
 
