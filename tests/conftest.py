@@ -1,7 +1,9 @@
 """Shared fixtures for Airfi tests."""
 
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 import logging
+import socket
+import struct
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -9,7 +11,14 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi.api import AirfiApiClient
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi.const import (
+    CONF_MODEL_NAME,
+    CONF_SERIAL_NUMBER,
+    DISCOVERY_DEVICE_PORT,
+    DISCOVERY_MULTICAST_PORT,
+    DOMAIN,
+)
+from custom_components.airfi.utils.discovery import DATA_DISCOVERY_LISTENER
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
@@ -34,6 +43,41 @@ def fail_on_deprecation_report(caplog: pytest.LogCaptureFixture) -> Generator[No
     assert not reports, "\n".join(reports)
 
 
+def _unconnected_socket() -> socket.socket:
+    """Return a socket that never receives anything."""
+    sock, peer = socket.socketpair(socket.AF_UNIX, socket.SOCK_DGRAM)
+    peer.close()
+    sock.setblocking(False)
+    return sock
+
+
+@pytest.fixture(autouse=True)
+def discovery_socket() -> Generator[MagicMock]:
+    """Keep the discovery listener and the scans off the network; `announce` feeds the listener instead."""
+    with patch(
+        "custom_components.airfi.utils.discovery.create_discovery_socket",
+        side_effect=_unconnected_socket,
+    ) as create:
+        yield create
+
+
+@pytest.fixture
+def announce(hass: HomeAssistant) -> Callable[..., None]:
+    """
+    Hand the running discovery listener an announcement, as the network would deliver it.
+
+    Returns:
+        A function taking the announced IP address, the serial number and the model ID.
+
+    """
+
+    def _announce(host: str, serial: int, model_id: int = 1) -> None:
+        packet = socket.inet_aton(host)[::-1] + struct.pack("<HI", DISCOVERY_DEVICE_PORT, serial) + bytes([0, model_id])
+        hass.data[DATA_DISCOVERY_LISTENER].datagram_received(packet, (host, DISCOVERY_MULTICAST_PORT))
+
+    return _announce
+
+
 @pytest.fixture
 def config_entry() -> MockConfigEntry:
     """Create a mock config entry for Airfi."""
@@ -41,10 +85,11 @@ def config_entry() -> MockConfigEntry:
         domain=DOMAIN,
         data={
             CONF_HOST: "192.168.1.10",
-            CONF_SERIAL_NUMBER: "AIRFI-12345",
+            CONF_SERIAL_NUMBER: "12345678",
+            CONF_MODEL_NAME: "Model 60 L",
         },
-        unique_id="airfi-12345",
-        title="Airfi AIRFI-12345",
+        unique_id="12345678",
+        title="Airfi Model 60 L",
     )
 
 

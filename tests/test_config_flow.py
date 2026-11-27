@@ -5,6 +5,7 @@ from contextlib import AbstractContextManager
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -51,8 +52,13 @@ def _discovered_device(
 
 
 def _scan_finds(*devices: AirfiDiscoveredDevice) -> AbstractContextManager[AsyncMock]:
-    """Patch the network scan to find the given units."""
-    return patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=list(devices)))
+    """Patch the network scan to find the given units; like a real scan, it does not finish at once."""
+
+    async def _scan(**_kwargs: Any) -> list[AirfiDiscoveredDevice]:
+        await asyncio.sleep(0)
+        return list(devices)
+
+    return patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(side_effect=_scan))
 
 
 async def _start_user_flow(hass: HomeAssistant) -> ConfigFlowResult:
@@ -173,7 +179,7 @@ async def test_fallback_shows_menu(hass) -> None:
     result = await handler.async_step_fallback()
 
     assert result["type"] is FlowResultType.MENU
-    assert "discovery" in result["menu_options"]
+    assert "scan" in result["menu_options"]
     assert "manual" in result["menu_options"]
     assert handler.discovery_task is None
 
@@ -187,7 +193,7 @@ async def test_fallback_error_shows_menu(hass) -> None:
     result = await handler.async_step_fallback_error()
 
     assert result["type"] is FlowResultType.MENU
-    assert "discovery" in result["menu_options"]
+    assert "scan" in result["menu_options"]
     assert "manual" in result["menu_options"]
     assert handler.discovery_task is None
 
@@ -414,34 +420,25 @@ async def test_reconfigure_keeps_the_address_when_the_new_one_fails(
 
 
 # ---------------------------------------------------------------------------
-# async_step_discovery
+# async_step_scan
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit
-async def test_discovery_resets_state_and_triggers_user(hass) -> None:
-    """Test that the discovery step resets state and delegates to user step."""
-    handler = _make_handler(hass)
-    handler.discovery_task = MagicMock()
-    handler.discovered_devices = [_discovered_device()]
-    handler.selected_device = _discovered_device()
+@pytest.mark.integration
+async def test_searching_again_after_an_empty_search_lists_the_unit(hass: HomeAssistant) -> None:
+    """Choosing to search again from the menu runs a new search and lists the unit it finds."""
+    with _scan_finds():
+        result = await _start_user_flow(hass)
+    assert result["step_id"] == "fallback"
 
-    start_event = asyncio.Event()
+    with _scan_finds(_discovered_device()):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "scan"})
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
 
-    async def _pending() -> list:
-        await start_event.wait()
-        return []
-
-    with patch.object(handler, "_async_run_discovery", side_effect=_pending):
-        result = await handler.async_step_discovery()
-
-    assert handler.discovered_devices == []
-    assert handler.selected_device is None
-    assert result["type"] is FlowResultType.SHOW_PROGRESS
-
-    start_event.set()
-    if handler.discovery_task is not None:
-        await handler.discovery_task
+    assert result["step_id"] == "discovery_select"
+    assert result["description_placeholders"]["count"] == "1"
 
 
 # ---------------------------------------------------------------------------
@@ -652,8 +649,7 @@ async def test_run_discovery_filters_already_configured(hass, config_entry) -> N
     config_entry.add_to_hass(hass)
     handler = _make_handler(hass)
 
-    # Config entry has serial "AIRFI-12345" — discovered device must match that string
-    existing_device = _discovered_device(serial="AIRFI-12345")
+    existing_device = _discovered_device(serial=12345678)
     new_device = _discovered_device(host="192.168.1.99", serial=67890, model_id=3)
 
     with (

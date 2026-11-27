@@ -8,6 +8,11 @@
     "@janmilinds"
   ],
   "config_flow": true,
+  "dhcp": [
+    {
+      "macaddress": "BC97407*"
+    }
+  ],
   "documentation": "https://github.com/janmilinds/ha-airfi",
   "integration_type": "device",
   "iot_class": "local_polling",

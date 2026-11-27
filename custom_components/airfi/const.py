@@ -31,6 +31,9 @@ DISCOVERY_QUIET_PERIOD_SECONDS = 3
 DISCOVERY_DEVICE_PORT = 4000
 DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS = 5
 DISCOVERY_RECOVERY_COOLDOWN_SECONDS = 60
+DISCOVERY_LISTENER_RETRY_SECONDS = 60
+# The first seven hex digits of the MAC address block registered to Airfi
+AIRFI_MAC_PREFIX = "bc97407"
 
 # Recovery configuration
 # How long the device must be unreachable before rediscovery is triggered (90 seconds)

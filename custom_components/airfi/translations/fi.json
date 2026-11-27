@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Määritä Airfi"
@@ -8,7 +9,7 @@
         "title": "Laitteita ei löytynyt",
         "description": "Airfi-laitteita ei löytynyt automaattisesti. Voit yrittää etsiä laitteita uudelleen tai lisätä laitteen manuaalisesti.",
         "menu_options": {
-          "discovery": "Yritä etsiä laitteita uudelleen",
+          "scan": "Yritä etsiä laitteita uudelleen",
           "manual": "Lisää laite manuaalisesti"
         }
       },
@@ -16,7 +17,7 @@
         "title": "Haku epäonnistui",
         "description": "Laitehakua ei voitu käynnistää, koska verkkoportti ei ole käytettävissä (portti voi olla toisen prosessin käytössä). Voit yrittää uudelleen tai lisätä laitteen manuaalisesti.",
         "menu_options": {
-          "discovery": "Yritä etsiä laitteita uudelleen",
+          "scan": "Yritä etsiä laitteita uudelleen",
           "manual": "Lisää laite manuaalisesti"
         }
       },
@@ -78,7 +79,9 @@
       "already_configured": "Tämä laite on jo määritetty.",
       "discovery_failed": "Laitteiden etsintä epäonnistui.",
       "discovery_no_devices": "Airfi-laitteita ei löytynyt.",
-      "invalid_selection": "Valittu laite ei ole enää saatavilla."
+      "invalid_selection": "Valittu laite ei ole enää saatavilla.",
+      "already_in_progress": "Määritys on jo käynnissä.",
+      "not_airfi_device": "Tämä laite ei ole Airfi-laite."
     }
   },
   "exceptions": {

@@ -44,7 +44,7 @@ from custom_components.airfi.coordinator.feature_manager import (
     UnsupportedFirmwareError,
 )
 from custom_components.airfi.utils import masked_serial, register_address, version_string
-from custom_components.airfi.utils.discovery import AirfiDiscoveryService
+from custom_components.airfi.utils.discovery import AirfiDiscoveryService, announced_device_with_serial
 from homeassistant.const import CONF_HOST
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
@@ -406,22 +406,19 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             return False
 
         self._last_rediscovery_attempt = now
-        discovery_service = AirfiDiscoveryService()
-        try:
-            discovered_devices = await discovery_service.async_scan(
-                timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
-            )
-        except OSError:
-            LOGGER.debug("Discovery unavailable during recovery (port in use)")
-            return False
-
-        target_serials = {str(serial)}
-        serial_digits = "".join(char for char in str(serial) if char.isdigit())
-        if serial_digits:
-            target_serials.add(str(int(serial_digits)))
+        if (heard := announced_device_with_serial(self.hass, str(serial))) is not None:
+            discovered_devices = [heard]
+        else:
+            try:
+                discovered_devices = await AirfiDiscoveryService().async_scan(
+                    timeout_seconds=DISCOVERY_RECOVERY_SCAN_TIMEOUT_SECONDS,
+                )
+            except OSError:
+                LOGGER.debug("Discovery unavailable during recovery (port in use)")
+                return False
 
         for device in discovered_devices:
-            if str(device.serial) not in target_serials:
+            if device.unique_key != str(serial):
                 continue
 
             current_host = self.config_entry.data.get(CONF_HOST)
