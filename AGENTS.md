@@ -389,17 +389,26 @@ The Community AI policy's restriction on posting to Open Home Foundation reposit
 - **One branch per change**, named `<type>/<short-kebab>` (`feat/release-zip-asset`), branched from current `main`;
   never commit on `main`. Do not rename a branch whose pull request is open, and do not reuse one after it was merged.
 - **One logical change per pull request.** An unrelated fix, a drive-by refactor or a dependency bump is a pull request
-  of its own: a squash merge makes each pull request one changelog line and one unit to revert.
+  of its own: each pull request is one unit to revert, and its commits are its changelog lines.
 - **Force push only with `--force-with-lease`**, only on your own branch that nobody else has pulled, and only when
   the developer asked for the push.
-- **Work reaches `main` through a pull request**, where `script/setup/github` applied the `main` ruleset. Squash is
-  the default, and the pull request's title becomes the commit, so it follows the same format as a commit subject.
-  Rebase only a pull request whose commits each pass the _Check each commit_ step, and only when the developer asks.
+- **Work reaches `main` through a pull request**, where `script/setup/github` applied the `main` ruleset. **Feature
+  and fix pull requests are rebase-merged**, so every commit lands on `main` as written and release-please turns each
+  one into its own changelog line. Each commit therefore follows the commit rules, passes the gates on its own, and is
+  worth that line: no working or fixup commits, and no `fix` for a bug the same unreleased work introduced — fold it
+  into the commit that introduced it. The _Check each commit_ step of the `PR title` workflow verifies the messages.
+  Squash-merged are only the release pull requests: release-please's own, and a short branch whose pull request sets
+  the version for a beta, with `Release-As: X.Y.Z-beta.N` as the last line of its description (`ha-release`). The
+  title still follows the commit subject format, which the `PR title` check enforces. This overrides the squash
+  default in `blueprint.commit-message` rule 7, `docs/development/REPOSITORY_SETUP.md` and the branch reference below,
+  which template sync keeps current.
 - **A pull request still being worked on is a draft** (`gh pr create --draft`). CI skips drafts, so pushes to it cost
   no Actions minutes; mark it ready (`gh pr ready`) once `script/lint`, `script/type-check` and `script/test` pass
   locally — that is what starts the checks.
 - Updating a branch from `main`, conflicts, splitting mixed work and stacked pull requests:
   [`ha-release/references/branches-and-pull-requests.md`](.agents/skills/ha-release/references/branches-and-pull-requests.md).
+  Where it assumes a squash merge, read rebase: once A has landed, `git rebase origin/main` on B drops A's commits,
+  which `main` holds under new hashes, and the clean-up _After a squash merge_ applies unchanged.
 - When a task completes and the developer moves on, offer a commit message based on the work done.
 - Format: [Conventional Commits](https://www.conventionalcommits.org/), enforced by the commitlint hook — see
   `.agents/instructions/blueprint.commit-message.instructions.md`.
