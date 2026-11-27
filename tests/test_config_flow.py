@@ -12,17 +12,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
-from custom_components.airfi.config_flow_handler.config_flow import AirfiConfigFlowHandler
-from custom_components.airfi.config_flow_handler.schemas import get_discovery_select_schema
-from custom_components.airfi.const import (
+from custom_components.airfi_home.api import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi_home.config_flow_handler.config_flow import AirfiConfigFlowHandler
+from custom_components.airfi_home.config_flow_handler.schemas import get_discovery_select_schema
+from custom_components.airfi_home.const import (
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_OPTION_MANUAL,
     DISCOVERY_OPTION_SCAN_MORE,
     DOMAIN,
 )
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
+from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from homeassistant.config_entries import SOURCE_USER, ConfigEntryState, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
@@ -526,7 +526,7 @@ async def test_discovery_select_picks_device(hass) -> None:
 
     with (
         patch(
-            "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
+            "custom_components.airfi_home.config_flow_handler.config_flow.validate_connection",
             new=AsyncMock(return_value=None),
         ),
     ):
@@ -638,7 +638,7 @@ async def test_discovery_confirm_shows_error_on_failure(hass) -> None:
     handler.selected_device = _discovered_device()
 
     with patch(
-        "custom_components.airfi.config_flow_handler.config_flow.validate_connection",
+        "custom_components.airfi_home.config_flow_handler.config_flow.validate_connection",
         new=AsyncMock(side_effect=AirfiApiClientConnectionError("timeout")),
     ):
         result = await handler.async_step_discovery_confirm(
@@ -714,7 +714,7 @@ async def test_run_discovery_filters_already_configured(hass, config_entry) -> N
     with (
         patch.object(handler, "_async_current_entries", return_value=[config_entry]),
         patch(
-            "custom_components.airfi.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[existing_device, new_device]),
         ),
     ):
@@ -734,7 +734,7 @@ async def test_run_discovery_fallback_scan(hass) -> None:
     with (
         patch.object(handler, "_async_current_entries", return_value=[]),
         patch(
-            "custom_components.airfi.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
             new=AsyncMock(side_effect=[[], [device]]),
         ),
     ):
@@ -756,7 +756,7 @@ async def test_run_discovery_accumulate_mode(hass) -> None:
     with (
         patch.object(handler, "_async_current_entries", return_value=[]),
         patch(
-            "custom_components.airfi.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
+            "custom_components.airfi_home.config_flow_handler.config_flow.AirfiDiscoveryService.async_scan",
             new=AsyncMock(return_value=[new_device]),
         ),
     ):

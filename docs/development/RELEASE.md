@@ -6,7 +6,7 @@ This document describes the release process for this integration, including auto
 
 Releases are managed with [release-please](https://github.com/googleapis/release-please), which automates version bumping and changelog generation based on [Conventional Commits](https://www.conventionalcommits.org/). An optional local script rewrites the release notes for users with a coding agent CLI.
 
-**Version source of truth:** `custom_components/airfi/manifest.json`
+**Version source of truth:** `custom_components/airfi_home/manifest.json`
 
 > [!NOTE]
 > This document explains _how the release machinery works_ and covers the one-time GitHub repository setup. The

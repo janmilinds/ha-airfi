@@ -9,10 +9,10 @@ from pytest_homeassistant.common import MockConfigEntry
 from pytest_homeassistant.components.repairs import process_repair_fix_flow, start_repair_fix_flow
 from pytest_homeassistant.typing import ClientSessionGenerator
 
-from custom_components.airfi.api import AirfiApiClient
-from custom_components.airfi.api.client import AirfiApiClientConnectionError, AirfiApiClientModbusError
-from custom_components.airfi.const import DOMAIN, ISSUE_DEVICE_UNREACHABLE
-from custom_components.airfi.repairs import DeviceUnreachableRepairFlow, async_create_fix_flow
+from custom_components.airfi_home.api import AirfiApiClient
+from custom_components.airfi_home.api.client import AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi_home.const import DOMAIN, ISSUE_DEVICE_UNREACHABLE
+from custom_components.airfi_home.repairs import DeviceUnreachableRepairFlow, async_create_fix_flow
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant

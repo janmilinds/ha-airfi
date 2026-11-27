@@ -4,16 +4,17 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
-from custom_components.airfi.sensor.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureSensor
-from custom_components.airfi.utils.temperature import convert_temperature
+from custom_components.airfi_home.const import DOMAIN
+from custom_components.airfi_home.coordinator.data_processing import AirfiDeviceData
+from custom_components.airfi_home.sensor.temperature import ENTITY_DESCRIPTIONS, AirfiTemperatureSensor
+from custom_components.airfi_home.utils.temperature import convert_temperature
 
 
 def _build_coordinator(input_registers: list[int]) -> MagicMock:
     """Build a coordinator mock suitable for Airfi entities."""
     config_entry = MagicMock()
     config_entry.entry_id = "entry-1"
-    config_entry.domain = "airfi"
+    config_entry.domain = DOMAIN
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
 

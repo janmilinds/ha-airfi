@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.api import AirfiApiClient
-from custom_components.airfi.const import CONF_MODEL_NAME, CONF_SERIAL_NUMBER, DOMAIN
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
+from custom_components.airfi_home.api import AirfiApiClient
+from custom_components.airfi_home.const import CONF_MODEL_NAME, CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from homeassistant.config_entries import SOURCE_DHCP, SOURCE_USER, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant

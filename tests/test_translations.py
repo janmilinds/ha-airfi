@@ -11,15 +11,15 @@ import probatio
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.config_flow_handler.schemas import (
+from custom_components.airfi_home.config_flow_handler.schemas import (
     get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
-from custom_components.airfi.const import DOMAIN
-from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice
+from custom_components.airfi_home.const import DOMAIN
+from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice
 from homeassistant.const import (
     ATTR_ASSUMED_STATE,
     ATTR_ATTRIBUTION,

@@ -5,7 +5,7 @@ This document describes the technical architecture of the Airfi custom component
 ## Directory Structure
 
 ```text
-custom_components/airfi/
+custom_components/airfi_home/
 ├── __init__.py              # Integration setup and unload
 ├── config_flow.py           # Config flow entry point (delegates to handler)
 ├── const.py                 # Constants and configuration keys
@@ -142,7 +142,7 @@ is organized modularly to support complex flows without becoming monolithic.
 Provides common functionality for all entities in the integration:
 
 - Device information
-- Unique IDs `<serial>_<key>` and the device identifier `(airfi, <serial>)`, so a unit added again gets its registry settings back
+- Unique IDs `<serial>_<key>` and the device identifier `(airfi_home, <serial>)`, so a unit added again gets its registry settings back
 - Coordinator integration
 - Availability tracking
 
@@ -222,7 +222,7 @@ To add new functionality:
 
 ### Adding a New Platform
 
-1. Create directory: `custom_components/airfi/<platform>/`
+1. Create directory: `custom_components/airfi_home/<platform>/`
 2. Implement `__init__.py` with `async_setup_entry()`
 3. Create entity classes inheriting from platform base + `AirfiEntity`
 4. Add platform to `PLATFORMS` in `__init__.py`

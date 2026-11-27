@@ -3,7 +3,7 @@
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi.const import DOMAIN
+from custom_components.airfi_home.const import DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 

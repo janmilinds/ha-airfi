@@ -4,8 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi.coordinator.data_processing import AirfiDeviceData
-from custom_components.airfi.sensor.diagnostics import ENTITY_DESCRIPTIONS, AirfiDiagnosticSensor
+from custom_components.airfi_home.const import DOMAIN
+from custom_components.airfi_home.coordinator.data_processing import AirfiDeviceData
+from custom_components.airfi_home.sensor.diagnostics import ENTITY_DESCRIPTIONS, AirfiDiagnosticSensor
 from homeassistant.const import EntityCategory
 
 
@@ -17,7 +18,7 @@ def _build_coordinator(
     config_entry = MagicMock()
     config_entry.entry_id = "entry-1"
     config_entry.unique_id = "12345678"
-    config_entry.domain = "airfi"
+    config_entry.domain = DOMAIN
     config_entry.title = "Airfi Unit"
     config_entry.data = {"host": "192.168.1.10"}
 

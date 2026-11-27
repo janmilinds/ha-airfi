@@ -140,5 +140,5 @@ logger:
     homeassistant.config_entries: info
 
     # Your integration debug logging - shows EVERYTHING from your integration
-    custom_components.airfi: debug
-    custom_components.airfi.modbus: warning
+    custom_components.airfi_home: debug
+    custom_components.airfi_home.modbus: warning
