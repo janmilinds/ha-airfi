@@ -1,6 +1,7 @@
 """Shared fixtures for Airfi tests."""
 
 from collections.abc import Generator
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -16,6 +17,21 @@ from homeassistant.core import HomeAssistant
 LOOKUP_REGISTERS = [100, 310, 270]
 INPUT_REGISTER_COUNT = 42
 HOLDING_REGISTER_COUNT = 59
+
+
+@pytest.fixture(autouse=True)
+def fail_on_deprecation_report(caplog: pytest.LogCaptureFixture) -> Generator[None]:
+    """Fail a test when Home Assistant logs a deprecation this integration caused."""
+    yield
+    reports = [
+        message
+        for when in ("setup", "call", "teardown")
+        for record in caplog.get_records(when)
+        if record.levelno >= logging.WARNING
+        and DOMAIN in (message := record.getMessage())
+        and message.startswith(("Detected that custom integration", "The deprecated"))
+    ]
+    assert not reports, "\n".join(reports)
 
 
 @pytest.fixture
