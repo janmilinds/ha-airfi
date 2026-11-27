@@ -26,12 +26,14 @@
         "data": {
           "host": "Adres IP",
           "serial_number": "Numer seryjny",
-          "model_name": "Model"
+          "model_name": "Model",
+          "name": "Nazwa"
         },
         "data_description": {
           "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej.",
-          "serial_number": "Wpisz go dokładnie tak, jak widnieje na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie. Home Assistant używa go, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP, a wyszukiwanie może do niego dotrzeć.",
-          "model_name": "Wybierz model widoczny na tabliczce znamionowej urządzenia, na przykład Model 60, lub dokładną nazwę modelu z aplikacji Airfi. Model nadaje urządzeniu nazwę w Home Assistant, a identyfikatory encji są tworzone z tej nazwy."
+          "serial_number": "Cyfry widoczne na tabliczce znamionowej urządzenia, w aplikacji Airfi lub interfejsie webowym albo na liście wykrytych urządzeń, jeśli wyszukiwanie znalazło urządzenie. Home Assistant używa go, aby ponownie odnaleźć urządzenie, gdy zmieni się jego adres IP, a wyszukiwanie może do niego dotrzeć.",
+          "model_name": "Wybierz model widoczny na tabliczce znamionowej urządzenia, na przykład Model 60, lub dokładną nazwę modelu z aplikacji Airfi. Jeśli nie podasz nazwy, model nadaje urządzeniu nazwę w Home Assistant.",
+          "name": "Pozostaw puste, aby urządzenie otrzymało nazwę Airfi i model. Identyfikatory encji są tworzone z tej nazwy, więc przy ponownym dodawaniu urządzenia nadaj mu tę samą nazwę co wcześniej."
         }
       },
       "discovery_select": {
@@ -69,7 +71,8 @@
     },
     "error": {
       "cannot_connect": "Nie można połączyć się z urządzeniem.",
-      "cannot_retrieve_data": "Nie można pobrać danych z urządzenia."
+      "cannot_retrieve_data": "Nie można pobrać danych z urządzenia.",
+      "invalid_serial": "Wpisz numer seryjny, używając wyłącznie cyfr."
     },
     "abort": {
       "already_configured": "Ten wpis jest już skonfigurowany.",

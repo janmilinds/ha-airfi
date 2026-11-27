@@ -26,12 +26,14 @@
         "data": {
           "host": "IP-osoite",
           "serial_number": "Sarjanumero",
-          "model_name": "Malli"
+          "model_name": "Malli",
+          "name": "Nimi"
         },
         "data_description": {
           "host": "Airfi-laitteen IP-osoite lähiverkossasi.",
-          "serial_number": "Syötä se täsmälleen niin kuin se näkyy laitteen tyyppikilvessä, Airfi-sovelluksessa tai web-käyttöliittymässä tai löydettyjen laitteiden listassa, jos haku löysi laitteen. Home Assistant löytää laitteen sen avulla uudelleen, jos sen IP-osoite muuttuu ja haku tavoittaa sen.",
-          "model_name": "Valitse tyyppikilvessä näkyvä malli, esimerkiksi Model 60, tai tarkka mallinimi Airfi-sovelluksesta. Malli antaa laitteelle sen nimen Home Assistantissa, ja entiteettien tunnukset muodostetaan tästä nimestä."
+          "serial_number": "Numerot, jotka näkyvät laitteen tyyppikilvessä, Airfi-sovelluksessa tai web-käyttöliittymässä tai löydettyjen laitteiden listassa, jos haku löysi laitteen. Home Assistant löytää laitteen sen avulla uudelleen, jos sen IP-osoite muuttuu ja haku tavoittaa sen.",
+          "model_name": "Valitse tyyppikilvessä näkyvä malli, esimerkiksi Model 60, tai tarkka mallinimi Airfi-sovelluksesta. Jos et anna nimeä, malli antaa laitteelle sen nimen Home Assistantissa.",
+          "name": "Jätä tyhjäksi, niin laitteen nimeksi tulee Airfi ja malli. Entiteettien tunnukset muodostetaan tästä nimestä, joten kun lisäät laitteen uudelleen, anna sille sama nimi kuin aiemmin."
         }
       },
       "discovery_select": {
@@ -69,7 +71,8 @@
     },
     "error": {
       "cannot_connect": "Yhteyden muodostaminen laitteeseen epäonnistui.",
-      "cannot_retrieve_data": "Tietojen hakeminen laitteesta epäonnistui."
+      "cannot_retrieve_data": "Tietojen hakeminen laitteesta epäonnistui.",
+      "invalid_serial": "Syötä sarjanumero pelkkinä numeroina."
     },
     "abort": {
       "already_configured": "Tämä laite on jo määritetty.",

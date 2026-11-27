@@ -3,6 +3,12 @@
 from homeassistant.helpers.redact import partial_redact
 
 
+def normalized_serial(serial: str | int) -> str | None:
+    """Return a serial number as the unit announces it, digits without leading zeros; None when it is not all digits."""
+    text = str(serial).strip()
+    return str(int(text)) if text.isdecimal() else None
+
+
 def masked_serial(serial: object) -> str:
     """Return a serial number for a log line: its last four characters, or fully masked when it is short."""
     return partial_redact(str(serial), unmasked_prefix=0, unmasked_suffix=4)

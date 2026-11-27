@@ -26,12 +26,14 @@
         "data": {
           "host": "IP-adress",
           "serial_number": "Serienummer",
-          "model_name": "Modell"
+          "model_name": "Modell",
+          "name": "Namn"
         },
         "data_description": {
           "host": "Airfi-enhetens IP-adress i ditt lokala nätverk.",
-          "serial_number": "Ange det exakt som det står på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över upptäckta enheter om sökningen hittade enheten. Home Assistant använder det för att hitta enheten igen om dess IP-adress ändras och sökningen når den.",
-          "model_name": "Välj modellen på enhetens typskylt, till exempel Model 60, eller det exakta modellnamnet från Airfi-appen. Modellen ger enheten dess namn i Home Assistant, och entiteternas ID:n bildas av det namnet."
+          "serial_number": "Siffrorna som står på enhetens typskylt, i Airfi-appen eller webbgränssnittet, eller i listan över upptäckta enheter om sökningen hittade enheten. Home Assistant använder det för att hitta enheten igen om dess IP-adress ändras och sökningen når den.",
+          "model_name": "Välj modellen på enhetens typskylt, till exempel Model 60, eller det exakta modellnamnet från Airfi-appen. Om du inte anger något namn ger modellen enheten dess namn i Home Assistant.",
+          "name": "Lämna tomt för att ge enheten namnet Airfi och modellen. Entiteternas ID:n bildas av det här namnet, så när du lägger till en enhet igen ska du ge den samma namn som tidigare."
         }
       },
       "discovery_select": {
@@ -69,7 +71,8 @@
     },
     "error": {
       "cannot_connect": "Det gick inte att ansluta till enheten.",
-      "cannot_retrieve_data": "Det gick inte att hämta data från enheten."
+      "cannot_retrieve_data": "Det gick inte att hämta data från enheten.",
+      "invalid_serial": "Ange serienumret med enbart siffror."
     },
     "abort": {
       "already_configured": "Denna enhet är redan konfigurerad.",

@@ -12,8 +12,6 @@ https://developers.home-assistant.io/docs/config_entries_config_flow_handler
 import asyncio
 from typing import Any
 
-from slugify import slugify
-
 from custom_components.airfi.config_flow_handler.schemas import (
     get_discovery_confirm_schema,
     get_discovery_select_schema,
@@ -31,10 +29,11 @@ from custom_components.airfi.const import (
     DOMAIN,
     LOGGER,
 )
+from custom_components.airfi.utils import normalized_serial
 from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST
+from homeassistant.const import CONF_HOST, CONF_NAME
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -73,15 +72,12 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         manual setup options if discovery does not find any devices.
 
         Args:
-            user_input: Direct manual input for backwards compatibility.
+            user_input: Unused; the step shows scan progress and has no form.
 
         Returns:
             The config flow result showing discovery progress or the next step.
 
         """
-        if user_input is not None:
-            return await self.async_step_manual(user_input)
-
         if self.discovery_task is None:
             self.discovery_task = self.hass.async_create_task(self._async_run_discovery())
 
@@ -179,24 +175,13 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            try:
-                await validate_connection(
-                    self.hass,
-                    host=user_input[CONF_HOST],
-                )
-            except Exception as exception:  # noqa: BLE001
-                errors["base"] = self._map_exception_to_error(exception)
+            if (serial := normalized_serial(user_input[CONF_SERIAL_NUMBER])) is None:
+                errors[CONF_SERIAL_NUMBER] = "invalid_serial"
+            elif error := await self._async_connection_error(user_input[CONF_HOST]):
+                errors["base"] = error
             else:
-                serial = user_input[CONF_SERIAL_NUMBER]
-                await self.async_set_unique_id(slugify(str(serial)))
-                self._abort_if_unique_id_configured()
-
-                return self.async_create_entry(
-                    title=f"Airfi {user_input.get(CONF_MODEL_NAME, serial)}",
-                    data={
-                        **user_input,
-                        CONF_MODEL_NAME: user_input.get(CONF_MODEL_NAME, "Airfi"),
-                    },
+                return await self._async_create_unit_entry(
+                    user_input[CONF_HOST], serial, user_input[CONF_MODEL_NAME], user_input.get(CONF_NAME)
                 )
 
         return self.async_show_form(
@@ -337,26 +322,14 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors: dict[str, str] = {}
         suggested_name: str | None = None
+        device = self.selected_device
         if user_input is not None:
-            try:
-                await validate_connection(
-                    self.hass,
-                    host=self.selected_device.host,
-                )
-            except Exception as exception:  # noqa: BLE001
-                errors["base"] = self._map_exception_to_error(exception)
-                suggested_name = user_input.get("name", "")
+            if error := await self._async_connection_error(device.host):
+                errors["base"] = error
+                suggested_name = user_input.get(CONF_NAME, "")
             else:
-                await self.async_set_unique_id(slugify(str(self.selected_device.serial)))
-                self._abort_if_unique_id_configured()
-
-                return self.async_create_entry(
-                    title=user_input.get("name") or f"Airfi {self.selected_device.model_name}",
-                    data={
-                        CONF_HOST: self.selected_device.host,
-                        CONF_SERIAL_NUMBER: self.selected_device.serial,
-                        CONF_MODEL_NAME: self.selected_device.model_name,
-                    },
+                return await self._async_create_unit_entry(
+                    device.host, device.unique_key, device.model_name, user_input.get(CONF_NAME)
                 )
 
         return self.async_show_form(
@@ -368,6 +341,25 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 "serial": str(self.selected_device.serial),
                 "model": self.selected_device.model_name,
             },
+        )
+
+    async def _async_connection_error(self, host: str) -> str | None:
+        """Return the form error for a unit that does not answer at this address, or None when it does."""
+        try:
+            await validate_connection(self.hass, host=host)
+        except Exception as exception:  # noqa: BLE001
+            return self._map_exception_to_error(exception)
+        return None
+
+    async def _async_create_unit_entry(
+        self, host: str, serial: str, model_name: str, name: str | None
+    ) -> config_entries.ConfigFlowResult:
+        """Add the unit under its serial number, named by the user or by Airfi and its model."""
+        await self.async_set_unique_id(serial)
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=name or f"Airfi {model_name}",
+            data={CONF_HOST: host, CONF_SERIAL_NUMBER: serial, CONF_MODEL_NAME: model_name},
         )
 
     def _map_exception_to_error(self, exception: Exception) -> str:
