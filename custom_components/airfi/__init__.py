@@ -11,7 +11,6 @@ For integration development guidelines:
 https://developers.home-assistant.io/docs/creating_integration_manifest
 """
 
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_HOST, Platform
@@ -20,7 +19,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import AirfiApiClient
-from .const import DEFAULT_MODBUS_PORT, DEFAULT_POLL_INTERVAL_SECONDS, DOMAIN, LOGGER
+from .const import DEFAULT_MODBUS_PORT, DOMAIN, LOGGER, UPDATE_INTERVAL
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
 
@@ -58,7 +57,7 @@ async def async_setup_entry(
     2. Initializes the DataUpdateCoordinator for data fetching
     3. Performs the first data refresh
     4. Sets up the entity platforms
-    5. Sets up reload listener for config changes
+    5. Reloads the entry when its connection details change
 
     Data flow in this integration:
     1. Device is discovered automatically or configured manually in config flow
@@ -86,15 +85,12 @@ async def async_setup_entry(
         port=DEFAULT_MODBUS_PORT,
     )
 
-    # Initialize coordinator with config_entry
-    # Determine update interval from options (seconds)
-    seconds = entry.options.get("update_interval_seconds", DEFAULT_POLL_INTERVAL_SECONDS)
     coordinator = AirfiDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
         config_entry=entry,
-        update_interval=timedelta(seconds=int(seconds)),
+        update_interval=UPDATE_INTERVAL,
     )
 
     # Store runtime data
@@ -153,8 +149,9 @@ async def async_reload_entry(
     """
     Reload config entry.
 
-    This is called when the integration configuration or options have changed.
-    It unloads and then reloads the integration with the new configuration.
+    This is called when the entry data changes, such as a new address from
+    reconfiguring, a repair, or rediscovery. It unloads and then reloads the
+    integration with the new connection details.
 
     Args:
         hass: The Home Assistant instance.

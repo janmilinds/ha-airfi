@@ -78,20 +78,6 @@
       "invalid_selection": "Valittu laite ei ole enää saatavilla."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Määritä integraation asetukset",
-        "description": "Mukauta, miten tämä integraatio toimii.",
-        "data": {
-          "update_interval_seconds": "Päivitysväli (sekuntia)"
-        },
-        "data_description": {
-          "update_interval_seconds": "Kuinka usein päivitetään tiedot laitteesta (5–60 sekuntia)"
-        }
-      }
-    }
-  },
   "exceptions": {
     "device_unreachable": {
       "message": "Laitteeseen ei saatu yhteyttä osoitteessa {host}."

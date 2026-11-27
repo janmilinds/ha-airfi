@@ -6,13 +6,13 @@
 ## Bronze
 
 - [ ] `action-setup` — N/A: no service actions defined (services.yaml empty)
-- [x] `appropriate-polling` — Default 10s, configurable 5–60s via options flow (`iot_class: local_polling`)
+- [x] `appropriate-polling` — Fixed 10s `UPDATE_INTERVAL`, no option for it (`iot_class: local_polling`)
 - [x] `brands` — Brand icons in `brand/` (icon.png, dark_icon.png, @2x variants)
 - [x] `common-modules` — Shared code in `utils/`, `entity/base.py`, `coordinator/`
 - [x] `config-flow-test-coverage` — Full test coverage (36 tests in test_config_flow.py)
 - [x] `config-flow` — UI config flow with discovery, manual setup, reconfigure
   - [x] Uses `data_description` in translations/en.json
-  - [x] `ConfigEntry.data` for connection, `.options` for poll interval
+  - [x] `ConfigEntry.data` for connection; no options flow
 - [x] `dependency-transparency` — Single dependency: `pymodbus>=3.8.0,<4.0.0`
 - [ ] `docs-actions` — N/A: no service actions defined
 - [x] `docs-high-level-description` — GETTING_STARTED.md "What is Airfi?" section
@@ -30,7 +30,7 @@
 
 - [ ] `action-exceptions` — N/A: no service actions defined
 - [x] `config-entry-unloading` — `async_unload_entry()` calls `async_unload_platforms()`
-- [x] `docs-configuration-parameters` — CONFIGURATION.md: all options with types, ranges, defaults
+- [ ] `docs-configuration-parameters` — N/A: no options flow; CONFIGURATION.md documents the fixed update interval
 - [x] `docs-installation-parameters` — GETTING_STARTED.md: host, serial number, model
 - [x] `entity-unavailable` — CoordinatorEntity auto-marks unavailable on update failures
 - [x] `integration-owner` — `@janmilinds` in manifest.json codeowners

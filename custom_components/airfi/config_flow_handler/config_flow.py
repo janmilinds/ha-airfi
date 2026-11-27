@@ -10,7 +10,7 @@ https://developers.home-assistant.io/docs/config_entries_config_flow_handler
 """
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from slugify import slugify
 
@@ -35,9 +35,6 @@ from custom_components.airfi.utils.discovery import AirfiDiscoveredDevice, Airfi
 from custom_components.airfi.utils.error_mapping import map_connection_exception_to_error
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
-
-if TYPE_CHECKING:
-    from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -64,21 +61,6 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.selected_device: AirfiDiscoveredDevice | None = None
         self.discovery_task: asyncio.Task[list[AirfiDiscoveredDevice]] | None = None
         self._discovery_accumulate: bool = False
-
-    @staticmethod
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> AirfiOptionsFlow:
-        """
-        Get the options flow for this handler.
-
-        Returns:
-            The options flow instance for modifying integration options.
-
-        """
-        from custom_components.airfi.config_flow_handler.options_flow import AirfiOptionsFlow  # noqa: PLC0415
-
-        return AirfiOptionsFlow()
 
     async def async_step_user(
         self,

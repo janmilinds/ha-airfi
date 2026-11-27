@@ -7,10 +7,8 @@ for maintainability and scalability.
 Package structure:
 ------------------
 - config_flow.py: Main configuration flow (user setup, reconfigure)
-- options_flow.py: Options flow for post-setup configuration changes
-- schemas/: Voluptuous schemas for all forms (user, options, reconfigure, discovery, etc.)
+- schemas/: Voluptuous schemas for all forms (user, reconfigure, discovery)
 - validators/: Validation logic for user inputs and connection settings
-- handler.py: Backwards compatibility wrapper (imports from above modules)
 
 Usage:
 ------
@@ -23,9 +21,7 @@ https://developers.home-assistant.io/docs/config_entries_config_flow_handler
 """
 
 from .config_flow import AirfiConfigFlowHandler
-from .options_flow import AirfiOptionsFlow
 
 __all__ = [
     "AirfiConfigFlowHandler",
-    "AirfiOptionsFlow",
 ]

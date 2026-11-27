@@ -78,20 +78,6 @@
       "invalid_selection": "Den valda enheten är inte längre tillgänglig."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Konfigurera integrationsinställningar",
-        "description": "Anpassa hur denna integration fungerar.",
-        "data": {
-          "update_interval_seconds": "Uppdateringsintervall (sekunder)"
-        },
-        "data_description": {
-          "update_interval_seconds": "Hur ofta data uppdateras från enheten (5 till 60 sekunder)"
-        }
-      }
-    }
-  },
   "exceptions": {
     "device_unreachable": {
       "message": "Det gick inte att ansluta till enheten på {host}."

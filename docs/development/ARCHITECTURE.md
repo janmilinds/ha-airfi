@@ -23,12 +23,9 @@ custom_components/airfi/
 ├── config_flow_handler/     # Config flow implementation
 │   ├── __init__.py          # Package exports
 │   ├── config_flow.py       # Main flow (user, discovery, reconfigure)
-│   ├── handler.py           # Backward compatibility wrapper
-│   ├── options_flow.py      # Options flow (update interval)
 │   ├── schemas/             # Voluptuous schemas
 │   │   ├── __init__.py      # Schema exports
-│   │   ├── config.py        # Config flow schemas
-│   │   └── options.py       # Options flow schemas
+│   │   └── config.py        # Config flow schemas
 │   └── validators/          # Input validation
 │       ├── __init__.py      # Validator exports
 │       └── connection.py    # Connection validation (Modbus TCP)
@@ -89,7 +86,7 @@ and distributes updates to all entities. It is organized as a package with separ
 
 **Core functionality:**
 
-- Configurable update interval (default: 10 seconds, range 5–60)
+- Fixed update interval of 10 seconds (`UPDATE_INTERVAL`), per the Quality Scale `appropriate-polling` rule
 - Error handling with exponential backoff
 - Shared data access for all entities
 - Automatic retry on transient failures
@@ -122,7 +119,6 @@ is organized modularly to support complex flows without becoming monolithic.
 **Structure:**
 
 - `config_flow.py`: Main flow (user setup, discovery, reconfigure)
-- `options_flow.py`: Options flow for update interval configuration
 - `schemas/`: Voluptuous schemas for all forms
 - `validators/`: Connection validation (Modbus TCP reachability)
 
@@ -131,14 +127,12 @@ is organized modularly to support complex flows without becoming monolithic.
 - Automatic discovery via UDP multicast
 - Manual user setup with host entry
 - Reconfigure flow for changing device IP
-- Options flow for update interval
 
 **Note:** No reauthentication flow — Modbus TCP has no authentication.
 
 **Key classes:**
 
 - `AirfiConfigFlowHandler` (main flow)
-- `AirfiOptionsFlow` (options)
 
 ### Base Entity
 

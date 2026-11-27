@@ -1,16 +1,19 @@
 """Tests for the Airfi integration __init__.py."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.airfi import async_reload_entry, async_setup, async_setup_entry, async_unload_entry
 
 # Force coverage of re-export shim
 import custom_components.airfi.config_flow  # noqa: F401
-from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi.const import CONF_SERIAL_NUMBER, DOMAIN, UPDATE_INTERVAL
 from homeassistant.const import CONF_HOST
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 
@@ -112,3 +115,26 @@ async def test_async_setup_entry_raises_on_first_refresh_failure(hass, entry) ->
         await async_setup_entry(hass, entry)
 
     assert getattr(exc.value, "translation_key", None) == "first_refresh_failed"
+
+
+@pytest.mark.integration
+async def test_unit_is_polled_at_the_fixed_interval(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_api: SimpleNamespace,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The unit is read again each time the fixed update interval has passed."""
+    reads = mock_api.get_data.await_count
+
+    freezer.tick(UPDATE_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert mock_api.get_data.await_count == reads + 1
+
+
+@pytest.mark.unit
+async def test_entry_has_no_options(init_integration: MockConfigEntry) -> None:
+    """The entry offers no options dialog, since the update interval is fixed."""
+    assert not init_integration.supports_options
