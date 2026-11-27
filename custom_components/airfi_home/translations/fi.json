@@ -79,7 +79,8 @@
       "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
       "invalid_serial": "Syötä sarjanumero pelkkinä numeroina.",
       "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen.",
-      "serial_mismatch": "Tässä IP-osoitteessa olevalla laitteella on eri sarjanumero. Tarkista IP-osoite ja sarjanumero."
+      "serial_mismatch": "Tässä IP-osoitteessa olevalla laitteella on eri sarjanumero. Tarkista IP-osoite ja sarjanumero.",
+      "unsupported_device": "Laitteen ohjelmisto on liian vanha tai sitä ei tueta. Päivitä laitteen ohjelmisto ja yritä sitten uudelleen."
     },
     "abort": {
       "already_configured": "Tämä laite on jo lisätty.",
@@ -93,7 +94,7 @@
       "message": "Laitteeseen ei saatu yhteyttä osoitteessa {host}."
     },
     "setup_firmware_error": {
-      "message": "Laitteen firmware-versio {firmware_version} ei ole yhteensopiva tämän integraation kanssa."
+      "message": "Laitteen ohjelmistoa ei tueta: laiteohjelmisto {firmware_version}, rekisterikartta {map_version}. Päivitä laitteen ohjelmisto ja lataa integraatio sitten uudelleen."
     },
     "update_failed": {
       "message": "Laitteen tietojen päivitys epäonnistui."
@@ -121,7 +122,8 @@
         "error": {
           "cannot_connect": "Laitteeseen ei saatu yhteyttä tästä IP-osoitteesta. Tarkista osoite ja että laite on päällä.",
           "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
-          "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen."
+          "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen.",
+          "unsupported_device": "Laitteen ohjelmisto on liian vanha tai sitä ei tueta. Päivitä laitteen ohjelmisto ja yritä sitten uudelleen."
         },
         "step": {
           "init": {
@@ -142,8 +144,8 @@
       }
     },
     "unsupported_firmware": {
-      "title": "{name}: laiteohjelmistoversio ({firmware_version}) ei ole tuettu",
-      "description": "Laitteen laiteohjelmistoversio {firmware_version} ei ole yhteensopiva tämän integraation kanssa. Päivitä tai vaihda laitteen laiteohjelmistoversio tuettuun versioon.\n\nLisätietoja laitteen ohjelmiston päivityksestä saat [Airfi-sivuston]({airfi_url}) tuki-osiosta (**airfi.fi** → **Tuki** → **Ohjelmistopäivitys**)."
+      "title": "{name} tarvitsee ohjelmistopäivityksen",
+      "description": "Tämä integraatio ei tue laitteen ohjelmistoa: laiteohjelmisto {firmware_version}, rekisterikartta {map_version}. Integraatio tarvitsee rekisterikartan 2.0 tai uudemman, eikä laiteohjelmisto 3.2.0 toimi sen kanssa.\n\n1. Päivitä laitteen ohjelmisto [Airfi-sivuston]({airfi_url}) tukiosion ohjeiden mukaan (**airfi.fi** > **Tuki** > **Ohjelmistopäivitys**).\n2. Lataa integraatio uudelleen: **Asetukset** > **Laitteet & palvelut** > **Airfi** > ⋮ > **Lataa uudelleen**."
     }
   },
   "entity": {

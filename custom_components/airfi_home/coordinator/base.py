@@ -46,7 +46,7 @@ from custom_components.airfi_home.coordinator.feature_manager import (
 from custom_components.airfi_home.utils import masked_serial, register_address, version_string
 from custom_components.airfi_home.utils.discovery import AirfiDiscoveryService, announced_device_with_serial
 from homeassistant.const import CONF_HOST
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -154,11 +154,12 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             LOGGER.debug("Coordinator setup complete for %s", self.config_entry.entry_id)
         except UnsupportedFirmwareError as exception:
             self._raise_unsupported_firmware_issue()
-            raise ConfigEntryNotReady(
+            raise ConfigEntryError(
                 translation_domain=DOMAIN,
                 translation_key="setup_firmware_error",
                 translation_placeholders={
                     "firmware_version": self.feature_manager.firmware_version or "unknown",
+                    "map_version": self.feature_manager.modbus_register_version or "unknown",
                 },
             ) from exception
         except AirfiDeviceError as exception:
@@ -252,6 +253,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
                 self.hass,
                 DOMAIN,
                 self._device_unreachable_issue_id,
+                config_entry_id=self.config_entry.entry_id,
                 data={
                     "entry_id": self.config_entry.entry_id,
                 },
@@ -276,7 +278,9 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             self._issue_raised = False
             ir.async_delete_issue(self.hass, DOMAIN, self._device_unreachable_issue_id)
 
-    def _raise_unsupported_firmware_issue(self, firmware_version: str | None = None) -> None:
+    def _raise_unsupported_firmware_issue(
+        self, firmware_version: str | None = None, modbus_register_version: str | None = None
+    ) -> None:
         """Create a non-fixable repairs issue for unsupported firmware.
 
         The issue has ``is_fixable=False`` because the user must update the
@@ -285,28 +289,25 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
         Args:
             firmware_version: The firmware version to show in the issue. Falls back
                 to the feature_manager cached value when not provided (setup-time path).
+            modbus_register_version: The register map version to show in the issue, with the same fallback.
         """
         fw = firmware_version or self.feature_manager.firmware_version or "unknown"
-        issue_reg = ir.async_get(self.hass)
-        existing = issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id)
-        if existing is not None:
-            # Already raised — only recreate if firmware version changed
-            if existing.translation_placeholders and existing.translation_placeholders.get("firmware_version") == fw:
-                return
-            ir.async_delete_issue(self.hass, DOMAIN, self._unsupported_firmware_issue_id)
-            LOGGER.info("Updating unsupported firmware repairs issue (firmware=%s)", fw)
-        else:
-            LOGGER.warning("Raising unsupported firmware repairs issue (firmware=%s)", fw)
+        map_version = modbus_register_version or self.feature_manager.modbus_register_version or "unknown"
+        if ir.async_get(self.hass).async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is None:
+            LOGGER.warning("Raising unsupported firmware repairs issue (firmware=%s, map=%s)", fw, map_version)
+        # Updating in place keeps a user's ignore; deleting to recreate would reset it.
         ir.async_create_issue(
             self.hass,
             DOMAIN,
             self._unsupported_firmware_issue_id,
+            config_entry_id=self.config_entry.entry_id,
             is_fixable=False,
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_UNSUPPORTED_FIRMWARE,
             translation_placeholders={
                 "name": self.config_entry.title,
                 "firmware_version": fw,
+                "map_version": map_version,
                 "airfi_url": "https://airfi.fi",
             },
         )
@@ -321,10 +322,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             lookup = await self.config_entry.runtime_data.client.async_get_lookup_registers()
         except AirfiApiClientError:
             return
-        if len(lookup) > 1:
-            fw = version_string(lookup[1])
-            modbus_ver = version_string(lookup[2]) if len(lookup) > 2 else ""
-            self._check_runtime_firmware(fw, modbus_ver)
+        if len(lookup) > 2:
+            self._check_runtime_firmware(version_string(lookup[1]), version_string(lookup[2]))
 
     def _check_runtime_firmware(self, firmware_version: str, modbus_register_version: str = "") -> None:
         """Check firmware version from coordinator data at runtime.
@@ -339,7 +338,7 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
             return
         self._update_device_sw_version(firmware_version)
         if self.feature_manager.is_configuration_unsupported(firmware_version, modbus_register_version):
-            self._raise_unsupported_firmware_issue(firmware_version)
+            self._raise_unsupported_firmware_issue(firmware_version, modbus_register_version)
         else:
             issue_reg = ir.async_get(self.hass)
             if issue_reg.async_get_issue(DOMAIN, self._unsupported_firmware_issue_id) is not None:

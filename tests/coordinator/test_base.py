@@ -24,11 +24,7 @@ from custom_components.airfi_home.const import (
 )
 from custom_components.airfi_home.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi_home.coordinator.base import RecoveryState
-from custom_components.airfi_home.coordinator.feature_manager import (
-    AirfiDeviceError,
-    InvalidDeviceDataError,
-    UnsupportedFirmwareError,
-)
+from custom_components.airfi_home.coordinator.feature_manager import AirfiDeviceError, InvalidDeviceDataError
 from custom_components.airfi_home.data import AirfiData
 from custom_components.airfi_home.utils.discovery import (
     DATA_DISCOVERY_LISTENER,
@@ -39,6 +35,7 @@ from homeassistant.components.fan import ATTR_PERCENTAGE, DOMAIN as FAN_DOMAIN, 
 from homeassistant.components.homeassistant import SERVICE_UPDATE_ENTITY
 from homeassistant.components.number import ATTR_VALUE, DOMAIN as NUMBER_DOMAIN, SERVICE_SET_VALUE
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import DOMAIN as HOMEASSISTANT_DOMAIN, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
@@ -1068,26 +1065,109 @@ async def test_runtime_firmware_no_issue_when_supported(hass, config_entry, mock
     assert issue_reg.async_get_issue(DOMAIN, expected_id) is None
 
 
-@pytest.mark.unit
-async def test_setup_firmware_validation_creates_issue(hass, config_entry, mock_integration) -> None:
-    """Test that async_initial_setup creates firmware issue when unsupported firmware raises UnsupportedFirmwareError."""
+@pytest.mark.integration
+async def test_unit_that_reports_no_version_is_retried_without_a_repair_issue(
+    hass: HomeAssistant,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Version registers that hold nothing, as from a unit still starting or another device, mean retry, not update."""
+    mock_api.get_lookup_registers.return_value = [0, 0, 0]
     config_entry.add_to_hass(hass)
-    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
-    client.async_get_lookup_registers = AsyncMock(return_value=[0, 320, 300])
-    coordinator.feature_manager.firmware_version = "3.2.0"
 
-    with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=UnsupportedFirmwareError("unsupported fw")),
-        patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
-        pytest.raises(ConfigEntryNotReady),
-    ):
-        await _call_setup(coordinator)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
 
-    issue_reg = ir.async_get(hass)
-    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
-    issue = issue_reg.async_get_issue(DOMAIN, expected_id)
+    assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert issue_registry.async_get_issue(DOMAIN, f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}") is None
+
+
+@pytest.mark.integration
+async def test_ignored_software_issue_stays_ignored_when_raised_again(
+    hass: HomeAssistant,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """An issue the user ignored, restored after a restart without its details, keeps the ignore when raised again."""
+    issue_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key=ISSUE_UNSUPPORTED_FIRMWARE,
+    )
+    ir.async_ignore_issue(hass, DOMAIN, issue_id, True)
+    mock_api.get_lookup_registers.return_value = [100, 381, 150]
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    issue = issue_registry.async_get_issue(DOMAIN, issue_id)
     assert issue is not None
-    assert issue.severity == ir.IssueSeverity.ERROR
+    assert issue.dismissed_version is not None
+    assert issue.translation_placeholders is not None
+    assert issue.translation_placeholders["map_version"] == "1.5.0"
+
+
+@pytest.mark.integration
+async def test_deleting_an_entry_stopped_by_unsupported_software_removes_its_repair_issue(
+    hass: HomeAssistant,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """The repair issue of a unit the user gives up on goes with its entry."""
+    mock_api.get_lookup_registers.return_value = [100, 381, 150]
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    issue_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
+    assert issue_registry.async_get_issue(DOMAIN, issue_id) is not None
+
+    await hass.config_entries.async_remove(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("lookup", "firmware", "map_version"),
+    [
+        pytest.param([100, 381, 150], "3.8.1", "1.5.0", id="register-map-1.5"),
+        pytest.param([100, 320, 300], "3.2.0", "3.0.0", id="blocklisted-firmware"),
+    ],
+)
+async def test_unit_with_unsupported_software_stops_with_a_repair_issue(
+    hass: HomeAssistant,
+    mock_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+    lookup: list[int],
+    firmware: str,
+    map_version: str,
+) -> None:
+    """A unit whose software is not supported stops setting up, without retrying, and tells the user what to update."""
+    mock_api.get_lookup_registers.return_value = lookup
+    config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert config_entry.state is ConfigEntryState.SETUP_ERROR
+    issue = issue_registry.async_get_issue(DOMAIN, f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}")
+    assert issue is not None
+    assert issue.severity is ir.IssueSeverity.ERROR
+    assert issue.translation_placeholders is not None
+    assert (issue.translation_placeholders["firmware_version"], issue.translation_placeholders["map_version"]) == (
+        firmware,
+        map_version,
+    )
 
 
 @pytest.mark.unit
@@ -1158,33 +1238,6 @@ async def test_setup_insufficient_registers_does_not_create_firmware_issue(
     issue_reg = ir.async_get(hass)
     expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
     assert issue_reg.async_get_issue(DOMAIN, expected_id) is None
-
-
-@pytest.mark.unit
-async def test_setup_old_modbus_version_creates_issue(hass, config_entry, mock_integration) -> None:
-    """Test that async_initial_setup creates repairs issue when modbus version is too old.
-
-    This covers the case where firmware is not blocklisted but the modbus map
-    version is below the minimum, which also makes the device unsupported.
-    """
-    config_entry.add_to_hass(hass)
-    coordinator, client = _make_coordinator(hass, config_entry, mock_integration)
-    client.async_get_lookup_registers = AsyncMock(return_value=[0, 150, 140])
-    coordinator.feature_manager.firmware_version = "1.5.0"
-    coordinator.feature_manager.modbus_register_version = "1.4.0"
-
-    with (
-        patch.object(coordinator.feature_manager, "initialize", side_effect=UnsupportedFirmwareError("below minimum")),
-        patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True),
-        pytest.raises(ConfigEntryNotReady),
-    ):
-        await _call_setup(coordinator)
-
-    issue_reg = ir.async_get(hass)
-    expected_id = f"{ISSUE_UNSUPPORTED_FIRMWARE}_{config_entry.entry_id}"
-    issue = issue_reg.async_get_issue(DOMAIN, expected_id)
-    assert issue is not None
-    assert issue.severity == ir.IssueSeverity.ERROR
 
 
 @pytest.mark.unit

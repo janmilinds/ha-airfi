@@ -32,6 +32,8 @@ from homeassistant.data_entry_flow import FlowResultType
 # Helpers
 # ---------------------------------------------------------------------------
 
+SUPPORTED_UNIT_LOOKUP = [100, 310, 270]
+
 
 def _make_handler(hass) -> AirfiConfigFlowHandler:
     """Create a config flow handler ready for testing."""
@@ -222,7 +224,7 @@ async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistan
     """When the scan finds nothing, the unit entered by hand is added."""
     with (
         _scan_finds(),
-        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
+        patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)),
     ):
         result = await _start_user_flow(hass)
         assert result["step_id"] == "fallback"
@@ -260,7 +262,7 @@ async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistan
 async def test_manual_setup_names_the_unit(hass: HomeAssistant, name: str, title: str) -> None:
     """A unit added by hand takes the typed name, or Airfi and its model when the name is left empty."""
     result = await _open_manual_form(hass)
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345", CONF_MODEL_NAME: "Model 100 L", CONF_NAME: name},
@@ -277,7 +279,7 @@ async def test_manual_setup_names_the_unit(hass: HomeAssistant, name: str, title
 async def test_manual_serial_is_keyed_like_an_announced_one(hass: HomeAssistant) -> None:
     """Leading zeros and surrounding spaces are dropped, so the unit gets the serial its announcement carries."""
     result = await _open_manual_form(hass)
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: " 0012345 ", CONF_MODEL_NAME: "Model 100 L"},
@@ -295,7 +297,9 @@ async def test_manual_serial_with_letters_is_refused_until_corrected(hass: HomeA
     """A serial that is not all digits shows an error on its field, and the corrected one adds the unit."""
     result = await _open_manual_form(hass)
     form = {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "AIRFI-12345", CONF_MODEL_NAME: "Model 100 L"}
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)) as test_connection:
+    with patch.object(
+        AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)
+    ) as test_connection:
         result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
         assert result["type"] is FlowResultType.FORM
         assert result["errors"] == {CONF_SERIAL_NUMBER: "invalid_serial"}
@@ -321,7 +325,7 @@ async def test_manual_serial_of_another_unit_at_the_address_is_refused(
     result = await _open_manual_form(hass)
     form = {CONF_HOST: "192.168.1.60", CONF_SERIAL_NUMBER: "11111", CONF_MODEL_NAME: "Model 100 L"}
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
         assert result["errors"] == {"base": "serial_mismatch"}
         result = await hass.config_entries.flow.async_configure(
@@ -331,6 +335,24 @@ async def test_manual_serial_of_another_unit_at_the_address_is_refused(
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["result"].unique_id == "67890"
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_manual_setup_refuses_a_unit_whose_software_is_not_supported(hass: HomeAssistant) -> None:
+    """A unit on register map 1.5 is refused with a reason, and a unit with supported software is then added."""
+    result = await _open_manual_form(hass)
+    form = {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345", CONF_MODEL_NAME: "Model 100 L"}
+
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=[100, 381, 150])):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
+    assert result["errors"] == {"base": "unsupported_device"}
+
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
 @pytest.mark.integration
@@ -351,14 +373,14 @@ async def test_manual_setup_recovers_from_a_failed_check(hass: HomeAssistant, er
         CONF_MODEL_NAME: "Model 100 L",
         CONF_NAME: "Upstairs",
     }
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(side_effect=error)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(side_effect=error)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": key}
     suggested = {str(field): field.description for field in result["data_schema"].schema}
     assert suggested[CONF_NAME] == {"suggested_value": "Upstairs"}
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], form)
         await hass.async_block_till_done()
 
@@ -391,7 +413,7 @@ async def test_reconfigure_sets_a_loaded_entry_up_once(
     result = await init_integration.start_reconfigure_flow(hass)
     setups_before = mock_api.get_lookup_registers.await_count
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
     assert result["step_id"] == "reconfigure_unverified"
     assert result["description_placeholders"] == {"host": "10.0.0.1", "name": "Airfi Model 60 L"}
@@ -422,7 +444,7 @@ async def test_reconfigure_sets_up_an_entry_that_is_retrying(
     mock_api.get_data.side_effect = None
     result = await config_entry.start_reconfigure_flow(hass)
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
     await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
@@ -440,7 +462,7 @@ async def test_reconfigure_keeps_the_address_when_the_new_one_fails(
     result = await init_integration.start_reconfigure_flow(hass)
 
     with patch.object(
-        AirfiApiClient, "async_test_connection", AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
+        AirfiApiClient, "async_get_lookup_registers", AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
     ):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
 
@@ -470,7 +492,7 @@ async def test_reconfigure_checks_which_unit_announced_from_the_address(
     await hass.async_block_till_done()
     result = await init_integration.start_reconfigure_flow(hass)
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
     await hass.async_block_till_done()
 
@@ -619,7 +641,7 @@ async def test_confirming_without_a_name_titles_the_unit_by_model(hass: HomeAssi
 
     with (
         _scan_finds(device),
-        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
+        patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)),
     ):
         result = await _start_user_flow(hass)
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"device": device.unique_key})
@@ -671,7 +693,7 @@ async def test_confirming_one_of_two_found_units_adds_it(hass: HomeAssistant) ->
 
     with (
         _scan_finds(first, second),
-        patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)),
+        patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)),
     ):
         result = await _start_user_flow(hass)
         assert result["step_id"] == "discovery_select"

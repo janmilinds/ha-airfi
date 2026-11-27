@@ -15,7 +15,7 @@ Airfi is a Home Assistant integration for **Airfi ventilation units** (heat reco
 ## Prerequisites
 
 - Home Assistant 2026.11 or newer
-- An Airfi ventilation unit connected to the same network as Home Assistant
+- An Airfi ventilation unit connected to the same network as Home Assistant, with software on Modbus register map 2.0 or newer (not firmware 3.2.0)
 
 Airfi 1.0.0 is the last release for Home Assistant 2026.4 to 2026.10; there it installs through HACS as a custom
 repository.

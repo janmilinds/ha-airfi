@@ -27,7 +27,6 @@ REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[tuple[int, int, int], tuple[int, in
     ((2, 3, 0), (40, 55)),
     ((2, 1, 0), (40, 51)),
     ((2, 0, 0), (40, 34)),
-    ((1, 5, 0), (31, 12)),
 )
 
 
@@ -92,11 +91,6 @@ class AirfiApiClient:
         self._holding_register_length: int | None = None
         self._lock = asyncio.Lock()
         self._device_lock = _device_lock_for(host, port)
-
-    async def async_test_connection(self) -> None:
-        """Validate that the device is reachable and responds to lookup read."""
-        async with self._lock:
-            await self._async_read_registers(start_address=1, length=3, register_type="input")
 
     async def async_get_lookup_registers(self) -> list[int]:
         """Read device lookup registers (firmware and modbus map version).
