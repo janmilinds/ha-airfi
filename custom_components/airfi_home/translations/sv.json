@@ -189,11 +189,29 @@
       }
     },
     "number": {
+      "boost_increase": {
+        "name": "Forceringstillägg"
+      },
       "supply_air_temperature_setting": {
         "name": "Tilluftstemperatur"
       }
     },
+    "select": {
+      "boost_timer": {
+        "name": "Forceringstimer",
+        "state": {
+          "0": "Av",
+          "30": "30 minuter",
+          "60": "60 minuter",
+          "90": "90 minuter",
+          "120": "120 minuter"
+        }
+      }
+    },
     "sensor": {
+      "boost_end": {
+        "name": "Forcering slutar"
+      },
       "exhaust_air_temperature": {
         "name": "Avluft"
       },

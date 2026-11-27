@@ -15,6 +15,13 @@ class AirfiDeviceData:
     input_registers: list[int]
     lookup_registers: list[int]
 
+    def holding_register(self, address: int) -> int | None:
+        """Return holding register 4x<address>, or None when the poll did not reach it."""
+        index = address - 1
+        if not 0 <= index < len(self.holding_registers):
+            return None
+        return self.holding_registers[index]
+
 
 def parse_device_data(raw_data: dict[str, Any]) -> AirfiDeviceData:
     """Parse raw Modbus payload from API client into typed structure."""

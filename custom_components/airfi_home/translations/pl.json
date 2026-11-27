@@ -189,11 +189,29 @@
       }
     },
     "number": {
+      "boost_increase": {
+        "name": "Przyrost intensywnej wentylacji"
+      },
       "supply_air_temperature_setting": {
         "name": "Temperatura nawiewu"
       }
     },
+    "select": {
+      "boost_timer": {
+        "name": "Timer intensywnej wentylacji",
+        "state": {
+          "0": "Wyłączona",
+          "30": "30 minut",
+          "60": "60 minut",
+          "90": "90 minut",
+          "120": "120 minut"
+        }
+      }
+    },
     "sensor": {
+      "boost_end": {
+        "name": "Koniec intensywnej wentylacji"
+      },
       "exhaust_air_temperature": {
         "name": "Powietrze wywiewane"
       },

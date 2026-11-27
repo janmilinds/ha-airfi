@@ -189,11 +189,29 @@
       }
     },
     "number": {
+      "boost_increase": {
+        "name": "Tehostuksen lisäys"
+      },
       "supply_air_temperature_setting": {
         "name": "Tuloilman lämpötila"
       }
     },
+    "select": {
+      "boost_timer": {
+        "name": "Tehostusajastin",
+        "state": {
+          "0": "Pois",
+          "30": "30 minuuttia",
+          "60": "60 minuuttia",
+          "90": "90 minuuttia",
+          "120": "120 minuuttia"
+        }
+      }
+    },
     "sensor": {
+      "boost_end": {
+        "name": "Tehostus päättyy"
+      },
       "exhaust_air_temperature": {
         "name": "Jäteilma"
       },

@@ -10,11 +10,22 @@
       }
     },
     "number": {
+      "boost_increase": {
+        "default": "mdi:fan-chevron-up"
+      },
       "supply_air_temperature_setting": {
         "default": "mdi:thermometer-chevron-down"
       }
     },
+    "select": {
+      "boost_timer": {
+        "default": "mdi:fan-plus"
+      }
+    },
     "sensor": {
+      "boost_end": {
+        "default": "mdi:timer-outline"
+      },
       "exhaust_air_temperature": {
         "default": "mdi:thermometer-chevron-up",
         "state": {

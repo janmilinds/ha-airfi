@@ -1,6 +1,6 @@
 """Shared fixtures for Airfi tests."""
 
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Coroutine, Generator
 import logging
 import socket
 import struct
@@ -31,6 +31,8 @@ INPUT_REGISTER_COUNT = 42
 HOLDING_REGISTER_COUNT = 59
 INPUT_REGISTERS = [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))]
 HOLDING_REGISTERS = [0] * HOLDING_REGISTER_COUNT
+MAP_2_9_INPUT_REGISTER_COUNT = 47
+MAP_2_9_HOLDING_REGISTER_COUNT = 65
 
 
 @pytest.fixture(autouse=True)
@@ -124,6 +126,13 @@ def mock_api() -> Generator[SimpleNamespace]:
         )
 
 
+async def _async_set_up(hass: HomeAssistant, config_entry: MockConfigEntry) -> MockConfigEntry:
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    return config_entry
+
+
 @pytest.fixture
 def modbus_unit() -> Generator[SimpleNamespace]:
     """
@@ -164,10 +173,57 @@ async def init_integration(
         The config entry, now loaded.
 
     """
-    config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-    return config_entry
+    return await _async_set_up(hass, config_entry)
+
+
+@pytest.fixture
+def map_2_9_api(mock_api: SimpleNamespace) -> SimpleNamespace:
+    """Turn the patched unit into one on register map 2.9, the first with the boost registers."""
+    lookup_registers = [100, 381, 290]
+    mock_api.get_lookup_registers.return_value = lookup_registers
+    data = mock_api.get_data.return_value
+    data["modbus_register_version"] = "2.9.0"
+    data["input_registers"] = [*lookup_registers, *[0] * (MAP_2_9_INPUT_REGISTER_COUNT - len(lookup_registers))]
+    data["holding_registers"] = [0] * MAP_2_9_HOLDING_REGISTER_COUNT
+    return mock_api
+
+
+@pytest.fixture
+async def init_map_2_9_integration(
+    hass: HomeAssistant,
+    map_2_9_api: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> MockConfigEntry:
+    """
+    Set up the integration for a unit on register map 2.9.
+
+    Returns:
+        The config entry, now loaded.
+
+    """
+    return await _async_set_up(hass, config_entry)
+
+
+@pytest.fixture
+def report_holding_register(
+    hass: HomeAssistant,
+    map_2_9_api: SimpleNamespace,
+    init_map_2_9_integration: MockConfigEntry,
+) -> Callable[[int, int], Coroutine[None, None, None]]:
+    """
+    Let the register map 2.9 unit report a new holding register value, and poll it.
+
+    Returns:
+        A coroutine function taking the register address and its new value.
+
+    """
+
+    async def _report(address: int, value: int) -> None:
+        map_2_9_api.get_data.return_value["holding_registers"][address - 1] = value
+        await init_map_2_9_integration.runtime_data.coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    return _report
 
 
 @pytest.fixture
