@@ -13,7 +13,7 @@ Home Assistant custom integration for controlling Airfi air handling units over 
 ## Why Airfi for Home Assistant
 
 - **Real Home Assistant entities.** The unit appears as a fan with on/off (away and at home on the unit, so the ventilation never stops completely) and speed, together with temperature and humidity sensors that carry the right device classes. They work in Apple Home through HomeKit Bridge, and are designed to work with Google Assistant, Alexa and Assist in the same way.
-- **Finds the unit and follows it.** Setup searches your network for Airfi units, so there is no IP address to look up. If the unit later gets a new IP address, the integration finds it again by its serial number and carries on.
+- **Finds the unit and follows it.** Home Assistant offers Airfi units on your network under **Discovered** on its own, and setup can search the network too, so there is no IP address to look up. If a unit later gets a new IP address, the integration notices as soon as the unit tells the network, and carries on.
 - **Local only.** Home Assistant talks to the unit over your own network with Modbus TCP. No cloud account and no internet connection are needed.
 
 Also included: a guided repair when the unit stays unreachable, a warning for unsupported firmware, switches only for the functions your unit's firmware offers, diagnostics with the host and serial number removed, and translations in English, Finnish, Swedish and Polish.
@@ -76,9 +76,18 @@ Install the integration first.
 
 Or open: Settings -> Devices & Services -> Add Integration -> Airfi.
 
+### Found automatically
+
+Home Assistant offers Airfi units under **Settings** > **Devices & services** > **Discovered**, without you starting a setup:
+
+- The first unit appears when Home Assistant sees it on your network, by the address of its network card. This happens when the unit gets its IP address from your router, or at the latest within an hour.
+- Once one unit is set up, further units appear within seconds.
+
+Select **Add**, give the unit a name if you want one, and confirm. A unit with a static IP address may not be offered on its own; add it as below.
+
 ### Discovery and Manual Setup
 
-When setup starts, Airfi automatically scans your network for devices.
+When you start setup yourself, Airfi searches your network for devices.
 
 - Typical scan time is about 5 seconds
 - In some environments the scan can take up to about 15 seconds
@@ -92,7 +101,7 @@ If no device is selected from discovery, you can add manually with:
 
 ### Reconfigure
 
-Reconfigure updates host only. Serial number and model remain fixed for the configured device entry.
+Reconfigure updates host only. Serial number and model remain fixed for the configured device entry. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
 
 ### Update interval
 
@@ -148,13 +157,16 @@ Auto-discovery uses UDP multicast:
 
 If Home Assistant and device are on different VLANs/subnets, multicast routing is required for discovery.
 
+The first unit is recognised through Home Assistant's DHCP discovery, by the start of its MAC address (`BC:97:40:7`). Home Assistant sees it when the unit requests an address from your router, so a unit with a static IP address may never be offered this way; set it up from **Add integration** instead, whose search finds it by its multicast announcement.
+
 Manual setup works without multicast as long as Modbus TCP to the device is reachable.
 
 ## IP Address Changes
 
-If the device IP changes, the integration can recover automatically:
+If the device IP changes, the integration follows it automatically:
 
-- On communication failure, it runs a short rediscovery
+- The unit announces itself regularly; an announcement from a new address is stored at once
+- If no announcement arrives and the unit stops answering, it runs a short rediscovery after 90 seconds
 - It matches by serial number
 - It updates the stored host and continues polling
 
@@ -166,7 +178,8 @@ If the device stays unreachable for an extended period, Home Assistant can show
 a repair issue for the integration. The repair flow lets you:
 
 - Update the stored host/IP address
-- Validate connectivity before saving
+- Validate connectivity before saving, and refuse an address that belongs to another Airfi unit
+- Confirm an address when Home Assistant cannot tell which unit is there
 - Reload the config entry after applying the fix
 
 ## Troubleshooting

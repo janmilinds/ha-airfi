@@ -32,7 +32,7 @@ To change the device IP address after setup:
 4. Enter the new IP address
 5. Click **Submit**
 
-This is useful when the ventilation unit gets a new IP address (e.g., DHCP lease change). Consider assigning a static IP or DHCP reservation to avoid this.
+The integration usually follows a new IP address on its own, so this is rarely needed. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
 
 ## Entities
 
@@ -112,10 +112,12 @@ Disabled entities are hidden from normal use and stop updating as entities in Ho
 
 You can add multiple Airfi ventilation units — each gets its own config entry:
 
-1. Go to **Settings** → **Devices & Services**
-2. Click **+ Add Integration**
-3. Search for "Airfi"
-4. The discovery scan will find any new units on the network
+Once one unit is set up, further units are offered under **Settings** > **Devices & services** > **Discovered** within seconds. You can also add one yourself:
+
+1. Go to **Settings** > **Devices & services**.
+2. Select **Add integration**.
+3. Search for **Airfi**.
+4. The search finds any new units on the network.
 
 Each unit is identified by its serial number, so re-adding an already-configured unit is prevented automatically.
 
@@ -135,13 +137,14 @@ The integration communicates with the ventilation unit over your local network:
 
 - **Protocol:** Modbus TCP
 - **Port:** 502 (standard Modbus port)
-- **Discovery:** UDP multicast on 239.255.100.200:3000
+- **Discovery:** UDP multicast on 239.255.100.200:3000, which each unit announces itself to; the first unit also through Home Assistant's DHCP discovery, by the MAC address prefix `BC:97:40:7`
 
 Ensure:
 
 - Home Assistant and the ventilation unit are on the same network (or routable)
 - Port 502 is not blocked by firewalls
 - UDP multicast is allowed if using automatic discovery
+- For DHCP discovery, Home Assistant sees the network directly: Home Assistant OS, or a container with host networking
 
 ## Supported Devices
 
@@ -198,13 +201,14 @@ actions:
 
 Home Assistant's [custom polling interval guide](https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval) describes the same steps.
 
-**Recovery behavior:** If the device becomes unreachable for more than 90 seconds, the integration attempts to rediscover the device via UDP multicast (the device may have changed IP). If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
+**Recovery behavior:** When the unit announces itself from a new IP address, the integration stores it at once. If no announcement arrives and the device stays unreachable for more than 90 seconds, the integration searches for it on the network. If unreachable for more than 10 minutes, a repair issue is raised in the Home Assistant UI.
 
 ## Known Limitations
 
 - **Single device per config entry** — Each ventilation unit requires its own config entry (multiple units are supported, but each is added separately).
 - **No write-back for all registers** — Currently only fan speed and at-home/away mode can be controlled. Other unit settings must be configured via the unit's own interface.
 - **Local network only** — Modbus TCP requires direct network access; remote access needs a VPN or similar solution.
+- **Static IP and discovery** — Home Assistant recognises the first unit when it requests an IP address from your router, so a unit with a static IP address may not be offered under **Discovered**. Add it from **Add integration**; the search finds it without the IP address.
 - **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. On an unstable connection, a poll can briefly delay the next one.
 - **No authentication** — Modbus TCP has no built-in security. Ensure the ventilation unit is on a trusted network.
 
