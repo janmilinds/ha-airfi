@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-beta.2](https://github.com/janmilinds/ha-airfi/compare/v2.0.0-beta.1...v2.0.0-beta.2) (2026-11-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config-flow:** a unit added with 2.0.0-beta.1 no longer loads; remove it and add it again, and it gets its entity IDs back
+* units on register map 1.5 are no longer supported; update the unit's software to register map 2.0 or newer
+
+### 🎉 What's new
+
+* **config-flow:** ask for the unit's Modbus ID when it does not answer ([92c29aa](https://github.com/janmilinds/ha-airfi/commit/92c29aa27196764a1cb05231df110efadb6b3c6a))
+* require Airfi register map 2.0 or newer ([de1c8e3](https://github.com/janmilinds/ha-airfi/commit/de1c8e3304760d2eeaa66c55bd474112ad97b5db))
+
+
+### 🐛 Fixed
+
+* **translations:** show the message after a successful reconfigure in Finnish and Polish ([92c29aa](https://github.com/janmilinds/ha-airfi/commit/92c29aa27196764a1cb05231df110efadb6b3c6a))
+
 ## [2.0.0-beta.1](https://github.com/janmilinds/ha-airfi/compare/v1.2.1...v2.0.0-beta.1) (2026-11-27)
 
 
