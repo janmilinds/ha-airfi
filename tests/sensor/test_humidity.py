@@ -22,8 +22,6 @@ def _build_coordinator(input_registers: list[int]) -> MagicMock:
     coordinator.data = AirfiDeviceData(
         input_registers=input_registers,
         holding_registers=[],
-        lookup_registers=[],
-        model="Airfi",
         firmware_version="3.8.1",
         modbus_register_version="3.0.0",
     )

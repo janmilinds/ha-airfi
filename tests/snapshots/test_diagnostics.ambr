@@ -5,10 +5,8 @@
       'data_keys': list([
         'firmware_version',
         'modbus_register_version',
-        'model',
         'holding_registers',
         'input_registers',
-        'lookup_registers',
       ]),
       'last_update_success': True,
       'update_interval': '0:00:10',

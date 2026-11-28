@@ -26,18 +26,17 @@ from homeassistant.util.hass_dict import HassKey
 LOGGER = logging.getLogger(__name__)
 
 
-def get_model_name(model_id: int) -> str:
-    """Return human-readable model name (e.g., 'Model 60 L', 'Model 100 R')."""
-    if model_id < 1:
-        return "Unknown"
-    try:
-        index = (model_id - 1) // 2
-        base_name = AIRFI_MODELS[index]
-        variant = "L" if model_id % 2 == 1 else "R"
-    except IndexError, ZeroDivisionError:
-        return "Unknown"
-    else:
-        return f"Model {base_name.replace('{}', variant)}"
+def get_model_name(model_id: int) -> str | None:
+    """Return the model name, such as 'Model 60 L' or 'Model 100 R', or None for a model ID not in the table."""
+    index, right_handed = divmod(model_id - 1, 2)
+    if not 0 <= index < len(AIRFI_MODELS):
+        return None
+    return f"Model {AIRFI_MODELS[index].replace('{}', 'R' if right_handed else 'L')}"
+
+
+def unit_title(model_name: str | None) -> str:
+    """Return the name a unit gets unless the user gives one: Airfi and its model, when known."""
+    return f"Airfi {model_name}" if model_name else "Airfi"
 
 
 @dataclass
@@ -49,8 +48,8 @@ class AirfiDiscoveredDevice:
     model_id: int
 
     @property
-    def model_name(self) -> str:
-        """Get human-readable model name (e.g., 'Model 60 L', 'Model 100 R')."""
+    def model_name(self) -> str | None:
+        """Return the model name, such as 'Model 60 L', or None for a model ID not in the table."""
         return get_model_name(self.model_id)
 
     @property
@@ -100,8 +99,7 @@ def parse_announcement(data: bytes, sender_ip: str) -> AirfiDiscoveredDevice | N
         # Parse model ID (byte 11)
         model_id = data[11]
 
-        # Validate model_id is in reasonable range (1-8 for MVP)
-        if model_id < 1 or model_id > 255:
+        if model_id == 0:
             LOGGER.debug("Invalid model_id: %d", model_id)
             return None
 
@@ -164,11 +162,12 @@ class AirfiDiscoveryService:
 
         self.sock = create_discovery_socket()
 
+        loop = asyncio.get_running_loop()
         try:
-            end_time = asyncio.get_event_loop().time() + timeout_seconds
+            end_time = loop.time() + timeout_seconds
 
             while True:
-                now = asyncio.get_event_loop().time()
+                now = loop.time()
                 remaining = end_time - now
                 if remaining <= 0:
                     break
@@ -195,14 +194,14 @@ class AirfiDiscoveryService:
                         if device:
                             # Store by unique key (deduplication)
                             self.discovered[device.unique_key] = device
-                            last_found_time = asyncio.get_event_loop().time()
+                            last_found_time = loop.time()
                             LOGGER.debug("Discovered device: %s (model %s)", device.host, device.model_name)
 
                 except TimeoutError:
                     # Continue scanning
                     continue
 
-        except Exception as err:  # noqa: BLE001
+        except OSError as err:
             LOGGER.error("Discovery scan error: %s", err)
 
         finally:
@@ -215,7 +214,7 @@ class AirfiDiscoveryService:
     async def _async_receive(self) -> tuple[bytes, tuple[str, int]]:
         """Receive a single UDP packet asynchronously."""
         assert self.sock is not None, "Socket must be initialized"
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.sock_recvfrom(self.sock, 1024)
 
     def get_discovered_devices(self) -> list[AirfiDiscoveredDevice]:

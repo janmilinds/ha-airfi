@@ -46,6 +46,7 @@ from custom_components.airfi_home.utils.discovery import (
     AirfiDiscoveredDevice,
     AirfiDiscoveryService,
     announced_device_at,
+    unit_title,
 )
 from custom_components.airfi_home.utils.error_mapping import ERROR_NO_RESPONSE
 from homeassistant import config_entries
@@ -58,7 +59,7 @@ class _NewUnit(NamedTuple):
 
     host: str
     serial: str
-    model_name: str
+    model_name: str | None
     name: str | None
 
 
@@ -300,7 +301,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.unique_key)
         self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.host}, reload_on_update=False)
         self.selected_device = discovery_info
-        self.context["title_placeholders"] = {"name": f"Airfi {discovery_info.model_name}"}
+        self.context["title_placeholders"] = {"name": unit_title(discovery_info.model_name)}
         return await self.async_step_discovery_confirm()
 
     async def async_step_dhcp(
@@ -430,7 +431,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "host": self.selected_device.host,
                 "serial": str(self.selected_device.serial),
-                "model": self.selected_device.model_name,
+                "model": self.selected_device.model_name or "Airfi",
             },
         )
 
@@ -475,15 +476,10 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Add the unit under its serial number, named by the user or by Airfi and its model."""
         await self.async_set_unique_id(unit.serial, raise_on_progress=False)
         self._abort_if_unique_id_configured()
-        return self.async_create_entry(
-            title=unit.name or f"Airfi {unit.model_name}",
-            data={
-                CONF_HOST: unit.host,
-                CONF_SERIAL_NUMBER: unit.serial,
-                CONF_MODEL_NAME: unit.model_name,
-                CONF_MODBUS_ID: modbus_id,
-            },
-        )
+        data = {CONF_HOST: unit.host, CONF_SERIAL_NUMBER: unit.serial, CONF_MODBUS_ID: modbus_id}
+        if unit.model_name:
+            data[CONF_MODEL_NAME] = unit.model_name
+        return self.async_create_entry(title=unit.name or unit_title(unit.model_name), data=data)
 
 
 __all__ = ["AirfiConfigFlowHandler"]

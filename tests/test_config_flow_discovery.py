@@ -16,6 +16,7 @@ from homeassistant.config_entries import SOURCE_DHCP, SOURCE_USER, ConfigFlowRes
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 UNIT = AirfiDiscoveredDevice(host="192.168.1.60", serial=67890, model_id=3)
@@ -72,6 +73,30 @@ async def test_unit_seen_by_dhcp_is_added_once_confirmed(hass: HomeAssistant) ->
         CONF_MODEL_NAME: "Model 100 L",
         CONF_MODBUS_ID: 1,
     }
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_unit_of_a_model_not_in_the_table_is_added_as_airfi(
+    hass: HomeAssistant, device_registry: dr.DeviceRegistry
+) -> None:
+    """A unit whose model ID the table lacks is named Airfi and gets no model, rather than an English placeholder."""
+    unit = AirfiDiscoveredDevice(host="192.168.1.61", serial=67891, model_id=39)
+    with _scan_finds(unit):
+        result = await _dhcp_sees(hass, unit.host)
+
+    assert result["description_placeholders"] == {"host": unit.host, "serial": "67891", "model": "Airfi"}
+
+    with _connection_works():
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_NAME: ""})
+        await hass.async_block_till_done()
+
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.title == "Airfi"
+    assert entry.data == {CONF_HOST: unit.host, CONF_SERIAL_NUMBER: "67891", CONF_MODBUS_ID: 1}
+    device = device_registry.async_get_device_by_identifier((DOMAIN, "67891"), entry.entry_id)
+    assert device is not None
+    assert device.model is None
 
 
 @pytest.mark.integration

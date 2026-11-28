@@ -30,7 +30,7 @@ from custom_components.airfi_home.const import (
     MODBUS_ID_MIN,
     SECTION_ADVANCED,
 )
-from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, get_model_name
+from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, get_model_name, unit_title
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
@@ -39,11 +39,9 @@ from homeassistant.helpers import selector
 def _get_model_options() -> list[selector.SelectOptionDict]:
     """Return manual model selector options matching autodiscovery names."""
     return [
-        selector.SelectOptionDict(
-            value=get_model_name(model_id),
-            label=get_model_name(model_id),
-        )
+        selector.SelectOptionDict(value=name, label=name)
         for model_id in range(1, (len(AIRFI_MODELS) * 2) + 1)
+        if (name := get_model_name(model_id))
     ]
 
 
@@ -172,7 +170,7 @@ def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> probati
     device_options = [
         selector.SelectOptionDict(
             value=device.unique_key,
-            label=f"Airfi {device.model_name} · {device.host} · {device.serial}",
+            label=f"{unit_title(device.model_name)} · {device.host} · {device.serial}",
         )
         for device in devices
     ]
@@ -211,7 +209,7 @@ def get_discovery_confirm_schema(
         Voluptuous schema for confirming device and setting custom name.
 
     """
-    default_name = suggested_name or f"Airfi {device.model_name}"
+    default_name = suggested_name or unit_title(device.model_name)
 
     return probatio.Schema(
         {

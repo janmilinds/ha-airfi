@@ -24,8 +24,6 @@ def _build_coordinator(holding_registers: list[int]) -> MagicMock:
     coordinator.data = AirfiDeviceData(
         holding_registers=holding_registers,
         input_registers=[],
-        lookup_registers=[],
-        model="Airfi",
         firmware_version="3.8.1",
         modbus_register_version="3.0.0",
     )
@@ -223,8 +221,6 @@ async def test_fan_percentage_returns_optimistic_and_cleared() -> None:
     entity.coordinator.data = AirfiDeviceData(
         holding_registers=[5] + [0] * 10 + [0],
         input_registers=[],
-        lookup_registers=[],
-        model="Airfi",
         firmware_version="3.8.1",
         modbus_register_version="3.0.0",
     )

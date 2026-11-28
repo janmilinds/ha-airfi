@@ -2,7 +2,6 @@
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi_home.const import PARALLEL_UPDATES as PARALLEL_UPDATES
 from homeassistant.components.fan import FanEntityDescription
 
 from .fan import ENTITY_DESCRIPTIONS as FAN_DESCRIPTIONS, AirfiFan
@@ -11,6 +10,8 @@ if TYPE_CHECKING:
     from custom_components.airfi_home.data import AirfiConfigEntry
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+PARALLEL_UPDATES = 1
 
 ENTITY_DESCRIPTIONS: tuple[FanEntityDescription, ...] = (*FAN_DESCRIPTIONS,)
 

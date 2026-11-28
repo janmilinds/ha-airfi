@@ -51,15 +51,10 @@ def test_get_model_name_valid(model_id: int, expected: str) -> None:
 
 
 @pytest.mark.unit
-def test_get_model_name_unknown_returns_unknown() -> None:
-    """Test that out-of-range model ID returns 'Unknown'."""
-    assert get_model_name(255) == "Unknown"
-
-
-@pytest.mark.unit
-def test_get_model_name_zero_returns_unknown() -> None:
-    """Test that model_id=0 returns 'Unknown' (invalid; rejected by parse_announcement)."""
-    assert get_model_name(0) == "Unknown"
+@pytest.mark.parametrize("model_id", [0, 39, 255])
+def test_get_model_name_is_none_for_a_model_not_in_the_table(model_id: int) -> None:
+    """A model ID the table lacks has no name, rather than an English placeholder."""
+    assert get_model_name(model_id) is None
 
 
 # ---------------------------------------------------------------------------
@@ -269,14 +264,14 @@ async def test_async_scan_deduplicates_same_device() -> None:
 
 
 @pytest.mark.unit
-async def test_async_scan_generic_error() -> None:
-    """Test that generic exceptions in scan loop are caught and logged."""
+async def test_async_scan_socket_error() -> None:
+    """A socket error while receiving ends the scan with what it found."""
     service = AirfiDiscoveryService()
     mock_sock = MagicMock()
 
     with (
         patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
-        patch.object(service, "_async_receive", new=AsyncMock(side_effect=RuntimeError("boom"))),
+        patch.object(service, "_async_receive", new=AsyncMock(side_effect=OSError("boom"))),
     ):
         result = await service.async_scan(timeout_seconds=0.1)
 

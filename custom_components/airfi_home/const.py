@@ -15,9 +15,6 @@ CONF_MODEL_NAME = "model_name"
 CONF_MODBUS_ID = "modbus_id"
 SECTION_ADVANCED = "advanced"
 
-# Platform parallel updates - applied to all platforms
-PARALLEL_UPDATES = 1
-
 DEFAULT_MODBUS_PORT = 502
 DEFAULT_MODBUS_ID = 1
 # Zero is the broadcast address, which every unit answers, so it would accept any unit.

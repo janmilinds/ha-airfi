@@ -382,8 +382,6 @@ async def test_async_update_data_recovers_after_device_ip_change_once_recovery_t
                 "modbus_register_version": "3.0.0",
                 "holding_registers": [],
                 "input_registers": [],
-                "lookup_registers": [],
-                "model": "Airfi",
             },
         ]
     )
@@ -670,8 +668,6 @@ async def test_async_update_data_success_restores_connection(hass, config_entry,
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -967,8 +963,6 @@ async def test_runtime_firmware_creates_issue_when_unsupported(hass, config_entr
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1007,8 +1001,6 @@ async def test_runtime_firmware_clears_issue_when_supported(hass, config_entry, 
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1031,8 +1023,6 @@ async def test_runtime_firmware_does_not_duplicate_issue(hass, config_entry, moc
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1056,8 +1046,6 @@ async def test_runtime_firmware_no_issue_when_supported(hass, config_entry, mock
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1203,8 +1191,6 @@ async def test_firmware_issue_cleared_after_restart_with_supported_firmware(
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1255,8 +1241,6 @@ async def test_runtime_old_modbus_version_creates_issue(hass, config_entry, mock
             "modbus_register_version": "1.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
 
@@ -1281,8 +1265,6 @@ async def test_firmware_issue_updated_when_version_changes(hass, config_entry, m
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
     with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
@@ -1302,8 +1284,6 @@ async def test_firmware_issue_updated_when_version_changes(hass, config_entry, m
             "modbus_register_version": "3.0.0",
             "holding_registers": [],
             "input_registers": [],
-            "lookup_registers": [],
-            "model": "Airfi",
         }
     )
     with patch.object(coordinator.feature_manager, "is_configuration_unsupported", return_value=True):
