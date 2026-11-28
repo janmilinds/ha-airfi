@@ -61,7 +61,7 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
             identifiers={(coordinator.config_entry.domain, serial)},
             name=coordinator.config_entry.title,
             manufacturer="Airfi",
-            model=coordinator.config_entry.data.get(CONF_MODEL_NAME, "Airfi"),
+            model=coordinator.config_entry.data.get(CONF_MODEL_NAME),
             serial_number=serial,
             hw_version=coordinator.hw_version or None,
             sw_version=coordinator.data.firmware_version,

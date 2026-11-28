@@ -26,18 +26,17 @@ from homeassistant.util.hass_dict import HassKey
 LOGGER = logging.getLogger(__name__)
 
 
-def get_model_name(model_id: int) -> str:
-    """Return human-readable model name (e.g., 'Model 60 L', 'Model 100 R')."""
-    if model_id < 1:
-        return "Unknown"
-    try:
-        index = (model_id - 1) // 2
-        base_name = AIRFI_MODELS[index]
-        variant = "L" if model_id % 2 == 1 else "R"
-    except IndexError, ZeroDivisionError:
-        return "Unknown"
-    else:
-        return f"Model {base_name.replace('{}', variant)}"
+def get_model_name(model_id: int) -> str | None:
+    """Return the model name, such as 'Model 60 L' or 'Model 100 R', or None for a model ID not in the table."""
+    index, right_handed = divmod(model_id - 1, 2)
+    if not 0 <= index < len(AIRFI_MODELS):
+        return None
+    return f"Model {AIRFI_MODELS[index].replace('{}', 'R' if right_handed else 'L')}"
+
+
+def unit_title(model_name: str | None) -> str:
+    """Return the name a unit gets unless the user gives one: Airfi and its model, when known."""
+    return f"Airfi {model_name}" if model_name else "Airfi"
 
 
 @dataclass
@@ -49,8 +48,8 @@ class AirfiDiscoveredDevice:
     model_id: int
 
     @property
-    def model_name(self) -> str:
-        """Get human-readable model name (e.g., 'Model 60 L', 'Model 100 R')."""
+    def model_name(self) -> str | None:
+        """Return the model name, such as 'Model 60 L', or None for a model ID not in the table."""
         return get_model_name(self.model_id)
 
     @property
