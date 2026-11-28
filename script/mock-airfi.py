@@ -40,6 +40,9 @@ Behaviour
   other such request also closes the connection 3 s later, as on the unit.
 - Firmware 3.2.0 hides input register 10: any read covering it fails.
 - Temperatures and humidity drift slightly.
+- A boost (4x62) counts down once a minute, one minute at once when it starts; 0 stops it.
+  The fan control % (3x11, 3x12) follows the speed and is raised by the boost speed
+  (4x63, 50 %) unless either fan would go above 100 %, in which case the unit does not boost.
 - Announcements keep retrying after a send error (no route, VPN).
 - Stop with Ctrl+C.
 """
@@ -75,8 +78,9 @@ from custom_components.airfi_home.const import (
     MODBUS_ID_MIN,
 )
 from custom_components.airfi_home.sensor.humidity import INPUT_REGISTER_RELATIVE_HUMIDITY
+from custom_components.airfi_home.utils.boost import HOLDING_REGISTER_BOOST_SPEED, HOLDING_REGISTER_BOOST_TIME
 from custom_components.airfi_home.utils.discovery import get_model_name
-from custom_components.airfi_home.utils.fan import HOLDING_REGISTER_FAN_SPEED
+from custom_components.airfi_home.utils.fan import HOLDING_REGISTER_FAN_ACTIVE, HOLDING_REGISTER_FAN_SPEED
 from custom_components.airfi_home.utils.number import (
     HOLDING_REGISTER_MINIMUM_TEMPERATURE,
     HOLDING_REGISTER_TARGET_TEMPERATURE,
@@ -115,6 +119,18 @@ TEMPERATURE_REGISTERS = (
     INPUT_REGISTER_SUPPLY_AIR_TEMP,
 )
 DRIFT_INTERVAL_SECONDS = 5.0
+BOOST_TICK_SECONDS = 60.0
+DEFAULT_BOOST_SPEED = 50
+INPUT_REGISTER_EXHAUST_FAN_CONTROL = 11
+INPUT_REGISTER_SUPPLY_FAN_CONTROL = 12
+FAN_CONTROL_BY_SPEED: dict[int, tuple[int, int]] = {
+    1: (27, 30),
+    2: (35, 40),
+    3: (55, 63),
+    4: (66, 75),
+    5: (88, 100),
+}
+"""Exhaust and supply fan control % per speed step, as measured on a Model 60 (fw 381, map 3.0)."""
 ANNOUNCE_INTERVAL_SECONDS = 2.0
 
 type Version = tuple[int, int, int]
@@ -199,11 +215,12 @@ def build_input_registers(*, firmware: Version, map_version: Version) -> list[in
 
 
 def build_holding_registers(*, map_version: Version) -> list[int]:
-    """Build holding registers: speed 3, at home, supply air setpoint 20 °C, minimum temperature 15 °C."""
+    """Build holding registers: speed 3, at home, supply air setpoint 20 °C, minimum temperature 15 °C, boost 50 %."""
     values = [0] * register_counts(map_version)[1]
     _set(values, HOLDING_REGISTER_FAN_SPEED, 3)
     _set(values, HOLDING_REGISTER_TARGET_TEMPERATURE, 200)
     _set(values, HOLDING_REGISTER_MINIMUM_TEMPERATURE, 15)
+    _set(values, HOLDING_REGISTER_BOOST_SPEED, DEFAULT_BOOST_SPEED)
     return values
 
 
@@ -229,7 +246,9 @@ class MockAirfiUnit:
         self.unit_id = unit_id
         self._clock = clock
         self._last_drift = clock()
+        self._last_boost_tick = clock()
         self._unanswered_for_other_ids = 0
+        self._update_fan_control()
 
     @classmethod
     def for_versions(
@@ -293,7 +312,12 @@ class MockAirfiUnit:
     def _write(self, address: int, value: int) -> bool:
         if not 1 <= address <= len(self.holding_registers):
             return False
+        if address == HOLDING_REGISTER_BOOST_TIME and value > 0:
+            # The unit counts a new boost down by one minute at once, then once a minute.
+            value -= 1
+            self._last_boost_tick = self._clock()
         self.holding_registers[address - 1] = value
+        self._update_fan_control()
         return True
 
     def _advance(self) -> None:
@@ -302,6 +326,32 @@ class MockAirfiUnit:
         if now - self._last_drift >= DRIFT_INTERVAL_SECONDS:
             self._last_drift = now
             self._drift()
+        self._count_boost_down(now)
+        self._update_fan_control()
+
+    def _count_boost_down(self, now: float) -> None:
+        if len(self.holding_registers) < HOLDING_REGISTER_BOOST_TIME:
+            return
+        while now - self._last_boost_tick >= BOOST_TICK_SECONDS:
+            self._last_boost_tick += BOOST_TICK_SECONDS
+            remaining = self.holding_registers[HOLDING_REGISTER_BOOST_TIME - 1]
+            self.holding_registers[HOLDING_REGISTER_BOOST_TIME - 1] = max(0, remaining - 1)
+
+    def _update_fan_control(self) -> None:
+        """Show the fan control % of the current speed, raised by a running boost unless a fan would pass 100 %."""
+        away = self._holding(HOLDING_REGISTER_FAN_ACTIVE) == 1
+        speed = 1 if away else self._holding(HOLDING_REGISTER_FAN_SPEED)
+        exhaust, supply = FAN_CONTROL_BY_SPEED.get(speed, (0, 0))
+        if self._holding(HOLDING_REGISTER_BOOST_TIME) > 0:
+            factor = 1 + self._holding(HOLDING_REGISTER_BOOST_SPEED) / 100
+            boosted = (int(exhaust * factor), int(supply * factor))
+            if max(boosted) <= 100:
+                exhaust, supply = boosted
+        _set(self.input_registers, INPUT_REGISTER_EXHAUST_FAN_CONTROL, exhaust)
+        _set(self.input_registers, INPUT_REGISTER_SUPPLY_FAN_CONTROL, supply)
+
+    def _holding(self, register: int) -> int:
+        return self.holding_registers[register - 1] if register <= len(self.holding_registers) else 0
 
     def _drift(self) -> None:
         for register in TEMPERATURE_REGISTERS:

@@ -291,3 +291,61 @@ def test_unit_id_option_sets_the_id_the_unit_answers(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(mock_airfi.sys, "argv", ["mock-airfi.py", "--unit-id=0"])
     with pytest.raises(SystemExit):
         mock_airfi.parse_args()
+
+
+def _fan_control(unit: Any) -> tuple[int, int]:
+    return (
+        unit.input_registers[mock_airfi.INPUT_REGISTER_EXHAUST_FAN_CONTROL - 1],
+        unit.input_registers[mock_airfi.INPUT_REGISTER_SUPPLY_FAN_CONTROL - 1],
+    )
+
+
+def test_boost_counts_down_once_a_minute_and_zero_stops_it() -> None:
+    """A new boost drops one minute at once and one per minute after that; writing 0 stops it."""
+    now = [0.0]
+    unit = _unit(clock=lambda: now[0])
+    boost_time = mock_airfi.HOLDING_REGISTER_BOOST_TIME
+
+    unit.handle(_request(6, boost_time, 30))
+    assert unit.holding_registers[boost_time - 1] == 29
+
+    now[0] = 59.0
+    unit.handle(_request(3, boost_time, 1))
+    assert unit.holding_registers[boost_time - 1] == 29
+
+    now[0] = 180.0
+    unit.handle(_request(3, boost_time, 1))
+    assert unit.holding_registers[boost_time - 1] == 26
+
+    unit.handle(_request(6, boost_time, 0))
+    now[0] = 600.0
+    unit.handle(_request(3, boost_time, 1))
+    assert unit.holding_registers[boost_time - 1] == 0
+
+
+@pytest.mark.parametrize(
+    ("speed", "away", "expected"),
+    [
+        pytest.param(3, 0, (82, 94), id="speed 3 boosted by half"),
+        pytest.param(4, 0, (66, 75), id="speed 4 would pass 100 %, no boost"),
+        pytest.param(5, 1, (40, 45), id="away runs speed 1, boosted"),
+    ],
+)
+def test_boost_raises_the_fan_control_unless_a_fan_would_pass_100(
+    speed: int, away: int, expected: tuple[int, int]
+) -> None:
+    """A boost multiplies both fans by the boost speed, and does nothing if either would go above 100 %."""
+    unit = _unit()
+    unit.handle(_request(6, mock_airfi.HOLDING_REGISTER_FAN_SPEED, speed))
+    unit.handle(_request(6, mock_airfi.HOLDING_REGISTER_FAN_ACTIVE, away))
+
+    unit.handle(_request(6, mock_airfi.HOLDING_REGISTER_BOOST_TIME, 30))
+
+    assert _fan_control(unit) == expected
+
+
+def test_fan_control_follows_the_speed_without_a_boost() -> None:
+    """With no boost the fans run at the speed step's own values."""
+    unit = _unit()
+
+    assert _fan_control(unit) == (55, 63)
