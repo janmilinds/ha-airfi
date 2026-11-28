@@ -11,7 +11,7 @@ from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.redact import async_redact_data
 
-from .const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, DEFAULT_MODBUS_ID, DEFAULT_MODBUS_PORT
+from .const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, DEFAULT_MODBUS_PORT
 from .utils import register_address
 
 if TYPE_CHECKING:
@@ -87,7 +87,7 @@ async def async_get_config_entry_diagnostics(
     modbus_info = {
         "transport": "modbus_tcp",
         "port": DEFAULT_MODBUS_PORT,
-        "modbus_id": entry.data.get(CONF_MODBUS_ID, DEFAULT_MODBUS_ID),
+        "modbus_id": entry.data[CONF_MODBUS_ID],
     }
 
     # Integration information

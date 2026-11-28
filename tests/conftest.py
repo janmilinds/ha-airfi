@@ -13,6 +13,7 @@ from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi_home.api import AirfiApiClient
 from custom_components.airfi_home.const import (
+    CONF_MODBUS_ID,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DEFAULT_MODBUS_ID,
@@ -91,6 +92,7 @@ def config_entry() -> MockConfigEntry:
             CONF_HOST: "192.168.1.10",
             CONF_SERIAL_NUMBER: "12345678",
             CONF_MODEL_NAME: "Model 60 L",
+            CONF_MODBUS_ID: DEFAULT_MODBUS_ID,
         },
         unique_id="12345678",
         title="Airfi Model 60 L",

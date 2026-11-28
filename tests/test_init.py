@@ -26,6 +26,7 @@ def entry(hass) -> MockConfigEntry:
         data={
             CONF_HOST: "192.168.1.10",
             CONF_SERIAL_NUMBER: "AIRFI-12345",
+            CONF_MODBUS_ID: 1,
         },
         unique_id="airfi-12345",
         title="Airfi AIRFI-12345",

@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 
 from .config_flow_handler.schemas import get_address_schema, get_confirm_schema, get_modbus_id_schema
 from .config_flow_handler.validators import AddressIdentity, check_address_identity, connection_error
-from .const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, DEFAULT_MODBUS_ID, ISSUE_DEVICE_UNREACHABLE
+from .const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, ISSUE_DEVICE_UNREACHABLE
 from .utils.error_mapping import ERROR_NO_RESPONSE
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
         self._entry = entry
         self._host: str = entry.data.get(CONF_HOST, "")
         self._identity = AddressIdentity.UNHEARD
-        self._modbus_id: int = entry.data.get(CONF_MODBUS_ID, DEFAULT_MODBUS_ID)
+        self._modbus_id: int = entry.data[CONF_MODBUS_ID]
 
     async def async_step_init(self, user_input: dict[str, str] | None = None) -> RepairsFlowResult:
         """Ask for the address, and try it with the stored Modbus ID."""

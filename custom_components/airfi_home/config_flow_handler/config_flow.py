@@ -244,7 +244,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
         host: str = entry.data.get(CONF_HOST, "")
-        modbus_id: int = entry.data.get(CONF_MODBUS_ID, DEFAULT_MODBUS_ID)
+        modbus_id: int = entry.data[CONF_MODBUS_ID]
 
         if user_input is not None:
             host = user_input[CONF_HOST]

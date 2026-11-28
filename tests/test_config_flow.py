@@ -931,11 +931,10 @@ async def test_unit_that_cannot_be_reached_is_not_asked_for_a_modbus_id(
 async def test_reconfigure_tries_the_modbus_id_from_the_advanced_section(
     hass: HomeAssistant, modbus_unit: SimpleNamespace, config_entry: MockConfigEntry
 ) -> None:
-    """An entry stored without an ID uses 1; an ID the unit ignores opens the section with the error, 1 is stored."""
+    """The stored ID is pre-filled; an ID the unit ignores opens the section with the error; 1 is accepted."""
     config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
-    assert CONF_MODBUS_ID not in config_entry.data
     assert config_entry.state is ConfigEntryState.LOADED
 
     result = await config_entry.start_reconfigure_flow(hass)
