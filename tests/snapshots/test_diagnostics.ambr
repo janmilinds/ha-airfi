@@ -250,6 +250,7 @@
       'name': 'Airfi',
     }),
     'modbus': dict({
+      'modbus_id': 1,
       'port': 502,
       'transport': 'modbus_tcp',
     }),

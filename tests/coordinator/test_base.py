@@ -6,8 +6,9 @@ import contextlib
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.airfi_home.api.client import (
     AirfiApiClientConnectionError,
@@ -21,6 +22,7 @@ from custom_components.airfi_home.const import (
     ISSUE_UNSUPPORTED_FIRMWARE,
     RECOVERY_ISSUE_SECONDS,
     RECOVERY_TRIGGER_SECONDS,
+    UPDATE_INTERVAL,
 )
 from custom_components.airfi_home.coordinator import AirfiDataUpdateCoordinator
 from custom_components.airfi_home.coordinator.base import RecoveryState
@@ -30,6 +32,7 @@ from custom_components.airfi_home.utils.discovery import (
     DATA_DISCOVERY_LISTENER,
     AirfiDiscoveredDevice,
     AirfiDiscoveryListener,
+    AirfiDiscoveryService,
 )
 from homeassistant.components.fan import ATTR_PERCENTAGE, DOMAIN as FAN_DOMAIN, SERVICE_SET_PERCENTAGE
 from homeassistant.components.homeassistant import SERVICE_UPDATE_ENTITY
@@ -1309,3 +1312,26 @@ async def test_firmware_issue_updated_when_version_changes(hass, config_entry, m
     assert issue is not None
     assert issue.translation_placeholders is not None
     assert issue.translation_placeholders["firmware_version"] == "3.3.0"
+
+
+@pytest.mark.integration
+async def test_unit_that_stops_answering_its_modbus_id_raises_the_unreachable_issue(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    issue_registry: ir.IssueRegistry,
+    modbus_unit: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> None:
+    """A unit whose Modbus ID was changed on the unit counts as unreachable, so the repair that asks for it opens."""
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    modbus_unit.modbus_id = 5
+
+    with patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=[])):
+        for _ in range(RECOVERY_ISSUE_SECONDS // int(UPDATE_INTERVAL.total_seconds()) + 2):
+            freezer.tick(UPDATE_INTERVAL)
+            async_fire_time_changed(hass)
+            await hass.async_block_till_done()
+
+    assert issue_registry.async_get_issue(DOMAIN, f"{ISSUE_DEVICE_UNREACHABLE}_{config_entry.entry_id}") is not None

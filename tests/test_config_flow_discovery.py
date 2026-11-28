@@ -10,7 +10,7 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi_home.api import AirfiApiClient
-from custom_components.airfi_home.const import CONF_MODEL_NAME, CONF_SERIAL_NUMBER, DOMAIN
+from custom_components.airfi_home.const import CONF_MODBUS_ID, CONF_MODEL_NAME, CONF_SERIAL_NUMBER, DOMAIN
 from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from homeassistant.config_entries import SOURCE_DHCP, SOURCE_USER, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
@@ -66,7 +66,12 @@ async def test_unit_seen_by_dhcp_is_added_once_confirmed(hass: HomeAssistant) ->
     (entry,) = hass.config_entries.async_entries(DOMAIN)
     assert entry.unique_id == "67890"
     assert entry.title == "Airfi Model 100 L"
-    assert entry.data == {CONF_HOST: UNIT.host, CONF_SERIAL_NUMBER: "67890", CONF_MODEL_NAME: "Model 100 L"}
+    assert entry.data == {
+        CONF_HOST: UNIT.host,
+        CONF_SERIAL_NUMBER: "67890",
+        CONF_MODEL_NAME: "Model 100 L",
+        CONF_MODBUS_ID: 1,
+    }
 
 
 @pytest.mark.integration

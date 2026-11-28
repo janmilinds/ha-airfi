@@ -15,6 +15,7 @@ These values are set during initial setup and stored in the config entry:
 | **Host**          | string | Auto-discovered or manual | IP address of the ventilation unit                        |
 | **Serial Number** | string | Auto-discovered or manual | Unique device identifier, digits only (used as unique ID) |
 | **Model Name**    | string | Auto-discovered or manual | Device model (e.g., "Airfi 100 L")                        |
+| **Modbus ID**     | number | 1, or asked during setup  | The ID the unit answers to, 1–247 (see below)             |
 
 - **Port** is always 502 (Modbus TCP standard) and not configurable
 - **No authentication** — Modbus TCP does not use credentials
@@ -22,17 +23,23 @@ These values are set during initial setup and stored in the config entry:
 
 When using **automatic discovery**, all three fields are populated from the device's UDP announcement. When using **manual setup**, you must enter all three fields yourself: host IP, serial number (from the unit's type plate, or the Airfi app or web interface), and model (selected from a dropdown). The optional name in either path names the device; left empty, it is Airfi and the model. The entity IDs are formed from that name.
 
+### Modbus ID
+
+Almost every unit answers to Modbus ID 1, so setup uses 1 without asking. Some installations give a unit another ID, for example the number of the flat. When Home Assistant finds the unit but the unit does not answer, setup asks for its Modbus ID and tries it before adding the unit.
+
+You can find the Modbus ID in the Airfi app, or on the unit in the potentiometric setup menu, item U1. It is a number from 1 to 247.
+
 ### Reconfigure
 
-To change the device IP address after setup:
+To change the device IP address or Modbus ID after setup:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find "Airfi"
 3. Click the three-dot menu (⋮) → **Reconfigure**
-4. Enter the new IP address
+4. Enter the new IP address. To change the Modbus ID, open **Advanced**
 5. Click **Submit**
 
-The integration usually follows a new IP address on its own, so this is rarely needed. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
+If the unit does not answer to the Modbus ID, the form says so and keeps **Advanced** open, so you can correct it. The integration usually follows a new IP address on its own, so this is rarely needed. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
 
 ## Entities
 

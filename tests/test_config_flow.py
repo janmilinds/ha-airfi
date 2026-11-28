@@ -9,18 +9,26 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import probatio
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
-from custom_components.airfi_home.api import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi_home.api import (
+    AirfiApiClient,
+    AirfiApiClientConnectionError,
+    AirfiApiClientModbusError,
+    AirfiApiClientNoResponseError,
+)
 from custom_components.airfi_home.config_flow_handler.config_flow import AirfiConfigFlowHandler
 from custom_components.airfi_home.config_flow_handler.schemas import get_discovery_select_schema
 from custom_components.airfi_home.const import (
+    CONF_MODBUS_ID,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_OPTION_MANUAL,
     DISCOVERY_OPTION_SCAN_MORE,
     DOMAIN,
+    SECTION_ADVANCED,
 )
 from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
 from homeassistant.config_entries import SOURCE_USER, ConfigEntryState, ConfigFlowResult
@@ -69,6 +77,11 @@ async def _start_user_flow(hass: HomeAssistant) -> ConfigFlowResult:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     await hass.async_block_till_done()
     return await hass.config_entries.flow.async_configure(result["flow_id"])
+
+
+def _reconfigure_input(host: str, modbus_id: int = 1) -> dict[str, Any]:
+    """Return what the reconfigure form sends: the address, and the Modbus ID from its Advanced section."""
+    return {CONF_HOST: host, SECTION_ADVANCED: {CONF_MODBUS_ID: modbus_id}}
 
 
 async def _open_manual_form(hass: HomeAssistant) -> ConfigFlowResult:
@@ -247,6 +260,7 @@ async def test_manual_setup_after_an_empty_scan_adds_the_unit(hass: HomeAssistan
         CONF_HOST: "192.168.1.10",
         CONF_SERIAL_NUMBER: "12345",
         CONF_MODEL_NAME: "Model 100 L",
+        CONF_MODBUS_ID: 1,
     }
 
 
@@ -414,7 +428,7 @@ async def test_reconfigure_sets_a_loaded_entry_up_once(
     setups_before = mock_api.get_lookup_registers.await_count
 
     with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("10.0.0.1"))
     assert result["step_id"] == "reconfigure_unverified"
     assert result["description_placeholders"] == {"host": "10.0.0.1", "name": "Airfi Model 60 L"}
     assert init_integration.data[CONF_HOST] != "10.0.0.1"
@@ -445,7 +459,7 @@ async def test_reconfigure_sets_up_an_entry_that_is_retrying(
     result = await config_entry.start_reconfigure_flow(hass)
 
     with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("10.0.0.1"))
     await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
 
@@ -464,7 +478,7 @@ async def test_reconfigure_keeps_the_address_when_the_new_one_fails(
     with patch.object(
         AirfiApiClient, "async_get_lookup_registers", AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
     ):
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("10.0.0.1"))
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "cannot_connect"}
@@ -493,7 +507,7 @@ async def test_reconfigure_checks_which_unit_announced_from_the_address(
     result = await init_integration.start_reconfigure_flow(hass)
 
     with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "10.0.0.1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("10.0.0.1"))
     await hass.async_block_till_done()
 
     assert result.get("errors") == errors
@@ -710,6 +724,7 @@ async def test_confirming_one_of_two_found_units_adds_it(hass: HomeAssistant) ->
             CONF_HOST: "192.168.1.50",
             CONF_SERIAL_NUMBER: "12345",
             CONF_MODEL_NAME: "Model 60 L",
+            CONF_MODBUS_ID: 1,
         }
 
         result = await _start_user_flow(hass)
@@ -812,6 +827,14 @@ def test_map_exception_to_error_modbus(hass) -> None:
 
 
 @pytest.mark.unit
+def test_map_exception_to_error_no_response(hass) -> None:
+    """Test that a unit that takes the connection but does not answer maps to no_response."""
+    handler = _make_handler(hass)
+    result = handler._map_exception_to_error(AirfiApiClientNoResponseError("silent"))  # noqa: SLF001
+    assert result == "no_response"
+
+
+@pytest.mark.unit
 def test_map_exception_to_error_generic(hass) -> None:
     """Test that generic exceptions map to cannot_connect."""
     handler = _make_handler(hass)
@@ -834,3 +857,119 @@ def test_device_list_shows_no_untranslated_text() -> None:
     assert device_row["label"] == "Airfi Model 60 L · 192.168.1.10 · 12345678"
     assert [option["value"] for option in own_options] == [DISCOVERY_OPTION_SCAN_MORE, DISCOVERY_OPTION_MANUAL]
     assert all(option["value"] in translated for option in own_options)
+
+
+# ---------------------------------------------------------------------------
+# Modbus ID
+# ---------------------------------------------------------------------------
+
+
+def _default(schema: probatio.Schema, key: str) -> Any:
+    """Return the value a form field is pre-filled with."""
+    return next(marker.default() for marker in schema.schema if marker == key)
+
+
+def _advanced(result: ConfigFlowResult) -> Any:
+    """Return the reconfigure form's Advanced section."""
+    return result["data_schema"].schema[SECTION_ADVANCED]
+
+
+@pytest.mark.integration
+async def test_unit_that_does_not_answer_is_added_once_its_modbus_id_is_entered(
+    hass: HomeAssistant, modbus_unit: SimpleNamespace
+) -> None:
+    """A unit that is silent to ID 1 is asked for its ID, which is tried until the unit answers, and stored."""
+    modbus_unit.modbus_id = 5
+    result = await _open_manual_form(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345", CONF_MODEL_NAME: "Model 100 L"},
+    )
+    assert result["step_id"] == "modbus_id"
+    assert result["errors"] == {}
+    assert result["description_placeholders"] == {"host": "192.168.1.10"}
+    assert _default(result["data_schema"], CONF_MODBUS_ID) == 1
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MODBUS_ID: 7})
+    assert result["step_id"] == "modbus_id"
+    assert result["errors"] == {"base": "no_response"}
+    assert _default(result["data_schema"], CONF_MODBUS_ID) == 7
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MODBUS_ID: 5})
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.data[CONF_MODBUS_ID] == 5
+    assert entry.state is ConfigEntryState.LOADED
+    assert modbus_unit.connection.read_holding_registers.call_args.kwargs["device_id"] == 5
+
+
+@pytest.mark.integration
+async def test_found_unit_that_does_not_answer_is_asked_for_its_modbus_id(
+    hass: HomeAssistant, modbus_unit: SimpleNamespace
+) -> None:
+    """Confirming a found unit that is silent to ID 1 asks for its ID before the unit is added under its name."""
+    modbus_unit.modbus_id = 12
+    device = _discovered_device()
+    with _scan_finds(device):
+        result = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"device": device.unique_key})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_NAME: "Upstairs"})
+    assert result["step_id"] == "modbus_id"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_MODBUS_ID: 12})
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert entry.title == "Upstairs"
+    assert entry.data[CONF_MODBUS_ID] == 12
+
+
+@pytest.mark.integration
+async def test_unit_that_cannot_be_reached_is_not_asked_for_a_modbus_id(
+    hass: HomeAssistant, modbus_unit: SimpleNamespace
+) -> None:
+    """Without a connection the ID cannot be the cause, so the address form shows the error instead."""
+    modbus_unit.connection.connect.return_value = False
+    result = await _open_manual_form(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_HOST: "192.168.1.10", CONF_SERIAL_NUMBER: "12345", CONF_MODEL_NAME: "Model 100 L"},
+    )
+
+    assert result["step_id"] == "manual"
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+@pytest.mark.integration
+async def test_reconfigure_tries_the_modbus_id_from_the_advanced_section(
+    hass: HomeAssistant, modbus_unit: SimpleNamespace, config_entry: MockConfigEntry
+) -> None:
+    """An entry stored without an ID uses 1; an ID the unit ignores opens the section with the error, 1 is stored."""
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert CONF_MODBUS_ID not in config_entry.data
+    assert config_entry.state is ConfigEntryState.LOADED
+
+    result = await config_entry.start_reconfigure_flow(hass)
+    assert _advanced(result).options["collapsed"] is True
+    assert _default(_advanced(result).schema, CONF_MODBUS_ID) == 1
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("192.168.1.10", 5))
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": "no_response"}
+    assert _advanced(result).options["collapsed"] is False
+    assert _default(_advanced(result).schema, CONF_MODBUS_ID) == 5
+    assert config_entry.data[CONF_HOST] == "192.168.1.10"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("192.168.1.10", 1))
+    assert result["step_id"] == "reconfigure_unverified"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+
+    assert result["reason"] == "reconfigure_successful"
+    assert config_entry.data[CONF_MODBUS_ID] == 1
+    assert config_entry.state is ConfigEntryState.LOADED

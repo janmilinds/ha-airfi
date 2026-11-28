@@ -12,11 +12,17 @@ ATTRIBUTION = "Data provided by Airfi ventilation unit"
 # Configuration keys
 CONF_SERIAL_NUMBER = "serial_number"
 CONF_MODEL_NAME = "model_name"
+CONF_MODBUS_ID = "modbus_id"
+SECTION_ADVANCED = "advanced"
 
 # Platform parallel updates - applied to all platforms
 PARALLEL_UPDATES = 1
 
 DEFAULT_MODBUS_PORT = 502
+DEFAULT_MODBUS_ID = 1
+# Zero is the broadcast address, which every unit answers, so it would accept any unit.
+MODBUS_ID_MIN = 1
+MODBUS_ID_MAX = 247
 UPDATE_INTERVAL = timedelta(seconds=10)
 
 # Discovery configuration

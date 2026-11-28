@@ -5,6 +5,7 @@ from collections.abc import Callable
 from functools import reduce
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 import probatio
@@ -12,9 +13,11 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi_home.config_flow_handler.schemas import (
+    get_address_schema,
     get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
+    get_modbus_id_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
@@ -31,6 +34,7 @@ from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.translation import async_get_translations, recursive_flatten
 
@@ -143,7 +147,8 @@ INTEGRATION = TRANSLATIONS.parent
 # data_schema, and the arguments to build it with here.
 FORMS: dict[tuple[str, str], tuple[str, Callable[..., probatio.Schema], tuple[Any, ...]]] = {
     ("AirfiConfigFlowHandler", "manual"): ("config.step.manual", get_user_schema, ()),
-    ("AirfiConfigFlowHandler", "reconfigure"): ("config.step.reconfigure", get_reconfigure_schema, ("", None)),
+    ("AirfiConfigFlowHandler", "reconfigure"): ("config.step.reconfigure", get_reconfigure_schema, ("", 1)),
+    ("AirfiConfigFlowHandler", "modbus_id"): ("config.step.modbus_id", get_modbus_id_schema, (1,)),
     ("AirfiConfigFlowHandler", "discovery_select"): (
         "config.step.discovery_select",
         get_discovery_select_schema,
@@ -166,10 +171,29 @@ FORMS: dict[tuple[str, str], tuple[str, Callable[..., probatio.Schema], tuple[An
     ),
     ("DeviceUnreachableRepairFlow", "init"): (
         "issues.device_unreachable.fix_flow.step.init",
-        get_reconfigure_schema,
-        ("", None),
+        get_address_schema,
+        ("",),
+    ),
+    ("DeviceUnreachableRepairFlow", "modbus_id"): (
+        "issues.device_unreachable.fix_flow.step.modbus_id",
+        get_modbus_id_schema,
+        (1,),
     ),
 }
+
+# The keys of a step that name or explain a field or a section; a section's description is optional.
+FIELD_KEY = re.compile(r"(sections\.\w+\.)?(data|data_description)\.\w+|sections\.\w+\.name")
+
+
+def _field_keys(schema: probatio.Schema, prefix: str = "") -> set[str]:
+    """Return the label and help keys each field of a form needs, and the name key of each section."""
+    keys: set[str] = set()
+    for key, value in schema.schema.items():
+        if isinstance(value, section):
+            keys |= {f"sections.{key}.name", *_field_keys(value.schema, f"sections.{key}.")}
+        else:
+            keys |= {f"{prefix}data.{key}", f"{prefix}data_description.{key}"}
+    return keys
 
 
 def _keyword(call: ast.Call, name: str) -> ast.expr | None:
@@ -210,18 +234,11 @@ def test_every_shown_form_is_checked() -> None:
 def test_every_form_field_has_a_label_and_a_description(path: str, schema: probatio.Schema) -> None:
     """Every field of a setup, reconfigure or repair form has a label and a help line, and en.json names no other."""
     step = reduce(lambda block, key: block.get(key, {}), path.split("."), _load(TRANSLATIONS / "en.json"))
-    fields = {str(key) for key in schema.schema}
+    expected = _field_keys(schema)
+    present = {key for key in recursive_flatten("", step) if FIELD_KEY.fullmatch(key)}
 
-    missing = sorted(
-        f"{path}.{section}.{field}"
-        for section in ("data", "data_description")
-        for field in fields - set(step.get(section, {}))
-    )
-    stale = sorted(
-        f"{path}.{section}.{field}"
-        for section in ("data", "data_description")
-        for field in set(step.get(section, {})) - fields
-    )
+    missing = sorted(f"{path}.{key}" for key in expected - present)
+    stale = sorted(f"{path}.{key}" for key in present - expected)
 
     assert not missing, f"missing in en.json: {missing}"
     assert not stale, f"not in the form: {stale}"

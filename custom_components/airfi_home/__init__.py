@@ -29,7 +29,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import AirfiApiClient
-from .const import DEFAULT_MODBUS_PORT, DOMAIN, LOGGER, UPDATE_INTERVAL
+from .const import CONF_MODBUS_ID, DEFAULT_MODBUS_ID, DEFAULT_MODBUS_PORT, DOMAIN, LOGGER, UPDATE_INTERVAL
 from .coordinator import AirfiDataUpdateCoordinator
 from .data import AirfiData
 from .utils.discovery import DATA_DISCOVERY_LISTENER, AirfiDiscoveredDevice, AirfiDiscoveryListener
@@ -126,6 +126,7 @@ async def async_setup_entry(
     client = AirfiApiClient(
         host=entry.data[CONF_HOST],
         port=DEFAULT_MODBUS_PORT,
+        unit_id=entry.data.get(CONF_MODBUS_ID, DEFAULT_MODBUS_ID),
     )
 
     coordinator = AirfiDataUpdateCoordinator(

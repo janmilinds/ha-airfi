@@ -11,7 +11,7 @@ from pytest_homeassistant.typing import ClientSessionGenerator
 
 from custom_components.airfi_home.api import AirfiApiClient
 from custom_components.airfi_home.api.client import AirfiApiClientConnectionError, AirfiApiClientModbusError
-from custom_components.airfi_home.const import DOMAIN, ISSUE_DEVICE_UNREACHABLE
+from custom_components.airfi_home.const import CONF_MODBUS_ID, DOMAIN, ISSUE_DEVICE_UNREACHABLE
 from custom_components.airfi_home.repairs import DeviceUnreachableRepairFlow, async_create_fix_flow
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
@@ -203,3 +203,40 @@ async def test_repair_checks_which_unit_announced_from_the_address(
 
     assert result.get("errors") == errors
     assert (init_integration.data[CONF_HOST] == "10.0.0.1") is stored
+
+
+@pytest.mark.integration
+async def test_repair_asks_for_the_modbus_id_when_the_unit_stops_answering_to_it(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    modbus_unit: SimpleNamespace,
+    config_entry: MockConfigEntry,
+) -> None:
+    """A unit whose ID was changed is asked for its new ID, which is stored with the address once it answers."""
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    modbus_unit.modbus_id = 5
+    repair_issue = await _raise_unreachable_issue(hass, config_entry)
+    client = await hass_client()
+    flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
+
+    result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "192.168.1.10"})
+    assert result["step_id"] == "modbus_id"
+    assert result["errors"] == {}
+    assert result["description_placeholders"] == {"host": "192.168.1.10", "name": "Airfi Model 60 L"}
+    assert result["data_schema"][0]["default"] == 1
+
+    result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_MODBUS_ID: 6})
+    assert result["step_id"] == "modbus_id"
+    assert result["errors"] == {"base": "no_response"}
+
+    result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_MODBUS_ID: 5})
+    assert result["step_id"] == "unverified"
+    result = await process_repair_fix_flow(client, flow["flow_id"], {})
+    await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert config_entry.data[CONF_MODBUS_ID] == 5
+    assert config_entry.state is ConfigEntryState.LOADED
+    assert modbus_unit.connection.read_holding_registers.call_args.kwargs["device_id"] == 5

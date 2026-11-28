@@ -7,6 +7,7 @@ import struct
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pymodbus.exceptions import ModbusIOException
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
@@ -14,6 +15,7 @@ from custom_components.airfi_home.api import AirfiApiClient
 from custom_components.airfi_home.const import (
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
+    DEFAULT_MODBUS_ID,
     DISCOVERY_DEVICE_PORT,
     DISCOVERY_MULTICAST_PORT,
     DOMAIN,
@@ -116,6 +118,35 @@ def mock_api() -> Generator[SimpleNamespace]:
             get_data=get_data,
             write_holding_register=write_holding_register,
         )
+
+
+@pytest.fixture
+def modbus_unit() -> Generator[SimpleNamespace]:
+    """
+    Patch the Modbus connection with a supported unit that answers only to its own Modbus ID.
+
+    Like a real unit, it stays silent towards any other ID. Set `modbus_id` to change the ID it answers to;
+    `connection` is the patched pymodbus client, for asserting which ID a request used.
+    """
+    unit = SimpleNamespace(modbus_id=DEFAULT_MODBUS_ID, connection=MagicMock())
+    input_registers = [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))]
+    holding_registers = [0] * HOLDING_REGISTER_COUNT
+
+    def _reader(registers: list[int]) -> Callable[..., MagicMock]:
+        def _read(address: int, *, count: int, device_id: int) -> MagicMock:
+            if device_id != unit.modbus_id:
+                raise ModbusIOException("No response received after 0 retries")
+            return MagicMock(
+                isError=MagicMock(return_value=False), registers=registers[address - 1 : address - 1 + count]
+            )
+
+        return _read
+
+    unit.connection.connect.return_value = True
+    unit.connection.read_input_registers.side_effect = _reader(input_registers)
+    unit.connection.read_holding_registers.side_effect = _reader(holding_registers)
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient", return_value=unit.connection):
+        yield unit
 
 
 @pytest.fixture
