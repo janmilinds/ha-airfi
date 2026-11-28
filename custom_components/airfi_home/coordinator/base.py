@@ -134,6 +134,8 @@ class AirfiDataUpdateCoordinator(DataUpdateCoordinator[AirfiDeviceData]):
                     translation_key="device_unreachable",
                     translation_placeholders={"host": self.config_entry.data.get(CONF_HOST, "unknown")},
                 ) from exception
+        # A reload starts a coordinator that cannot know the unreachable issue is open, and the unit has just answered.
+        ir.async_delete_issue(self.hass, DOMAIN, self._device_unreachable_issue_id)
         try:
             # Initialize feature manager and validate firmware
             self.feature_manager.initialize(device_name, lookup_registers)
