@@ -1,7 +1,13 @@
 """Shared mapping from integration exceptions to user-facing form errors."""
 
-from custom_components.airfi_home.api import AirfiApiClientConnectionError, AirfiApiClientModbusError
+from custom_components.airfi_home.api import (
+    AirfiApiClientConnectionError,
+    AirfiApiClientModbusError,
+    AirfiApiClientNoResponseError,
+)
 from custom_components.airfi_home.coordinator.feature_manager import InvalidDeviceDataError, UnsupportedFirmwareError
+
+ERROR_NO_RESPONSE = "no_response"
 
 
 def map_connection_exception_to_error(exception: Exception) -> str:
@@ -11,6 +17,9 @@ def map_connection_exception_to_error(exception: Exception) -> str:
 
     if isinstance(exception, (AirfiApiClientModbusError, InvalidDeviceDataError)):
         return "cannot_retrieve_data"
+
+    if isinstance(exception, AirfiApiClientNoResponseError):
+        return ERROR_NO_RESPONSE
 
     if isinstance(exception, AirfiApiClientConnectionError):
         return "cannot_connect"

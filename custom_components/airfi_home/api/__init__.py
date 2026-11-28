@@ -9,6 +9,7 @@ Architecture:
 Exception hierarchy:
     AirfiApiClientError (base)
     ├── AirfiApiClientConnectionError (TCP unreachable / timeout)
+    │   └── AirfiApiClientNoResponseError (connected, no answer: e.g. a wrong Modbus ID)
     └── AirfiApiClientModbusError (Modbus protocol failure)
 
 Coordinator exception mapping:
@@ -17,11 +18,18 @@ Coordinator exception mapping:
     AirfiApiClientError           → UpdateFailed
 """
 
-from .client import AirfiApiClient, AirfiApiClientConnectionError, AirfiApiClientError, AirfiApiClientModbusError
+from .client import (
+    AirfiApiClient,
+    AirfiApiClientConnectionError,
+    AirfiApiClientError,
+    AirfiApiClientModbusError,
+    AirfiApiClientNoResponseError,
+)
 
 __all__ = [
     "AirfiApiClient",
     "AirfiApiClientConnectionError",
     "AirfiApiClientError",
     "AirfiApiClientModbusError",
+    "AirfiApiClientNoResponseError",
 ]

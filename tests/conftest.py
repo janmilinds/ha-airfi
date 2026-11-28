@@ -7,13 +7,16 @@ import struct
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pymodbus.exceptions import ModbusIOException
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.airfi_home.api import AirfiApiClient
 from custom_components.airfi_home.const import (
+    CONF_MODBUS_ID,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
+    DEFAULT_MODBUS_ID,
     DISCOVERY_DEVICE_PORT,
     DISCOVERY_MULTICAST_PORT,
     DOMAIN,
@@ -26,6 +29,8 @@ from homeassistant.core import HomeAssistant
 LOOKUP_REGISTERS = [100, 310, 270]
 INPUT_REGISTER_COUNT = 42
 HOLDING_REGISTER_COUNT = 59
+INPUT_REGISTERS = [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))]
+HOLDING_REGISTERS = [0] * HOLDING_REGISTER_COUNT
 
 
 @pytest.fixture(autouse=True)
@@ -87,6 +92,7 @@ def config_entry() -> MockConfigEntry:
             CONF_HOST: "192.168.1.10",
             CONF_SERIAL_NUMBER: "12345678",
             CONF_MODEL_NAME: "Model 60 L",
+            CONF_MODBUS_ID: DEFAULT_MODBUS_ID,
         },
         unique_id="12345678",
         title="Airfi Model 60 L",
@@ -99,8 +105,8 @@ def mock_api() -> Generator[SimpleNamespace]:
     data = {
         "firmware_version": "3.1.0",
         "modbus_register_version": "2.7.0",
-        "input_registers": [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))],
-        "holding_registers": [0] * HOLDING_REGISTER_COUNT,
+        "input_registers": list(INPUT_REGISTERS),
+        "holding_registers": list(HOLDING_REGISTERS),
         "lookup_registers": [],
         "model": "Airfi",
     }
@@ -116,6 +122,33 @@ def mock_api() -> Generator[SimpleNamespace]:
             get_data=get_data,
             write_holding_register=write_holding_register,
         )
+
+
+@pytest.fixture
+def modbus_unit() -> Generator[SimpleNamespace]:
+    """
+    Patch the Modbus connection with a supported unit that answers only to its own Modbus ID.
+
+    Like a real unit, it stays silent towards any other ID. Set `modbus_id` to change the ID it answers to;
+    `connection` is the patched pymodbus client, for asserting which ID a request used.
+    """
+    unit = SimpleNamespace(modbus_id=DEFAULT_MODBUS_ID, connection=MagicMock())
+
+    def _reader(registers: list[int]) -> Callable[..., MagicMock]:
+        def _read(address: int, *, count: int, device_id: int) -> MagicMock:
+            if device_id != unit.modbus_id:
+                raise ModbusIOException("No response received after 0 retries")
+            return MagicMock(
+                isError=MagicMock(return_value=False), registers=registers[address - 1 : address - 1 + count]
+            )
+
+        return _read
+
+    unit.connection.connect.return_value = True
+    unit.connection.read_input_registers.side_effect = _reader(INPUT_REGISTERS)
+    unit.connection.read_holding_registers.side_effect = _reader(HOLDING_REGISTERS)
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient", return_value=unit.connection):
+        yield unit
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ import weakref
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ConnectionException, ModbusIOException
 
-from custom_components.airfi_home.const import LOGGER
+from custom_components.airfi_home.const import DEFAULT_MODBUS_ID, LOGGER
 from custom_components.airfi_home.utils import version_string, version_tuple
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,6 @@ _DEVICE_LOCKS: weakref.WeakValueDictionary[tuple[str, int], threading.Lock] = we
 
 DEVICE_LOCK_POLL_SECONDS = 0.1
 MODBUS_READ_LIMIT = 30
-MODBUS_SLAVE_ID = 1
 REGISTER_LENGTHS_BY_MAP_VERSION: tuple[tuple[tuple[int, int, int], tuple[int, int]], ...] = (
     ((2, 7, 0), (42, 59)),
     ((2, 5, 0), (40, 58)),
@@ -40,6 +39,14 @@ class AirfiApiClientConnectionError(AirfiApiClientError):
     This includes failed TCP connections and timeouts. A connection error
     suggests the device may have changed IP address and warrants a
     rediscovery attempt.
+    """
+
+
+class AirfiApiClientNoResponseError(AirfiApiClientConnectionError):
+    """Exception raised when the unit accepts the connection but does not answer.
+
+    The unit stays silent towards a request for another Modbus ID, and sometimes closes the connection a few seconds
+    later, so this is what a wrong Modbus ID looks like. To the coordinator it is still an unreachable unit.
     """
 
 
@@ -80,11 +87,24 @@ class AirfiApiClient:
         host: str,
         port: int,
         timeout_seconds: float = 2.0,
+        *,
+        unit_id: int = DEFAULT_MODBUS_ID,
+        retries: int = 3,
     ) -> None:
-        """Initialize the Modbus client configuration."""
+        """Initialize the Modbus client configuration.
+
+        Args:
+            host: Address of the unit.
+            port: Modbus TCP port of the unit.
+            timeout_seconds: How long to wait for each answer.
+            unit_id: Modbus ID the unit answers to.
+            retries: How many times an unanswered request is sent again.
+        """
         self._host = host
         self._port = port
         self._timeout_seconds = timeout_seconds
+        self._unit_id = unit_id
+        self._retries = retries
         self._firmware_version: str | None = None
         self._modbus_register_version: str | None = None
         self._input_register_length: int | None = None
@@ -191,15 +211,20 @@ class AirfiApiClient:
             "model": "Airfi",
         }
 
-    async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
+    async def _async_run_on_device[T](self, request: Callable[[], T], *, timeout: float, action: str) -> T:
         """Run a blocking request in a worker thread, never alongside another connection to the same address.
 
         The thread lock is shared by every client for that address, so the config flow's connection check and a
         reloaded entry's new client wait as well. It also holds while a thread outlives the timeout or cancellation of
         the task awaiting it, which the asyncio lock cannot. A request abandoned while it waited is dropped without
         reaching the unit, so a write reported as failed is never sent later, and its thread does not wait out the lock.
+
+        Raises:
+            AirfiApiClientNoResponseError: If the timeout passes after the request reached the unit.
+            AirfiApiClientConnectionError: If it passes while the request still waits for another connection to end.
         """
         abandoned = threading.Event()
+        started = threading.Event()
         device_lock = self._device_lock
 
         def _run() -> T:
@@ -211,15 +236,23 @@ class AirfiApiClient:
                 if abandoned.is_set():
                     msg = "Request abandoned before it reached the device"
                     raise AirfiApiClientConnectionError(msg)
+                started.set()
                 return request()
             finally:
                 device_lock.release()
 
         try:
-            return await asyncio.to_thread(_run)
-        except asyncio.CancelledError:
-            abandoned.set()
-            raise
+            async with asyncio.timeout(timeout):
+                try:
+                    return await asyncio.to_thread(_run)
+                except asyncio.CancelledError:
+                    abandoned.set()
+                    raise
+        except TimeoutError as exception:
+            msg = f"Timeout while {action}: {exception}"
+            if started.is_set():
+                raise AirfiApiClientNoResponseError(msg) from exception
+            raise AirfiApiClientConnectionError(msg) from exception
 
     async def _async_read_registers(
         self,
@@ -248,16 +281,10 @@ class AirfiApiClient:
                 start_address,
                 length,
             )
-            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
-            if not client.connect():
-                msg = f"Unable to connect to device at {self._host}:{self._port}"
-                raise AirfiApiClientConnectionError(msg)
+            client = self._connect()
 
             try:
-                if register_type == "holding":
-                    response = self._read_holding_registers(client, start_address, length)
-                else:
-                    response = self._read_input_registers(client, start_address, length)
+                response = self._request_registers(client, register_type, start_address, length)
 
                 if response.isError():
                     msg = f"Modbus read error for {register_type} registers at {start_address}"
@@ -273,11 +300,7 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with asyncio.timeout(10):
-                return await self._async_run_on_device(_read)
-        except TimeoutError as exception:
-            msg = f"Timeout while reading Modbus registers: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            return await self._async_run_on_device(_read, timeout=10, action="reading Modbus registers")
         except AirfiApiClientError:
             raise
         except Exception as exception:
@@ -296,10 +319,7 @@ class AirfiApiClient:
         """
 
         def _read_all() -> tuple[list[int], list[int]]:
-            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
-            if not client.connect():
-                msg = f"Unable to connect to device at {self._host}:{self._port}"
-                raise AirfiApiClientConnectionError(msg)
+            client = self._connect()
             try:
                 holding = self._read_registers_sync(client, 1, holding_length, "holding")
                 inputs = self._read_registers_sync(client, 1, input_length, "input")
@@ -312,11 +332,7 @@ class AirfiApiClient:
         poll_timeout = (holding_chunks + input_chunks) * self._timeout_seconds
 
         try:
-            async with asyncio.timeout(poll_timeout):
-                return await self._async_run_on_device(_read_all)
-        except TimeoutError as exception:
-            msg = f"Timeout while reading Modbus registers: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            return await self._async_run_on_device(_read_all, timeout=poll_timeout, action="reading Modbus registers")
         except AirfiApiClientError:
             raise
         except Exception as exception:
@@ -341,10 +357,7 @@ class AirfiApiClient:
                 read_start,
                 read_length,
             )
-            if register_type == "holding":
-                response = self._read_holding_registers(client, read_start, read_length)
-            else:
-                response = self._read_input_registers(client, read_start, read_length)
+            response = self._request_registers(client, register_type, read_start, read_length)
 
             if response.isError():
                 msg = f"Modbus read error for {register_type} registers at {read_start}"
@@ -366,23 +379,20 @@ class AirfiApiClient:
             value: Integer value to write.
 
         Raises:
-            AirfiApiClientConnectionError: If the device is unreachable or does not answer.
+            AirfiApiClientConnectionError: If the device is unreachable.
+            AirfiApiClientNoResponseError: If the device takes the connection but does not answer.
             AirfiApiClientModbusError: If the Modbus write fails.
             AirfiApiClientError: For unexpected failures.
         """
 
         def _write() -> None:
             _LOGGER.debug("Writing holding register: address=%d, value=%d", address, value)
-            client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds)
-            if not client.connect():
-                msg = f"Unable to connect to device at {self._host}:{self._port}"
-                raise AirfiApiClientConnectionError(msg)
+            client = self._connect()
             try:
                 try:
-                    response = client.write_register(address, value, device_id=MODBUS_SLAVE_ID)
+                    response = client.write_register(address, value, device_id=self._unit_id)
                 except (ConnectionException, ModbusIOException) as exception:
-                    msg = f"No answer from device at {self._host}:{self._port}: {exception}"
-                    raise AirfiApiClientConnectionError(msg) from exception
+                    raise self._no_response(exception) from exception
                 if response.isError():
                     msg = f"Modbus write error for holding register at {address}"
                     raise AirfiApiClientModbusError(msg)
@@ -390,23 +400,39 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with self._lock, asyncio.timeout(10):
-                await self._async_run_on_device(_write)
-        except TimeoutError as exception:
-            msg = f"Timeout while writing Modbus register: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            async with self._lock:
+                await self._async_run_on_device(_write, timeout=10, action="writing Modbus register")
         except AirfiApiClientError:
             raise
         except Exception as exception:
             msg = f"Unexpected Modbus write failure: {exception}"
             raise AirfiApiClientError(msg) from exception
 
-    @staticmethod
-    def _read_holding_registers(client: ModbusTcpClient, start_address: int, length: int) -> Any:
-        """Read holding registers."""
-        return client.read_holding_registers(start_address, count=length, device_id=MODBUS_SLAVE_ID)
+    def _connect(self) -> ModbusTcpClient:
+        """Open a connection to the unit.
 
-    @staticmethod
-    def _read_input_registers(client: ModbusTcpClient, start_address: int, length: int) -> Any:
-        """Read input registers."""
-        return client.read_input_registers(start_address, count=length, device_id=MODBUS_SLAVE_ID)
+        Raises:
+            AirfiApiClientConnectionError: If the connection cannot be opened.
+        """
+        client = ModbusTcpClient(self._host, port=self._port, timeout=self._timeout_seconds, retries=self._retries)
+        if not client.connect():
+            msg = f"Unable to connect to device at {self._host}:{self._port}"
+            raise AirfiApiClientConnectionError(msg)
+        return client
+
+    def _no_response(self, exception: Exception) -> AirfiApiClientNoResponseError:
+        """Describe a request the unit left unanswered on an open connection."""
+        msg = f"No answer from device at {self._host}:{self._port} to Modbus ID {self._unit_id}: {exception}"
+        return AirfiApiClientNoResponseError(msg)
+
+    def _request_registers(self, client: ModbusTcpClient, register_type: str, start_address: int, length: int) -> Any:
+        """Read holding or input registers on an open connection.
+
+        Raises:
+            AirfiApiClientNoResponseError: If the unit times out or closes the connection instead of answering.
+        """
+        read = client.read_holding_registers if register_type == "holding" else client.read_input_registers
+        try:
+            return read(start_address, count=length, device_id=self._unit_id)
+        except (ConnectionException, ModbusIOException) as exception:
+            raise self._no_response(exception) from exception

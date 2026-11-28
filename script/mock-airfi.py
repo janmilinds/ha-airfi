@@ -25,6 +25,9 @@ Rediscovery test workflow:
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.3
     # Any 127.x.x.x address works without 'ip addr add' on Linux (the whole /8 is loopback)
 
+Unit that answers to another Modbus ID:
+    python3 script/mock-airfi.py --serial=12345678 --unit-id=5
+
 Multiple units (separate terminals):
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
     python3 script/mock-airfi.py --serial=87654321 --ip=127.0.0.3
@@ -33,7 +36,8 @@ Behaviour
 ---------
 - Register counts follow the register map version; the highest known map at or
   below the requested one decides. Map 1.5 is kept to try the refusal.
-- Requests for a Modbus ID other than the unit's own (1) or 0 get no answer, as on the unit.
+- Requests for a Modbus ID other than the unit's own (--unit-id) or 0 get no answer, and every
+  other such request also closes the connection 3 s later, as on the unit.
 - Firmware 3.2.0 hides input register 10: any read covering it fails.
 - Temperatures and humidity drift slightly.
 - Announcements keep retrying after a send error (no route, VPN).
@@ -44,6 +48,7 @@ import argparse
 import asyncio
 from collections.abc import Callable
 import contextlib
+from enum import Enum, auto
 import errno
 import ipaddress
 import logging
@@ -61,10 +66,13 @@ sys.path.insert(0, str(Path(__file__).parent / ".."))
 from custom_components.airfi_home.api.client import REGISTER_LENGTHS_BY_MAP_VERSION
 from custom_components.airfi_home.const import (
     AIRFI_MODELS,
+    DEFAULT_MODBUS_ID,
     DEFAULT_MODBUS_PORT,
     DISCOVERY_DEVICE_PORT,
     DISCOVERY_MULTICAST_GROUP,
     DISCOVERY_MULTICAST_PORT,
+    MODBUS_ID_MAX,
+    MODBUS_ID_MIN,
 )
 from custom_components.airfi_home.sensor.humidity import INPUT_REGISTER_RELATIVE_HUMIDITY
 from custom_components.airfi_home.utils.discovery import get_model_name
@@ -87,7 +95,7 @@ logging.basicConfig(
 LOGGER = logging.getLogger("mock-airfi")
 
 BROADCAST_UNIT_ID = 0
-DEFAULT_UNIT_ID = 1
+WRONG_UNIT_ID_CLOSE_SECONDS = 3.0
 MAX_FRAME_LENGTH = 254
 
 READ_HOLDING_REGISTERS = 3
@@ -150,6 +158,13 @@ def parse_ipv4(text: str) -> str:
         raise argparse.ArgumentTypeError(f"invalid IPv4 address: {text}") from err
 
 
+class Silence(Enum):
+    """How the unit leaves a request unanswered."""
+
+    KEEP_OPEN = auto()
+    CLOSE_LATER = auto()
+
+
 def version_to_register(version: Version) -> int:
     """Encode a version the way the unit reports it: 3.1.0 is 310."""
     major, minor, patch = version
@@ -204,7 +219,7 @@ class MockAirfiUnit:
         input_registers: list[int],
         holding_registers: list[int],
         hidden_input_registers: frozenset[int] = frozenset(),
-        unit_id: int = DEFAULT_UNIT_ID,
+        unit_id: int = DEFAULT_MODBUS_ID,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Initialize the unit with its register values."""
@@ -214,26 +229,34 @@ class MockAirfiUnit:
         self.unit_id = unit_id
         self._clock = clock
         self._last_drift = clock()
+        self._unanswered_for_other_ids = 0
 
     @classmethod
     def for_versions(
-        cls, *, firmware: Version, map_version: Version, clock: Callable[[], float] = time.monotonic
+        cls,
+        *,
+        firmware: Version,
+        map_version: Version,
+        unit_id: int = DEFAULT_MODBUS_ID,
+        clock: Callable[[], float] = time.monotonic,
     ) -> Self:
         """Build a unit with the registers and quirks of a firmware and register map version."""
         return cls(
             input_registers=build_input_registers(firmware=firmware, map_version=map_version),
             holding_registers=build_holding_registers(map_version=map_version),
             hidden_input_registers=frozenset({10}) if firmware == FIRMWARE_HIDING_INPUT_REGISTER_10 else frozenset(),
+            unit_id=unit_id,
             clock=clock,
         )
 
-    def handle(self, frame: bytes) -> bytes | None:
-        """Return the response frame for one request frame, or None when the unit stays silent."""
+    def handle(self, frame: bytes) -> bytes | Silence:
+        """Return the response frame for one request frame, or how the unit stays silent."""
         if len(frame) < MBAP_HEADER.size + 1:
-            return None
+            return Silence.KEEP_OPEN
         transaction, _protocol, _length, unit_id = MBAP_HEADER.unpack_from(frame)
         if unit_id not in (BROADCAST_UNIT_ID, self.unit_id):
-            return None
+            self._unanswered_for_other_ids += 1
+            return Silence.CLOSE_LATER if self._unanswered_for_other_ids % 2 == 0 else Silence.KEEP_OPEN
         self._advance()
         function = frame[MBAP_HEADER.size]
         data = frame[MBAP_HEADER.size + 1 :]
@@ -308,7 +331,11 @@ async def serve_client(unit: MockAirfiUnit, reader: asyncio.StreamReader, writer
                 LOGGER.warning("Closing %s: frame length %d", peer, length)
                 return
             response = unit.handle(header + await reader.readexactly(length - 1))
-            if response is not None:
+            if response is Silence.CLOSE_LATER:
+                LOGGER.debug("Closing %s soon: request for another Modbus ID", peer)
+                await asyncio.sleep(WRONG_UNIT_ID_CLOSE_SECONDS)
+                return
+            if isinstance(response, bytes):
                 writer.write(response)
                 await writer.drain()
     except asyncio.IncompleteReadError, ConnectionError:
@@ -369,7 +396,7 @@ async def send_announcements(packet: bytes, stop_event: asyncio.Event) -> None:
 
 async def run_mock_unit(args: argparse.Namespace) -> None:
     """Run the Modbus server and the announcements until stopped."""
-    unit = MockAirfiUnit.for_versions(firmware=args.firmware, map_version=args.modbus)
+    unit = MockAirfiUnit.for_versions(firmware=args.firmware, map_version=args.modbus, unit_id=args.unit_id)
     bind_address = args.ip or "0.0.0.0"
     announced_ip = args.ip or get_local_ip()
 
@@ -441,6 +468,14 @@ def parse_args() -> argparse.Namespace:
         type=parse_ipv4,
         default=None,
         help="address to announce and bind to; without it, the detected local address is announced and all are bound",
+    )
+    parser.add_argument(
+        "--unit-id",
+        type=int,
+        default=DEFAULT_MODBUS_ID,
+        choices=range(MODBUS_ID_MIN, MODBUS_ID_MAX + 1),
+        metavar=f"{MODBUS_ID_MIN}-{MODBUS_ID_MAX}",
+        help="Modbus ID the unit answers to, besides 0",
     )
     parser.add_argument("--no-announce", action="store_true", help="do not send announcements")
     return parser.parse_args()

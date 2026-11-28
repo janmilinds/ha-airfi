@@ -57,13 +57,34 @@
           "name": "Airfi och modellen om du inte ändrar det. Entiteternas ID:n bildas av det här namnet, så när du lägger till en enhet igen ska du ge den samma namn som tidigare."
         }
       },
+      "modbus_id": {
+        "title": "Kontrollera Modbus-ID",
+        "description": "Enheten på {host} hittades, men den svarade inte. Det betyder oftast att dess Modbus-ID är något annat än det vanliga 1. Ange enhetens Modbus-ID.",
+        "data": {
+          "modbus_id": "Modbus-ID"
+        },
+        "data_description": {
+          "modbus_id": "Oftast 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
+        }
+      },
       "reconfigure": {
-        "description": "Ange IP-adressen där {name} nås nu.",
+        "description": "Ange den nuvarande IP-adressen för {name}.",
         "data": {
           "host": "IP-adress"
         },
         "data_description": {
           "host": "Airfi-enhetens IP-adress i ditt lokala nätverk."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avancerat",
+            "data": {
+              "modbus_id": "Modbus-ID"
+            },
+            "data_description": {
+              "modbus_id": "Ändra detta bara om enhetens Modbus-ID inte är 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
+            }
+          }
         }
       },
       "reconfigure_unverified": {
@@ -77,6 +98,7 @@
     "error": {
       "cannot_connect": "Det gick inte att ansluta till enheten. Kontrollera IP-adressen och att enheten är påslagen.",
       "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
+      "no_response": "Enheten svarade inte. Kontrollera dess Modbus-ID.",
       "invalid_serial": "Ange serienumret med enbart siffror.",
       "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen.",
       "serial_mismatch": "Enheten på den här IP-adressen har ett annat serienummer. Kontrollera IP-adressen och serienumret.",
@@ -86,7 +108,8 @@
       "already_configured": "Den här enheten är redan tillagd.",
       "invalid_selection": "Den valda enheten är inte längre tillgänglig.",
       "already_in_progress": "Den här enheten håller redan på att läggas till.",
-      "not_airfi_device": "Den här enheten är inte en Airfi-enhet."
+      "not_airfi_device": "Den här enheten är inte en Airfi-enhet.",
+      "reconfigure_successful": "Omkonfigureringen lyckades."
     }
   },
   "exceptions": {
@@ -122,6 +145,7 @@
         "error": {
           "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen. Kontrollera adressen och att enheten är påslagen.",
           "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
+          "no_response": "Enheten svarade inte. Kontrollera dess Modbus-ID.",
           "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen.",
           "unsupported_device": "Enhetens programvara är för gammal eller stöds inte. Uppdatera enhetens programvara och försök sedan igen."
         },
@@ -133,7 +157,17 @@
               "host": "IP-adress"
             },
             "data_description": {
-              "host": "IP-adressen där Airfi-enheten nu kan nås."
+              "host": "Airfi-enhetens nuvarande IP-adress."
+            }
+          },
+          "modbus_id": {
+            "title": "{name} svarar inte",
+            "description": "{name} hittades på {host}, men svarade inte. Om enhetens Modbus-ID har ändrats anger du det nya.",
+            "data": {
+              "modbus_id": "Modbus-ID"
+            },
+            "data_description": {
+              "modbus_id": "Oftast 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
             }
           },
           "unverified": {

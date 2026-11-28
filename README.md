@@ -130,9 +130,11 @@ If the search finds nothing, or you choose to, add the unit manually with:
 - Model
 - Name (optional; Airfi and the model when left empty)
 
+If Home Assistant finds the unit but it does not answer, setup asks for the unit's [Modbus ID](docs/user/CONFIGURATION.md#modbus-id), which is almost always 1. Units found by Home Assistant are checked the same way.
+
 ### Reconfigure
 
-Reconfigure updates host only. Serial number and model remain fixed for the configured device entry. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
+Reconfigure updates the host, and the Modbus ID under **Advanced**. Serial number and model remain fixed for the configured device entry. An address that belongs to another Airfi unit is refused; when Home Assistant cannot tell which unit is at the address, it asks you to confirm.
 
 ### Update interval
 
@@ -209,6 +211,7 @@ If the device stays unreachable for an extended period, Home Assistant can show
 a repair issue for the integration. The repair flow lets you:
 
 - Update the stored host/IP address
+- Enter the unit's Modbus ID when the unit is reached but does not answer
 - Validate connectivity before saving, and refuse an address that belongs to another Airfi unit
 - Confirm an address when Home Assistant cannot tell which unit is there
 - Reload the config entry after applying the fix

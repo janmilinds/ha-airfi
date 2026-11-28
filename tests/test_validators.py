@@ -18,7 +18,7 @@ async def test_validate_connection_success(hass) -> None:
         mock_client = mock_client_cls.return_value
         mock_client.async_get_lookup_registers = AsyncMock(return_value=[100, 310, 270])
 
-        await validate_connection(hass, host="192.168.1.10")
+        await validate_connection(hass, host="192.168.1.10", unit_id=1)
 
     mock_client.async_get_lookup_registers.assert_awaited_once()
 
@@ -33,7 +33,7 @@ async def test_validate_connection_raises_on_failure(hass) -> None:
         mock_client.async_get_lookup_registers = AsyncMock(side_effect=AirfiApiClientConnectionError("timeout"))
 
         with pytest.raises(AirfiApiClientConnectionError):
-            await validate_connection(hass, host="192.168.1.10")
+            await validate_connection(hass, host="192.168.1.10", unit_id=1)
 
 
 @pytest.mark.unit
@@ -57,4 +57,17 @@ async def test_validate_connection_refuses_a_unit_it_cannot_support(
         mock_client_cls.return_value.async_get_lookup_registers = AsyncMock(return_value=lookup)
 
         with pytest.raises(error):
-            await validate_connection(hass, host="192.168.1.10")
+            await validate_connection(hass, host="192.168.1.10", unit_id=1)
+
+
+@pytest.mark.unit
+async def test_validate_connection_asks_once_with_the_given_modbus_id(hass) -> None:
+    """The check is sent once, to the ID asked for, so a unit that ignores it is reported within one timeout."""
+    with patch(
+        "custom_components.airfi_home.config_flow_handler.validators.connection.AirfiApiClient"
+    ) as mock_client_cls:
+        mock_client_cls.return_value.async_get_lookup_registers = AsyncMock(return_value=[100, 310, 270])
+
+        await validate_connection(hass, host="192.168.1.10", unit_id=5)
+
+    mock_client_cls.assert_called_once_with(host="192.168.1.10", port=502, unit_id=5, retries=0)

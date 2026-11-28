@@ -227,6 +227,7 @@
     'entry': dict({
       'data': dict({
         'host': '**REDACTED**',
+        'modbus_id': 1,
         'model_name': 'Model 60 L',
         'serial_number': '**REDACTED**',
       }),
@@ -250,6 +251,7 @@
       'name': 'Airfi',
     }),
     'modbus': dict({
+      'modbus_id': 1,
       'port': 502,
       'transport': 'modbus_tcp',
     }),

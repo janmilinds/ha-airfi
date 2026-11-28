@@ -15,6 +15,7 @@ from custom_components.airfi_home.api.client import (
     AirfiApiClientConnectionError,
     AirfiApiClientError,
     AirfiApiClientModbusError,
+    AirfiApiClientNoResponseError,
     _device_lock_for,
     _register_lengths,
 )
@@ -520,7 +521,7 @@ async def test_async_write_holding_register_raises_modbus_error_on_error_respons
     "error",
     [ModbusIOException("No response received after 3 retries"), ConnectionException("connection lost")],
 )
-async def test_async_write_holding_register_raises_connection_error_when_unit_does_not_answer(
+async def test_async_write_holding_register_raises_no_response_when_unit_does_not_answer(
     error: Exception,
 ) -> None:
     """Test that a unit that takes the connection but never answers the write counts as unreachable."""
@@ -531,9 +532,10 @@ async def test_async_write_holding_register_raises_connection_error_when_unit_do
         mock_instance.connect.return_value = True
         mock_instance.write_register.side_effect = error
 
-        with pytest.raises(AirfiApiClientConnectionError) as exc_info:
+        with pytest.raises(AirfiApiClientNoResponseError) as exc_info:
             await client.async_write_holding_register(address=1, value=3)
 
+    assert isinstance(exc_info.value, AirfiApiClientConnectionError)
     assert exc_info.value.__cause__ is error
     mock_instance.close.assert_called_once()
 
@@ -931,3 +933,107 @@ def test_update_host_changes_target() -> None:
     client = AirfiApiClient(host="192.168.1.10", port=502)
     client.update_host("10.0.0.1")
     assert client._host == "10.0.0.1"  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
+# Modbus ID and unanswered requests
+# ---------------------------------------------------------------------------
+
+UNANSWERED = [
+    pytest.param(ModbusIOException("No response received after 3 retries"), id="timeout"),
+    pytest.param(ConnectionException("connection reset"), id="reset-by-unit"),
+]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("error", UNANSWERED)
+async def test_read_chunk_without_an_answer_raises_no_response(error: Exception) -> None:
+    """A unit that takes the connection but times out or resets it instead of answering does not answer."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_input_registers.side_effect = error
+
+        with pytest.raises(AirfiApiClientNoResponseError) as exc_info:
+            await client._async_read_chunk(1, 3, "input")  # noqa: SLF001
+
+    assert exc_info.value.__cause__ is error
+    mock_instance.close.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("error", UNANSWERED)
+async def test_read_all_registers_without_an_answer_raises_no_response(error: Exception) -> None:
+    """A poll the unit leaves unanswered on an open connection does not answer, rather than failing unexpectedly."""
+    client = AirfiApiClient(host="192.168.1.10", port=502)
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = error
+
+        with pytest.raises(AirfiApiClientNoResponseError):
+            await client._async_read_all_registers(input_length=42, holding_length=59)  # noqa: SLF001
+
+
+@pytest.mark.unit
+async def test_requests_go_to_the_clients_modbus_id() -> None:
+    """Every read and write is addressed to the Modbus ID the client was given, with its retry count."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, unit_id=5, retries=0)
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_input_registers.return_value = MagicMock(
+            isError=MagicMock(return_value=False), registers=[100, 310, 270]
+        )
+        mock_instance.write_register.return_value = MagicMock(isError=MagicMock(return_value=False))
+
+        await client.async_get_lookup_registers()
+        await client.async_write_holding_register(address=1, value=3)
+
+    mock_tcp_client.assert_called_with("192.168.1.10", port=502, timeout=2.0, retries=0)
+    mock_instance.read_input_registers.assert_called_once_with(1, count=3, device_id=5)
+    mock_instance.write_register.assert_called_once_with(1, 3, device_id=5)
+
+
+@pytest.mark.unit
+async def test_timeout_after_the_request_reached_the_unit_is_no_response() -> None:
+    """A poll that runs out of time while the unit holds the request unanswered is a unit that did not answer."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    release = threading.Event()
+
+    def _silent(*_args: object, **_kwargs: object) -> MagicMock:
+        release.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0])
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = _silent
+
+        try:
+            with pytest.raises(AirfiApiClientNoResponseError, match="Timeout while reading"):
+                await client._async_read_all_registers(input_length=1, holding_length=1)  # noqa: SLF001
+        finally:
+            release.set()
+
+
+@pytest.mark.unit
+async def test_timeout_while_another_connection_holds_the_unit_is_not_no_response() -> None:
+    """A request that never got its turn at the unit says nothing about the unit's Modbus ID."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    device_lock = _device_lock_for("192.168.1.10", 502)
+    device_lock.acquire()
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        try:
+            with pytest.raises(AirfiApiClientConnectionError, match="Timeout while reading") as exc_info:
+                await client._async_read_all_registers(input_length=1, holding_length=1)  # noqa: SLF001
+        finally:
+            device_lock.release()
+
+    assert not isinstance(exc_info.value, AirfiApiClientNoResponseError)
+    mock_tcp_client.assert_not_called()

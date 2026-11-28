@@ -57,13 +57,34 @@
           "name": "Airfi i model, jeśli jej nie zmienisz. Identyfikatory encji są tworzone z tej nazwy, więc przy ponownym dodawaniu urządzenia nadaj mu tę samą nazwę co wcześniej."
         }
       },
+      "modbus_id": {
+        "title": "Sprawdź Modbus ID",
+        "description": "Urządzenie pod adresem {host} zostało znalezione, ale nie odpowiedziało. Zwykle oznacza to, że jego Modbus ID jest inny niż typowe 1. Wpisz Modbus ID urządzenia.",
+        "data": {
+          "modbus_id": "Modbus ID"
+        },
+        "data_description": {
+          "modbus_id": "Zwykle 1. Znajdziesz go w aplikacji Airfi w sekcji Info lub na urządzeniu w menu Konfiguracja potencjometryczna, w pozycji U1."
+        }
+      },
       "reconfigure": {
-        "description": "Wpisz adres IP, pod którym {name} jest teraz dostępne.",
+        "description": "Wpisz aktualny adres IP urządzenia {name}.",
         "data": {
           "host": "Adres IP"
         },
         "data_description": {
           "host": "Adres IP urządzenia Airfi w Twojej sieci lokalnej."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Zaawansowane",
+            "data": {
+              "modbus_id": "Modbus ID"
+            },
+            "data_description": {
+              "modbus_id": "Zmień to tylko wtedy, gdy Modbus ID urządzenia nie wynosi 1. Znajdziesz go w aplikacji Airfi w sekcji Info lub na urządzeniu w menu Konfiguracja potencjometryczna, w pozycji U1."
+            }
+          }
         }
       },
       "reconfigure_unverified": {
@@ -77,6 +98,7 @@
     "error": {
       "cannot_connect": "Nie można połączyć się z urządzeniem. Sprawdź adres IP i czy urządzenie jest włączone.",
       "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
+      "no_response": "Urządzenie nie odpowiedziało. Sprawdź jego Modbus ID.",
       "invalid_serial": "Wpisz numer seryjny, używając wyłącznie cyfr.",
       "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie.",
       "serial_mismatch": "Urządzenie pod tym adresem IP ma inny numer seryjny. Sprawdź adres IP i numer seryjny.",
@@ -86,7 +108,8 @@
       "already_configured": "To urządzenie jest już dodane.",
       "invalid_selection": "Wybrane urządzenie nie jest już dostępne.",
       "already_in_progress": "To urządzenie jest już dodawane.",
-      "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi."
+      "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi.",
+      "reconfigure_successful": "Ponowna konfiguracja zakończyła się pomyślnie."
     }
   },
   "exceptions": {
@@ -122,6 +145,7 @@
         "error": {
           "cannot_connect": "Nie można połączyć się z urządzeniem pod tym adresem IP. Sprawdź adres i czy urządzenie jest włączone.",
           "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
+          "no_response": "Urządzenie nie odpowiedziało. Sprawdź jego Modbus ID.",
           "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie.",
           "unsupported_device": "Oprogramowanie urządzenia jest zbyt stare lub nieobsługiwane. Zaktualizuj oprogramowanie urządzenia i spróbuj ponownie."
         },
@@ -133,7 +157,17 @@
               "host": "Adres IP"
             },
             "data_description": {
-              "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
+              "host": "Aktualny adres IP urządzenia Airfi."
+            }
+          },
+          "modbus_id": {
+            "title": "{name} nie odpowiada",
+            "description": "Urządzenie {name} zostało znalezione pod adresem {host}, ale nie odpowiedziało. Jeśli jego Modbus ID został zmieniony, wpisz nowy.",
+            "data": {
+              "modbus_id": "Modbus ID"
+            },
+            "data_description": {
+              "modbus_id": "Zwykle 1. Znajdziesz go w aplikacji Airfi w sekcji Info lub na urządzeniu w menu Konfiguracja potencjometryczna, w pozycji U1."
             }
           },
           "unverified": {

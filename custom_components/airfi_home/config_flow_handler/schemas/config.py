@@ -3,7 +3,8 @@ Config flow schemas.
 
 Schemas for the main configuration flow steps:
 - User setup
-- Reconfiguration
+- Reconfiguration, and the address a repair asks for
+- The Modbus ID of a unit that does not answer
 - Discovery
 - Discovery confirm (select device + override name)
 
@@ -20,13 +21,18 @@ import probatio
 
 from custom_components.airfi_home.const import (
     AIRFI_MODELS,
+    CONF_MODBUS_ID,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
     DISCOVERY_OPTION_MANUAL,
     DISCOVERY_OPTION_SCAN_MORE,
+    MODBUS_ID_MAX,
+    MODBUS_ID_MIN,
+    SECTION_ADVANCED,
 )
 from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, get_model_name
 from homeassistant.const import CONF_HOST, CONF_NAME
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
 
@@ -55,14 +61,7 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schem
     defaults = defaults or {}
     return probatio.Schema(
         {
-            probatio.Required(
-                CONF_HOST,
-                default=defaults.get(CONF_HOST, probatio.UNDEFINED),
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.TEXT,
-                ),
-            ),
+            **_host_field(defaults.get(CONF_HOST, probatio.UNDEFINED)),
             probatio.Required(
                 CONF_SERIAL_NUMBER,
                 default=defaults.get(CONF_SERIAL_NUMBER, probatio.UNDEFINED),
@@ -84,31 +83,79 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schem
     )
 
 
-def get_reconfigure_schema(host: str, serial_number: str | None) -> probatio.Schema:
+def _host_field(host: Any) -> dict[probatio.Required, selector.TextSelector]:
+    """Return the address field, pre-filled."""
+    return {
+        probatio.Required(CONF_HOST, default=host): selector.TextSelector(
+            selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
+        ),
+    }
+
+
+def _modbus_id_field(modbus_id: int) -> dict[probatio.Required, selector.NumberSelector]:
+    """Return the Modbus ID field, pre-filled."""
+    return {
+        probatio.Required(CONF_MODBUS_ID, default=modbus_id): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=MODBUS_ID_MIN,
+                max=MODBUS_ID_MAX,
+                step=1,
+                mode=selector.NumberSelectorMode.BOX,
+            ),
+        ),
+    }
+
+
+def get_address_schema(host: str) -> probatio.Schema:
     """
-    Get schema for reconfigure step.
+    Get schema for a step that asks only for the unit's address.
 
     Args:
-        host: Current host to pre-fill in the form.
-        serial_number: Unused; kept for call-site compatibility.
+        host: Address to pre-fill in the form.
 
     Returns:
-        Voluptuous schema for reconfiguration.
+        Schema with the address field.
 
     """
-    del serial_number
+    return probatio.Schema(_host_field(host))
+
+
+def get_reconfigure_schema(host: str, modbus_id: int, *, show_advanced: bool = False) -> probatio.Schema:
+    """
+    Get schema for reconfigure step: the address, and the Modbus ID in a section that starts collapsed.
+
+    Args:
+        host: Address to pre-fill in the form.
+        modbus_id: Modbus ID to pre-fill in the form.
+        show_advanced: Open the section, such as when the unit did not answer to the ID in it.
+
+    Returns:
+        Schema for reconfiguration.
+
+    """
     return probatio.Schema(
         {
-            probatio.Required(
-                CONF_HOST,
-                default=host,
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.TEXT,
-                ),
+            **_host_field(host),
+            probatio.Required(SECTION_ADVANCED): section(
+                probatio.Schema(_modbus_id_field(modbus_id)),
+                {"collapsed": not show_advanced},
             ),
         },
     )
+
+
+def get_modbus_id_schema(modbus_id: int) -> probatio.Schema:
+    """
+    Get schema for the step that asks for the Modbus ID of a unit that did not answer.
+
+    Args:
+        modbus_id: Modbus ID to pre-fill in the form, normally the one just tried.
+
+    Returns:
+        Schema with the Modbus ID field.
+
+    """
+    return probatio.Schema(_modbus_id_field(modbus_id))
 
 
 def get_discovery_select_schema(devices: list[AirfiDiscoveredDevice]) -> probatio.Schema:
@@ -187,9 +234,11 @@ def get_confirm_schema() -> probatio.Schema:
 
 
 __all__ = [
+    "get_address_schema",
     "get_confirm_schema",
     "get_discovery_confirm_schema",
     "get_discovery_select_schema",
+    "get_modbus_id_schema",
     "get_reconfigure_schema",
     "get_user_schema",
 ]

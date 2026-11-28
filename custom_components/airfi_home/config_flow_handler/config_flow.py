@@ -4,6 +4,7 @@ Config flow for Airfi.
 This module implements the main configuration flow including:
 - Initial user setup, searching the network first
 - Units found by the discovery listener or by Home Assistant's DHCP watcher
+- The Modbus ID of a unit that takes the connection but does not answer to the default one
 - Reconfiguration of existing entries
 
 For more information:
@@ -11,30 +12,34 @@ https://developers.home-assistant.io/docs/config_entries_config_flow_handler
 """
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from custom_components.airfi_home.config_flow_handler.schemas import (
     get_confirm_schema,
     get_discovery_confirm_schema,
     get_discovery_select_schema,
+    get_modbus_id_schema,
     get_reconfigure_schema,
     get_user_schema,
 )
 from custom_components.airfi_home.config_flow_handler.validators import (
     AddressIdentity,
     check_address_identity,
-    validate_connection,
+    connection_error,
 )
 from custom_components.airfi_home.const import (
     AIRFI_MAC_PREFIX,
+    CONF_MODBUS_ID,
     CONF_MODEL_NAME,
     CONF_SERIAL_NUMBER,
+    DEFAULT_MODBUS_ID,
     DISCOVERY_INITIAL_SCAN_TIMEOUT_SECONDS,
     DISCOVERY_OPTION_MANUAL,
     DISCOVERY_OPTION_SCAN_MORE,
     DISCOVERY_SCAN_TIMEOUT_SECONDS,
     DOMAIN,
     LOGGER,
+    SECTION_ADVANCED,
 )
 from custom_components.airfi_home.utils import normalized_serial
 from custom_components.airfi_home.utils.discovery import (
@@ -42,10 +47,19 @@ from custom_components.airfi_home.utils.discovery import (
     AirfiDiscoveryService,
     announced_device_at,
 )
-from custom_components.airfi_home.utils.error_mapping import map_connection_exception_to_error
+from custom_components.airfi_home.utils.error_mapping import ERROR_NO_RESPONSE
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
+
+
+class _NewUnit(NamedTuple):
+    """A unit being added, kept while the flow asks for its Modbus ID."""
+
+    host: str
+    serial: str
+    model_name: str
+    name: str | None
 
 
 class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -75,6 +89,8 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self.discovery_task: asyncio.Task[list[AirfiDiscoveredDevice]] | None = None
         self._discovery_accumulate: bool = False
         self._unverified_host: str | None = None
+        self._new_unit: _NewUnit | None = None
+        self._modbus_id: int = DEFAULT_MODBUS_ID
 
     async def async_step_user(
         self,
@@ -190,16 +206,15 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            host = user_input[CONF_HOST]
             if (serial := normalized_serial(user_input[CONF_SERIAL_NUMBER])) is None:
                 errors[CONF_SERIAL_NUMBER] = "invalid_serial"
-            elif error := await self._async_connection_error(user_input[CONF_HOST]):
-                errors["base"] = error
-            elif check_address_identity(self.hass, user_input[CONF_HOST], serial) is AddressIdentity.OTHER_UNIT:
+            elif check_address_identity(self.hass, host, serial) is AddressIdentity.OTHER_UNIT:
                 errors["base"] = "serial_mismatch"
-            else:
-                return await self._async_create_unit_entry(
-                    user_input[CONF_HOST], serial, user_input[CONF_MODEL_NAME], user_input.get(CONF_NAME)
-                )
+            elif result := await self._async_add_unit(
+                _NewUnit(host, serial, user_input[CONF_MODEL_NAME], user_input.get(CONF_NAME)), errors
+            ):
+                return result
 
         return self.async_show_form(
             step_id="manual",
@@ -228,32 +243,27 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
+        host: str = entry.data.get(CONF_HOST, "")
+        modbus_id: int = entry.data[CONF_MODBUS_ID]
 
         if user_input is not None:
             host = user_input[CONF_HOST]
-            try:
-                await validate_connection(
-                    self.hass,
-                    host=host,
-                )
-            except Exception as exception:  # noqa: BLE001
-                errors["base"] = self._map_exception_to_error(exception)
+            modbus_id = int(user_input[SECTION_ADVANCED][CONF_MODBUS_ID])
+            identity = check_address_identity(self.hass, host, entry.data[CONF_SERIAL_NUMBER])
+            if identity is AddressIdentity.OTHER_UNIT:
+                errors["base"] = "wrong_device"
+            elif error := await connection_error(self.hass, host, modbus_id):
+                errors["base"] = error
+            elif identity is AddressIdentity.UNHEARD:
+                self._unverified_host = host
+                self._modbus_id = modbus_id
+                return await self.async_step_reconfigure_unverified()
             else:
-                identity = check_address_identity(self.hass, host, entry.data[CONF_SERIAL_NUMBER])
-                if identity is AddressIdentity.OTHER_UNIT:
-                    errors["base"] = "wrong_device"
-                elif identity is AddressIdentity.UNHEARD:
-                    self._unverified_host = host
-                    return await self.async_step_reconfigure_unverified()
-                else:
-                    return self._async_store_reconfigured_host(host)
+                return self._async_store_reconfigured(host, modbus_id)
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=get_reconfigure_schema(
-                host=entry.data.get(CONF_HOST, ""),
-                serial_number=entry.data.get(CONF_SERIAL_NUMBER),
-            ),
+            data_schema=get_reconfigure_schema(host, modbus_id, show_advanced=errors.get("base") == ERROR_NO_RESPONSE),
             errors=errors,
             description_placeholders={"name": entry.title},
         )
@@ -266,20 +276,21 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if TYPE_CHECKING:
             assert self._unverified_host is not None
         if user_input is not None:
-            return self._async_store_reconfigured_host(self._unverified_host)
+            return self._async_store_reconfigured(self._unverified_host, self._modbus_id)
         return self.async_show_form(
             step_id="reconfigure_unverified",
             data_schema=get_confirm_schema(),
             description_placeholders={"host": self._unverified_host, "name": self._get_reconfigure_entry().title},
         )
 
-    def _async_store_reconfigured_host(self, host: str) -> config_entries.ConfigFlowResult:
-        """Store the new address; a loaded entry reloads through its update listener."""
+    def _async_store_reconfigured(self, host: str, modbus_id: int) -> config_entries.ConfigFlowResult:
+        """Store the new address and Modbus ID; a loaded entry reloads through its update listener."""
         entry = self._get_reconfigure_entry()
-        data = {**entry.data, CONF_HOST: host}
+        data = {**entry.data, CONF_HOST: host, CONF_MODBUS_ID: modbus_id}
+        # A named reason shows this integration's translated text; without one, Home Assistant shows its own.
         if entry.state is config_entries.ConfigEntryState.LOADED:
-            return self.async_update_and_abort(entry, data=data)
-        return self.async_update_reload_and_abort(entry, data=data)
+            return self.async_update_and_abort(entry, data=data, reason="reconfigure_successful")
+        return self.async_update_reload_and_abort(entry, data=data, reason="reconfigure_successful")
 
     async def async_step_integration_discovery(
         self,
@@ -407,13 +418,10 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         suggested_name: str | None = None
         device = self.selected_device
         if user_input is not None:
-            if error := await self._async_connection_error(device.host):
-                errors["base"] = error
-                suggested_name = user_input.get(CONF_NAME, "")
-            else:
-                return await self._async_create_unit_entry(
-                    device.host, device.unique_key, device.model_name, user_input.get(CONF_NAME)
-                )
+            unit = _NewUnit(device.host, device.unique_key, device.model_name, user_input.get(CONF_NAME))
+            if result := await self._async_add_unit(unit, errors):
+                return result
+            suggested_name = user_input.get(CONF_NAME, "")
 
         return self.async_show_form(
             step_id="discovery_confirm",
@@ -426,38 +434,56 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def _async_connection_error(self, host: str) -> str | None:
-        """Return the form error for a unit that does not answer at this address, or None when it does."""
-        try:
-            await validate_connection(self.hass, host=host)
-        except Exception as exception:  # noqa: BLE001
-            return self._map_exception_to_error(exception)
-        return None
-
-    async def _async_create_unit_entry(
-        self, host: str, serial: str, model_name: str, name: str | None
+    async def async_step_modbus_id(
+        self,
+        user_input: dict[str, Any] | None = None,
     ) -> config_entries.ConfigFlowResult:
-        """Add the unit under its serial number, named by the user or by Airfi and its model."""
-        await self.async_set_unique_id(serial, raise_on_progress=False)
-        self._abort_if_unique_id_configured()
-        return self.async_create_entry(
-            title=name or f"Airfi {model_name}",
-            data={CONF_HOST: host, CONF_SERIAL_NUMBER: serial, CONF_MODEL_NAME: model_name},
+        """Ask for the Modbus ID of a unit being added that took the connection but did not answer."""
+        if TYPE_CHECKING:
+            assert self._new_unit is not None
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._modbus_id = int(user_input[CONF_MODBUS_ID])
+            if (error := await connection_error(self.hass, self._new_unit.host, self._modbus_id)) is None:
+                return await self._async_create_unit_entry(self._new_unit, self._modbus_id)
+            errors["base"] = error
+        return self.async_show_form(
+            step_id="modbus_id",
+            data_schema=get_modbus_id_schema(self._modbus_id),
+            errors=errors,
+            description_placeholders={"host": self._new_unit.host},
         )
 
-    def _map_exception_to_error(self, exception: Exception) -> str:
+    async def _async_add_unit(self, unit: _NewUnit, errors: dict[str, str]) -> config_entries.ConfigFlowResult | None:
         """
-        Map API exceptions to user-facing error keys.
-
-        Args:
-            exception: The exception that was raised.
+        Add a unit that answers to the default Modbus ID, or ask for its ID when it does not answer at all.
 
         Returns:
-            The error key for display in the config flow form.
+            The next flow result, or None after putting the form error for any other failure into errors.
 
         """
-        LOGGER.warning("Error in config flow: %s", exception)
-        return map_connection_exception_to_error(exception)
+        error = await connection_error(self.hass, unit.host, DEFAULT_MODBUS_ID)
+        if error is None:
+            return await self._async_create_unit_entry(unit, DEFAULT_MODBUS_ID)
+        if error == ERROR_NO_RESPONSE:
+            self._new_unit = unit
+            return await self.async_step_modbus_id()
+        errors["base"] = error
+        return None
+
+    async def _async_create_unit_entry(self, unit: _NewUnit, modbus_id: int) -> config_entries.ConfigFlowResult:
+        """Add the unit under its serial number, named by the user or by Airfi and its model."""
+        await self.async_set_unique_id(unit.serial, raise_on_progress=False)
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=unit.name or f"Airfi {unit.model_name}",
+            data={
+                CONF_HOST: unit.host,
+                CONF_SERIAL_NUMBER: unit.serial,
+                CONF_MODEL_NAME: unit.model_name,
+                CONF_MODBUS_ID: modbus_id,
+            },
+        )
 
 
 __all__ = ["AirfiConfigFlowHandler"]

@@ -11,7 +11,8 @@ from custom_components.airfi_home import async_reload_entry, async_setup, async_
 
 # Force coverage of re-export shim
 import custom_components.airfi_home.config_flow  # noqa: F401
-from custom_components.airfi_home.const import CONF_SERIAL_NUMBER, DOMAIN, UPDATE_INTERVAL
+from custom_components.airfi_home.const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, DOMAIN, UPDATE_INTERVAL
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -25,6 +26,7 @@ def entry(hass) -> MockConfigEntry:
         data={
             CONF_HOST: "192.168.1.10",
             CONF_SERIAL_NUMBER: "AIRFI-12345",
+            CONF_MODBUS_ID: 1,
         },
         unique_id="airfi-12345",
         title="Airfi AIRFI-12345",
@@ -138,3 +140,18 @@ async def test_unit_is_polled_at_the_fixed_interval(
 async def test_entry_has_no_options(init_integration: MockConfigEntry) -> None:
     """The entry offers no options dialog, since the update interval is fixed."""
     assert not init_integration.supports_options
+
+
+@pytest.mark.integration
+async def test_unit_is_read_with_the_stored_modbus_id(
+    hass: HomeAssistant, modbus_unit: SimpleNamespace, config_entry: MockConfigEntry
+) -> None:
+    """An entry that stores a Modbus ID sends every request to it."""
+    modbus_unit.modbus_id = 5
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(config_entry, data={**config_entry.data, CONF_MODBUS_ID: 5})
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert config_entry.state is ConfigEntryState.LOADED
+    assert {call.kwargs["device_id"] for call in modbus_unit.connection.read_input_registers.call_args_list} == {5}

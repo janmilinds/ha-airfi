@@ -37,9 +37,12 @@ def _unit(
     *,
     firmware: tuple[int, int, int] = (3, 8, 1),
     map_version: tuple[int, int, int] = (3, 0, 0),
+    unit_id: int = 1,
     clock: Callable[[], float] = lambda: 0.0,
 ) -> Any:
-    return mock_airfi.MockAirfiUnit.for_versions(firmware=firmware, map_version=map_version, clock=clock)
+    return mock_airfi.MockAirfiUnit.for_versions(
+        firmware=firmware, map_version=map_version, unit_id=unit_id, clock=clock
+    )
 
 
 def _values(response: bytes) -> list[int]:
@@ -51,7 +54,7 @@ def test_reads_the_version_registers() -> None:
     """Input registers 1-3 hold hardware, firmware and register map versions."""
     response = _unit().handle(_request(4, 1, 3))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert response[:8] == struct.pack(">HHHBB", 7, 0, 9, 1, 4)
     assert _values(response) == [160, 381, 300]
 
@@ -60,7 +63,7 @@ def test_reads_holding_registers() -> None:
     """Holding register 1 is the fan speed and 5 the supply air setpoint."""
     response = _unit().handle(_request(3, 1, 5))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert _values(response) == [3, 0, 0, 0, 200]
 
 
@@ -70,7 +73,7 @@ def test_write_stores_the_value_and_echoes_it() -> None:
 
     response = unit.handle(_request(6, 1, 5))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert response[7:] == struct.pack(">BHH", 6, 1, 5)
     assert unit.holding_registers[0] == 5
 
@@ -89,7 +92,7 @@ def test_out_of_range_is_an_illegal_address(function: int, address: int, value: 
     """Registers the map version lacks answer with exception 2."""
     response = _unit().handle(_request(function, address, value))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert response[7:] == bytes([function | 0x80, 2])
 
 
@@ -97,7 +100,7 @@ def test_short_request_is_an_illegal_data_value() -> None:
     """A read without its address and count answers with exception 3."""
     response = _unit().handle(struct.pack(">HHHBB", 7, 0, 2, 1, 4))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert response[7:] == bytes([4 | 0x80, 3])
 
 
@@ -105,29 +108,38 @@ def test_unknown_function_is_an_illegal_function() -> None:
     """A function the unit lacks answers with exception 1."""
     response = _unit().handle(_request(16, 1, 1))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert response[7:] == bytes([16 | 0x80, 1])
 
 
 @pytest.mark.parametrize(
     ("unit_id", "answered"),
     [
-        pytest.param(1, True, id="own ID"),
+        pytest.param(5, True, id="own ID"),
         pytest.param(0, True, id="broadcast ID"),
-        pytest.param(2, False, id="ID 2"),
+        pytest.param(1, False, id="ID 1"),
         pytest.param(247, False, id="ID 247"),
     ],
 )
 def test_answers_only_its_own_and_the_broadcast_id(unit_id: int, *, answered: bool) -> None:
     """The unit answers its Modbus ID and 0, and stays silent for any other."""
-    response = _unit().handle(_request(4, 1, 1, unit_id=unit_id))
+    response = _unit(unit_id=5).handle(_request(4, 1, 1, unit_id=unit_id))
 
-    assert (response is not None) is answered
+    assert isinstance(response, bytes) is answered
+
+
+def test_every_other_request_for_another_id_closes_the_connection_later() -> None:
+    """The unit keeps the connection after one unanswered request for another ID, and closes it after the next."""
+    unit = _unit()
+
+    silences = [unit.handle(_request(4, 1, 1, unit_id=2)) for _ in range(4)]
+
+    assert silences == [mock_airfi.Silence.KEEP_OPEN, mock_airfi.Silence.CLOSE_LATER] * 2
 
 
 def test_short_frame_gets_no_answer() -> None:
-    """A frame without a function code is ignored."""
-    assert _unit().handle(struct.pack(">HHHB", 1, 0, 1, 1)) is None
+    """A frame without a function code is ignored, and the connection stays open."""
+    assert _unit().handle(struct.pack(">HHHB", 1, 0, 1, 1)) is mock_airfi.Silence.KEEP_OPEN
 
 
 @pytest.mark.parametrize(
@@ -143,7 +155,7 @@ def test_firmware_320_hides_input_register_10(address: int, count: int, *, fails
     """On firmware 3.2.0 every input read covering register 10 fails."""
     response = _unit(firmware=(3, 2, 0), map_version=(2, 7, 0)).handle(_request(4, address, count))
 
-    assert response is not None
+    assert isinstance(response, bytes)
     assert (response[7] == 4 | 0x80) is fails
 
 
@@ -250,3 +262,29 @@ async def test_connection_with_a_bad_length_is_closed() -> None:
 
     writer.write.assert_not_called()
     writer.close.assert_called_once()
+
+
+async def test_connection_closes_after_the_second_request_for_another_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """After the second unanswered request for another ID, the unit closes the connection and reads no further."""
+    monkeypatch.setattr(mock_airfi, "WRONG_UNIT_ID_CLOSE_SECONDS", 0)
+    reader = asyncio.StreamReader()
+    reader.feed_data(_request(4, 1, 3, unit_id=5) + _request(4, 1, 3, unit_id=5) + _request(4, 1, 3))
+    writer = _writer()
+
+    await mock_airfi.serve_client(_unit(), reader, writer)
+
+    writer.write.assert_not_called()
+    writer.close.assert_called_once()
+
+
+def test_unit_id_option_sets_the_id_the_unit_answers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """--unit-id takes 1-247 and defaults to 1."""
+    monkeypatch.setattr(mock_airfi.sys, "argv", ["mock-airfi.py"])
+    assert mock_airfi.parse_args().unit_id == 1
+
+    monkeypatch.setattr(mock_airfi.sys, "argv", ["mock-airfi.py", "--unit-id=5"])
+    assert mock_airfi.parse_args().unit_id == 5
+
+    monkeypatch.setattr(mock_airfi.sys, "argv", ["mock-airfi.py", "--unit-id=0"])
+    with pytest.raises(SystemExit):
+        mock_airfi.parse_args()

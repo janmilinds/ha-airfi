@@ -57,13 +57,34 @@
           "name": "Airfi ja malli, ellet muuta sitä. Entiteettien tunnukset muodostetaan tästä nimestä, joten kun lisäät laitteen uudelleen, anna sille sama nimi kuin aiemmin."
         }
       },
+      "modbus_id": {
+        "title": "Tarkista Modbus-ID",
+        "description": "Laite löytyi osoitteesta {host}, mutta se ei vastannut. Yleensä syy on, että laitteen Modbus-ID on jokin muu kuin tavallinen 1. Syötä laitteen Modbus-ID.",
+        "data": {
+          "modbus_id": "Modbus-ID"
+        },
+        "data_description": {
+          "modbus_id": "Yleensä 1. Löydät sen Airfi-sovelluksen Info-kohdasta tai laitteelta potentiometriasetusten kohdasta U1."
+        }
+      },
       "reconfigure": {
-        "description": "Syötä IP-osoite, josta {name} tavoitetaan nyt.",
+        "description": "Syötä laitteen {name} nykyinen IP-osoite.",
         "data": {
           "host": "IP-osoite"
         },
         "data_description": {
           "host": "Airfi-laitteen IP-osoite lähiverkossasi."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Lisäasetukset",
+            "data": {
+              "modbus_id": "Modbus-ID"
+            },
+            "data_description": {
+              "modbus_id": "Muuta tätä vain, jos laitteen Modbus-ID ei ole 1. Löydät sen Airfi-sovelluksen Info-kohdasta tai laitteelta potentiometriasetusten kohdasta U1."
+            }
+          }
         }
       },
       "reconfigure_unverified": {
@@ -77,6 +98,7 @@
     "error": {
       "cannot_connect": "Laitteeseen ei saatu yhteyttä. Tarkista IP-osoite ja että laite on päällä.",
       "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
+      "no_response": "Laite ei vastannut. Tarkista sen Modbus-ID.",
       "invalid_serial": "Syötä sarjanumero pelkkinä numeroina.",
       "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen.",
       "serial_mismatch": "Tässä IP-osoitteessa olevalla laitteella on eri sarjanumero. Tarkista IP-osoite ja sarjanumero.",
@@ -86,7 +108,8 @@
       "already_configured": "Tämä laite on jo lisätty.",
       "invalid_selection": "Valittu laite ei ole enää saatavilla.",
       "already_in_progress": "Tämän laitteen lisääminen on jo käynnissä.",
-      "not_airfi_device": "Tämä laite ei ole Airfi-laite."
+      "not_airfi_device": "Tämä laite ei ole Airfi-laite.",
+      "reconfigure_successful": "Uudelleenmääritys onnistui."
     }
   },
   "exceptions": {
@@ -122,6 +145,7 @@
         "error": {
           "cannot_connect": "Laitteeseen ei saatu yhteyttä tästä IP-osoitteesta. Tarkista osoite ja että laite on päällä.",
           "cannot_retrieve_data": "Yhteys saatiin, mutta laitteen tietoja ei voitu lukea. Tarkista, että IP-osoite kuuluu Airfi-laitteelle.",
+          "no_response": "Laite ei vastannut. Tarkista sen Modbus-ID.",
           "wrong_device": "Tämä IP-osoite kuuluu toiselle Airfi-laitteelle. Tarkista osoite ja yritä uudelleen.",
           "unsupported_device": "Laitteen ohjelmisto on liian vanha tai sitä ei tueta. Päivitä laitteen ohjelmisto ja yritä sitten uudelleen."
         },
@@ -133,7 +157,17 @@
               "host": "IP-osoite"
             },
             "data_description": {
-              "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
+              "host": "Airfi-laitteen nykyinen IP-osoite."
+            }
+          },
+          "modbus_id": {
+            "title": "{name} ei vastaa",
+            "description": "{name} löytyi osoitteesta {host}, mutta se ei vastannut. Jos laitteen Modbus-ID:tä on muutettu, syötä uusi ID.",
+            "data": {
+              "modbus_id": "Modbus-ID"
+            },
+            "data_description": {
+              "modbus_id": "Yleensä 1. Löydät sen Airfi-sovelluksen Info-kohdasta tai laitteelta potentiometriasetusten kohdasta U1."
             }
           },
           "unverified": {

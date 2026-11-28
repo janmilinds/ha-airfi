@@ -116,7 +116,7 @@ If automatic discovery does not find your device (e.g., the unit is on a differe
 - **Model** — select your model from the dropdown list
 - **Name** — optional; left empty, the device is named Airfi and its model. The entity IDs are formed from this name, so when you add a unit again, give it the name it had before
 
-Modbus TCP port 502 is used automatically. Click **Submit** to test the connection and complete setup.
+Modbus TCP port 502 is used automatically. Click **Submit** to test the connection and complete setup. If Home Assistant finds the unit but the unit does not answer, it asks for the unit's [Modbus ID](./CONFIGURATION.md#modbus-id). Units found by Home Assistant are checked the same way.
 
 ## What Gets Created
 
@@ -221,6 +221,13 @@ If setup fails with connection errors:
 3. Check that the Airfi unit is powered on and connected to the network
 4. Check Home Assistant logs for detailed error messages
 
+### The unit is found but does not answer
+
+If setup or a repair asks for the unit's Modbus ID, Home Assistant reached the unit, but the unit did not answer. This usually means the unit uses a Modbus ID other than 1.
+
+1. Look up the Modbus ID in the Airfi app under **Info**, or on the unit in the **Potentiometric setup** menu, item **U1**.
+2. Enter it and select **Submit**. Home Assistant tries the ID before saving it.
+
 ### Entities Not Updating
 
 If entities show "Unavailable" or don't update:
@@ -237,6 +244,7 @@ If the unit is unreachable for more than 10 minutes, a **repair issue** is creat
 
 - If the address belongs to another Airfi unit, it is refused.
 - If Home Assistant cannot tell which unit is at the address, it asks you to confirm. This is normal on networks where the units' announcements do not reach Home Assistant.
+- If the unit is reached but does not answer, for example because its Modbus ID was changed, the repair asks for the [Modbus ID](./CONFIGURATION.md#modbus-id) and saves it with the address.
 
 ### A unit is not offered under Discovered
 
