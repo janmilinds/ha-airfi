@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorEntityDescription
 
+from .boost import ENTITY_DESCRIPTIONS as BOOST_DESCRIPTIONS, AirfiBoostEndSensor
 from .diagnostics import ENTITY_DESCRIPTIONS as DIAGNOSTIC_DESCRIPTIONS, AirfiDiagnosticSensor
 from .humidity import ENTITY_DESCRIPTIONS as HUMIDITY_DESCRIPTIONS, AirfiHumiditySensor
 from .temperature import ENTITY_DESCRIPTIONS as TEMPERATURE_DESCRIPTIONS, AirfiTemperatureSensor
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 ENTITY_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
+    *BOOST_DESCRIPTIONS,
     *DIAGNOSTIC_DESCRIPTIONS,
     *HUMIDITY_DESCRIPTIONS,
     *TEMPERATURE_DESCRIPTIONS,
@@ -39,3 +41,7 @@ async def async_setup_entry(
     async_add_entities(
         AirfiTemperatureSensor(coordinator=coordinator, entity_description=desc) for desc in TEMPERATURE_DESCRIPTIONS
     )
+    if coordinator.feature_manager.has_feature("boost"):
+        async_add_entities(
+            AirfiBoostEndSensor(coordinator=coordinator, entity_description=desc) for desc in BOOST_DESCRIPTIONS
+        )

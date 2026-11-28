@@ -17,7 +17,6 @@ from custom_components.airfi_home.api.client import (
     AirfiApiClientModbusError,
     AirfiApiClientNoResponseError,
     _device_lock_for,
-    _register_lengths,
 )
 from custom_components.airfi_home.utils import version_string, version_tuple
 
@@ -63,28 +62,6 @@ def test_as_version_tuple(value: int, expected: tuple[int, int, int]) -> None:
 def test_as_version_string(value: int, expected: str) -> None:
     """Test version string conversion from register values."""
     assert version_string(value) == expected
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize(
-    ("map_version_raw", "expected"),
-    [
-        (270, (42, 59)),
-        (250, (40, 58)),
-        (230, (40, 55)),
-        (210, (40, 51)),
-        (200, (40, 34)),
-    ],
-)
-def test_register_lengths_by_version(map_version_raw: int, expected: tuple[int, int]) -> None:
-    """Test register length resolution for each known modbus map version."""
-    assert _register_lengths(map_version_raw) == expected
-
-
-@pytest.mark.unit
-def test_register_lengths_fallback_for_unknown_version() -> None:
-    """Test that an older version than the table knows falls back to the oldest mapping."""
-    assert _register_lengths(150) == (40, 34)
 
 
 # ---------------------------------------------------------------------------

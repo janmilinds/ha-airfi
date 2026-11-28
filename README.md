@@ -31,7 +31,8 @@ Also included: a guided repair when the unit stays unreachable, a warning for un
   - Exhaust air
   - Supply air
 - Relative humidity sensor
-- Diagnostic sensors: firmware version, Modbus register version, connection (disabled by default)
+- Timed boost of 30 to 120 minutes, with the time it ends (register map 2.9 or newer)
+- Diagnostic sensors: firmware version, Modbus register version (disabled by default)
 - Change the unit's IP address without removing it
 - Reads the unit every 10 seconds; all entities update together
 
@@ -160,6 +161,12 @@ The integration reads the unit every 10 seconds. There is no option for it; to r
 ### Number
 
 - Supply air temperature setting (target temperature, 13–25 °C)
+
+### Boost (register map 2.9 or newer)
+
+- **Boost timer** (select) — 0, 30, 60, 90 or 120 minutes; choosing a time starts a boost, 0 stops it
+- **Boost ends** (sensor) — when the running boost ends
+- **Boost increase** (number, disabled by default) — how much a boost raises the fan speeds, relative to their current speed
 
 ### Switches (disabled by default, depending on firmware)
 

@@ -189,11 +189,29 @@
       }
     },
     "number": {
+      "boost_increase": {
+        "name": "Boost increase"
+      },
       "supply_air_temperature_setting": {
         "name": "Supply air temperature"
       }
     },
+    "select": {
+      "boost_timer": {
+        "name": "Boost timer",
+        "state": {
+          "0": "Off",
+          "30": "30 minutes",
+          "60": "60 minutes",
+          "90": "90 minutes",
+          "120": "120 minutes"
+        }
+      }
+    },
     "sensor": {
+      "boost_end": {
+        "name": "Boost ends"
+      },
       "exhaust_air_temperature": {
         "name": "Exhaust air"
       },

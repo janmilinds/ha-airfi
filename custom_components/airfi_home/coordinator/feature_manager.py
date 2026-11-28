@@ -6,8 +6,9 @@ capability detection based on the Modbus map version.
 
 from packaging import version
 
+from custom_components.airfi_home.api.register_map import MapVersion, register_lengths
 from custom_components.airfi_home.const import LOGGER
-from custom_components.airfi_home.utils import version_string
+from custom_components.airfi_home.utils import version_string, version_tuple
 
 
 class AirfiDeviceError(Exception):
@@ -31,22 +32,13 @@ class AirfiFeatureManager:
     # Firmware versions with known issues (not supported)
     UNSUPPORTED_FIRMWARE_VERSIONS = {"3.2.0"}
 
-    # Register count mapping by Modbus map version
-    # Format: (input_register_count, holding_register_count)
-    REGISTER_LENGTHS_BY_MAP_VERSION = {
-        "2.7.0": (42, 59),
-        "2.5.0": (40, 58),
-        "2.3.0": (40, 55),
-        "2.1.0": (40, 51),
-        "2.0.0": (40, 34),
-    }
-
     # Feature flags gated by minimum Modbus map version
-    _FEATURE_VERSION_MAP: dict[str, str] = {
-        "minimum_temperature_set": "2.1.0",
-        "fireplace_function": "2.5.0",
-        "boosted_cooling": "2.1.0",
-        "sauna_function": "2.5.0",
+    _FEATURE_VERSION_MAP: dict[str, MapVersion] = {
+        "boost": (2, 9, 0),
+        "minimum_temperature_set": (2, 1, 0),
+        "fireplace_function": (2, 5, 0),
+        "boosted_cooling": (2, 1, 0),
+        "sauna_function": (2, 5, 0),
     }
 
     def __init__(self) -> None:
@@ -54,6 +46,7 @@ class AirfiFeatureManager:
         self.firmware_version = ""
         self.modbus_register_version = ""
         self.hw_version = ""
+        self._map_version: MapVersion = (0, 0, 0)
         self._feature_flags: dict[str, bool] = dict.fromkeys(self._FEATURE_VERSION_MAP, False)
 
     def initialize(self, device_name: str, lookup_registers: list[int]) -> None:
@@ -77,6 +70,7 @@ class AirfiFeatureManager:
         self.hw_version = version_string(lookup_registers[0])
         self.firmware_version = version_string(lookup_registers[1])
         self.modbus_register_version = version_string(lookup_registers[2])
+        self._map_version = version_tuple(lookup_registers[2])
 
         self.check_supported(lookup_registers)
         self._set_feature_flags()
@@ -89,19 +83,7 @@ class AirfiFeatureManager:
             Tuple of (input_register_count, holding_register_count).
 
         """
-        parsed = version.parse(self.modbus_register_version)
-        input_len, holding_len = next(
-            (
-                lengths
-                for map_version_str, lengths in sorted(
-                    self.REGISTER_LENGTHS_BY_MAP_VERSION.items(),
-                    key=lambda x: version.parse(x[0]),
-                    reverse=True,
-                )
-                if parsed >= version.parse(map_version_str)
-            ),
-            self.REGISTER_LENGTHS_BY_MAP_VERSION[self.MIN_MODBUS_VERSION],
-        )
+        input_len, holding_len = register_lengths(self._map_version)
         LOGGER.debug(
             "Setting input register length to %d and holding register length to %d",
             input_len,
@@ -171,9 +153,8 @@ class AirfiFeatureManager:
 
     def _set_feature_flags(self) -> None:
         """Set feature flags based on the Modbus map version."""
-        parsed = version.parse(self.modbus_register_version)
-        for feature, min_ver in self._FEATURE_VERSION_MAP.items():
-            self._feature_flags[feature] = parsed >= version.parse(min_ver)
+        for feature, min_version in self._FEATURE_VERSION_MAP.items():
+            self._feature_flags[feature] = self._map_version >= min_version
 
 
 __all__ = ["AirfiFeatureManager"]

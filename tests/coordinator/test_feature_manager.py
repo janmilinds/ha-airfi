@@ -19,7 +19,7 @@ def test_feature_manager_initializes_supported_device() -> None:
 
     assert manager.firmware_version == "3.8.1"
     assert manager.modbus_register_version == "3.0.0"
-    assert manager.get_register_lengths() == (42, 59)
+    assert manager.get_register_lengths() == (47, 65)
 
 
 @pytest.mark.unit
@@ -74,6 +74,25 @@ def test_feature_flags_all_false_before_initialize() -> None:
     assert manager.has_feature("sauna_function") is False
     assert manager.has_feature("boosted_cooling") is False
     assert manager.has_feature("minimum_temperature_set") is False
+    assert manager.has_feature("boost") is False
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("map_version", "expected"),
+    [
+        pytest.param(270, False, id="2.7"),
+        pytest.param(280, False, id="2.8"),
+        pytest.param(290, True, id="2.9"),
+        pytest.param(340, True, id="3.4"),
+    ],
+)
+def test_feature_flags_boost_needs_register_map_2_9(map_version: int, *, expected: bool) -> None:
+    """The boost registers arrive with register map 2.9."""
+    manager = AirfiFeatureManager()
+    manager.initialize("Airfi AIRFI-12345", [0, 381, map_version])
+
+    assert manager.has_feature("boost") is expected
 
 
 @pytest.mark.unit

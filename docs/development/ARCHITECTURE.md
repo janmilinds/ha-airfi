@@ -16,7 +16,8 @@ custom_components/airfi_home/
 ├── repairs.py               # Repair flows (device_unreachable)
 ├── api/                     # Modbus TCP communication
 │   ├── __init__.py          # Exports AirfiApiClient, exceptions
-│   └── client.py            # Modbus TCP client (pymodbus)
+│   ├── client.py            # Modbus TCP client (pymodbus)
+│   └── register_map.py      # Register counts per register map version
 ├── config_flow_handler/     # Config flow implementation
 │   ├── __init__.py          # Package exports
 │   ├── config_flow.py       # Main flow (user, discovery, reconfigure)
@@ -40,14 +41,19 @@ custom_components/airfi_home/
 │   └── fan.py               # Ventilation fan entity (5-speed)
 ├── number/                  # Number platform
 │   ├── __init__.py          # Platform setup
+│   ├── boost.py             # Boost increase setting entity
 │   └── temperature.py       # Supply air temperature setting entity
+├── select/                  # Select platform
+│   ├── __init__.py          # Platform setup
+│   └── boost.py             # Boost timer entity
 ├── sensor/                  # Sensor platform
 │   ├── __init__.py          # Platform setup
+│   ├── boost.py             # Boost end time entity
 │   ├── humidity.py          # Humidity sensor entity
 │   └── temperature.py       # Temperature sensor entities (4 types)
 ├── switch/                  # Switch platform (feature-gated)
 │   ├── __init__.py          # Platform setup (filters by feature flags)
-│   └── functions.py         # Special function switches (sauna, fireplace, boost)
+│   └── functions.py         # Special function switches (fireplace, sauna, boosted cooling)
 ├── translations/            # Localization files
 │   ├── en.json              # English
 │   ├── fi.json              # Finnish
@@ -55,6 +61,7 @@ custom_components/airfi_home/
 │   └── sv.json              # Swedish
 └── utils/                   # Integration-wide utilities
     ├── __init__.py
+    ├── boost.py             # Boost register constants and remaining time
     ├── discovery.py         # UDP multicast scan and long-lived listener
     ├── error_mapping.py     # Modbus error code mapping
     ├── fan.py               # Fan speed conversion helpers
