@@ -40,11 +40,3 @@ class AirfiConnectivitySensor(BinarySensorEntity, AirfiEntity):
         """Return true if the device connection is established."""
         # Connection is considered established if coordinator has valid data
         return self.coordinator.last_update_success
-
-    @property
-    def extra_state_attributes(self) -> dict[str, str | None]:
-        """Return additional state attributes."""
-        return {
-            "update_interval": str(self.coordinator.update_interval),
-            "transport": "modbus_tcp",
-        }

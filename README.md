@@ -75,6 +75,8 @@ place. The move takes a few steps:
    default.
 8. Create again the helpers that used the unit's entities, with the entity IDs they had. Statistics, Trend, History
    stats and Change device type helpers are deleted together with the entity they follow.
+9. Change templates and cards that read the measured temperature from the Supply air temperature setting: read it
+   from the Supply air sensor. Device connection no longer shows the update interval and connection type.
 
 Once the entity IDs are the same as before, history, automations and dashboards carry on. Areas, custom names and
 icons, labels and hidden entities are set again. The full steps are in

@@ -7,7 +7,6 @@ from custom_components.airfi_home.utils.number import (
     HOLDING_REGISTER_MINIMUM_TEMPERATURE,
     HOLDING_REGISTER_TARGET_TEMPERATURE,
 )
-from custom_components.airfi_home.utils.temperature import INPUT_REGISTER_SUPPLY_AIR_TEMP, convert_temperature
 from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription, NumberMode
 from homeassistant.const import UnitOfTemperature
 
@@ -66,21 +65,3 @@ class AirfiTemperatureNumber(NumberEntity, AirfiEntity):
                 await self.coordinator.async_set_holding_register(HOLDING_REGISTER_MINIMUM_TEMPERATURE, round(value))
         finally:
             await self.coordinator.async_request_refresh()
-
-    @property
-    def extra_state_attributes(self) -> dict[str, float | str | None]:
-        """Return additional attributes including current measured supply-air temperature.
-
-        Some Lovelace components read `supply_air_temperature` from entity attributes
-        to show the measured temperature alongside a setpoint control.
-        """
-        input_registers: list[int] = self.coordinator.data.input_registers
-        index = INPUT_REGISTER_SUPPLY_AIR_TEMP - 1
-        if index >= len(input_registers):
-            return {}
-
-        value = convert_temperature(input_registers[index])
-
-        return {
-            "supply_air_temperature": value,
-        }

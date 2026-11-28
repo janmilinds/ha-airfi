@@ -84,6 +84,9 @@ long-term statistics, automations and dashboards carry on.
 8. **Create the helpers again** that used the unit's entities, and give each the entity ID it had. Statistics, Trend,
    History stats and Change device type helpers are deleted together with the entity they follow; other helpers stay,
    and work again once the entity IDs are the same as before.
+9. **Change templates and cards that read an attribute.** The **Supply air temperature** setting no longer carries
+   the measured temperature: read it from the **Supply air** sensor, such as `sensor.airfi_model_60_l_supply_air`.
+   **Device connection** no longer shows the update interval and connection type.
 
 ## Initial Setup
 

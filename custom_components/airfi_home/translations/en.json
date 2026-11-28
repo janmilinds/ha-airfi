@@ -185,18 +185,7 @@
   "entity": {
     "binary_sensor": {
       "device_connectivity": {
-        "name": "Device connection",
-        "state_attributes": {
-          "update_interval": {
-            "name": "Update interval"
-          },
-          "transport": {
-            "name": "Connection type",
-            "state": {
-              "modbus_tcp": "Modbus TCP"
-            }
-          }
-        }
+        "name": "Device connection"
       }
     },
     "fan": {
@@ -206,12 +195,7 @@
     },
     "number": {
       "supply_air_temperature_setting": {
-        "name": "Supply air temperature",
-        "state_attributes": {
-          "supply_air_temperature": {
-            "name": "Current supply air temperature"
-          }
-        }
+        "name": "Supply air temperature"
       }
     },
     "sensor": {
