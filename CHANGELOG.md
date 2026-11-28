@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0-beta.2](https://github.com/janmilinds/ha-airfi/compare/v2.0.0-beta.2...v3.0.0-beta.2) (2026-11-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **binary_sensor:** the old entity deleted on its next start.
+* the device connection sensor no longer has the update_interval and transport attributes, and the supply air temperature setting no longer has the supply_air_temperature attribute. A card or template that read the measured supply air temperature from the setting reads the supply air sensor instead.
+
+### 🎉 What's new
+
+* start a timed ventilation boost ([#115](https://github.com/janmilinds/ha-airfi/issues/115)) ([f067139](https://github.com/janmilinds/ha-airfi/commit/f067139bb8a0d930cde3baba566f414c0d77d0a3))
+
+
+### 🐛 Fixed
+
+* **binary_sensor:** remove the connectivity sensor, which never showed a lost connection ([#113](https://github.com/janmilinds/ha-airfi/issues/113)) ([ef9cb4c](https://github.com/janmilinds/ha-airfi/commit/ef9cb4c3af263ebd1e0a4a497dd66202b764c9ab))
+* **config-flow:** name a unit of an unknown model Airfi ([#116](https://github.com/janmilinds/ha-airfi/issues/116)) ([6a54f0b](https://github.com/janmilinds/ha-airfi/commit/6a54f0bd097102192542ac045fa79bec86014f19))
+* **coordinator:** close the unreachable repair when a reload reaches the unit ([#114](https://github.com/janmilinds/ha-airfi/issues/114)) ([cbc35b4](https://github.com/janmilinds/ha-airfi/commit/cbc35b4a1af6878fc45007255ce589c2d98a7024))
+* remove state attributes that repeat other values or never change ([#111](https://github.com/janmilinds/ha-airfi/issues/111)) ([3b34a75](https://github.com/janmilinds/ha-airfi/commit/3b34a756d51d8d1ec8c9a31f5456558394f06ef3))
+
 ## [2.0.0-beta.2](https://github.com/janmilinds/ha-airfi/compare/v2.0.0-beta.1...v2.0.0-beta.2) (2026-11-28)
 
 
