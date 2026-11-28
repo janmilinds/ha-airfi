@@ -61,6 +61,35 @@ Fan speed presets map directly to the ventilation unit's speed settings (1 = low
 
 The supply air temperature setting controls the target temperature for air delivered into the rooms. When the device supports minimum temperature parity (Modbus map version ≥ 2.1.0), the minimum temperature setting is also updated automatically to keep both values in sync.
 
+### Boost
+
+A boost raises the ventilation for a set time, like the boost key on the unit's own panel. The unit counts the time down once a minute; when it runs out, the fans return to the current speed. The boost needs Modbus register map 2.9 or newer; on an older map these entities are not created.
+
+| Entity             | Type                                  | Description                                                                                                                              |
+| ------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Boost timer**    | select: 0, 30, 60, 90, 120 minutes    | Choosing a time starts a boost or changes the running one; 0 stops it. The state is the remaining time, rounded up to the next option.   |
+| **Boost ends**     | sensor, timestamp                     | When the running boost ends; unknown when no boost runs.                                                                                 |
+| **Boost increase** | number, 0–100 % (disabled by default) | How much a boost raises the fan speeds, relative to their current speed: with 50 %, a fan running at 40 % runs at 60 % during the boost. |
+
+To start a boost of the time already shown again, choose a longer time, or run the action from an automation: a dashboard's select row sends nothing when you pick the option it already shows.
+
+The options are numbers written as text. In YAML, quote them, also in a state trigger or condition (`to: "0"`); a template can pass the minutes as they are (`option: "{{ minutes }}"`).
+
+**Example — boost for 30 minutes when the bathroom humidity rises:**
+
+```yaml
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.bathroom_humidity
+    above: 70
+actions:
+  - action: select.select_option
+    target:
+      entity_id: select.airfi_model_60_l_boost_timer
+    data:
+      option: "30"
+```
+
 ### Sensors
 
 | Entity                      | Device Class | Unit | State Class | Description                          |
@@ -212,7 +241,8 @@ Home Assistant's [custom polling interval guide](https://www.home-assistant.io/c
 ## Known Limitations
 
 - **Single device per config entry** — Each ventilation unit requires its own config entry (multiple units are supported, but each is added separately).
-- **No write-back for all registers** — Currently only fan speed and at-home/away mode can be controlled. Other unit settings must be configured via the unit's own interface.
+- **Not every unit setting** — The integration controls the speed, away mode, the supply air temperature setting, the fireplace, sauna and boosted cooling functions, and the boost. Other settings are made on the unit's own panel or interface.
+- **Boost at high fan settings** — A boost multiplies the fan speeds of the current speed step by the boost increase. If either fan would go above 100 %, the unit does not boost at all and the fans keep their speed. Whether that happens depends on the fan settings of the unit's speed steps: with a boost increase of 50 %, any step whose fan setting is above about 66 % is affected. If a boost seems to do nothing, lower the **Boost increase** or use a lower speed.
 - **Local network only** — Modbus TCP requires direct network access; remote access needs a VPN or similar solution.
 - **Static IP and discovery** — Home Assistant recognises the first unit when it requests an IP address from your router, so a unit with a static IP address may not be offered under **Discovered**. Add it from **Add integration**; the search finds it without the IP address.
 - **Synchronous Modbus** — The pymodbus library uses synchronous calls run in an executor thread. On an unstable connection, a poll can briefly delay the next one.

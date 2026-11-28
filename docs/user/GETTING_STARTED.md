@@ -135,16 +135,21 @@ A device entry representing your Airfi ventilation unit with:
 
 ### Entities
 
-| Entity                      | Type     | Description                                                   |
-| --------------------------- | -------- | ------------------------------------------------------------- |
-| **Fan**                     | `fan`    | Main ventilation control — on/off and 5-speed control         |
-| **Outdoor air temperature** | `sensor` | Temperature of incoming outdoor air (°C)                      |
-| **Extract air temperature** | `sensor` | Temperature of air extracted from the building (°C)           |
-| **Exhaust air temperature** | `sensor` | Temperature of air exhausted outdoors (°C)                    |
-| **Supply air temperature**  | `sensor` | Temperature of air supplied to the building (°C)              |
-| **Relative humidity**       | `sensor` | Indoor relative humidity (%)                                  |
-| **Firmware version**        | `sensor` | Current firmware version (diagnostic, disabled by default)    |
-| **Modbus register version** | `sensor` | Modbus register map version (diagnostic, disabled by default) |
+| Entity                                                          | Type     | Description                                                                             |
+| --------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| **Fan**                                                         | `fan`    | Main ventilation control — on/off and 5-speed control                                   |
+| **Outdoor air temperature**                                     | `sensor` | Temperature of incoming outdoor air (°C)                                                |
+| **Extract air temperature**                                     | `sensor` | Temperature of air extracted from the building (°C)                                     |
+| **Exhaust air temperature**                                     | `sensor` | Temperature of air exhausted outdoors (°C)                                              |
+| **Supply air temperature**                                      | `sensor` | Temperature of air supplied to the building (°C)                                        |
+| **Relative humidity**                                           | `sensor` | Indoor relative humidity (%)                                                            |
+| **Supply air temperature setting**                              | `number` | Target temperature of the supply air (°C)                                               |
+| **Boost timer**                                                 | `select` | Starts a boost of 30–120 minutes; 0 stops it (register map 2.9 or newer)                |
+| **Boost ends**                                                  | `sensor` | When the running boost ends (register map 2.9 or newer)                                 |
+| **Boost increase**                                              | `number` | How much a boost raises the fan speeds (disabled by default, register map 2.9 or newer) |
+| **Fireplace function**, **Sauna function**, **Boosted cooling** | `switch` | The unit's special functions (disabled by default, depending on the register map)       |
+| **Firmware version**                                            | `sensor` | Current firmware version (diagnostic, disabled by default)                              |
+| **Modbus register version**                                     | `sensor` | Modbus register map version (diagnostic, disabled by default)                           |
 
 All temperature and humidity sensors support **long-term statistics** in Home Assistant.
 
@@ -167,22 +172,24 @@ entities:
 
 ### Automations
 
-**Example — boost ventilation when humidity is high:**
+**Example — boost ventilation for 30 minutes when humidity is high:**
 
 ```yaml
 automation:
   - alias: "Boost ventilation on high humidity"
     trigger:
       - trigger: numeric_state
-        entity_id: sensor.airfi_relative_humidity
+        entity_id: sensor.airfi_model_60_l_relative_humidity
         above: 70
     action:
-      - action: fan.set_percentage
+      - action: select.select_option
         target:
-          entity_id: fan.airfi_fan
+          entity_id: select.airfi_model_60_l_boost_timer
         data:
-          percentage: 100
+          option: "30"
 ```
+
+The boost needs register map 2.9 or newer; see [Boost](./CONFIGURATION.md#boost).
 
 **Example — reduce ventilation at night:**
 
