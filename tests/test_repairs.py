@@ -20,6 +20,8 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
 
+SUPPORTED_UNIT_LOOKUP = [100, 310, 270]
+
 
 @pytest.mark.unit
 async def test_async_create_fix_flow_returns_device_unreachable_flow(hass, config_entry) -> None:
@@ -100,7 +102,7 @@ async def test_repair_saves_the_new_address_and_reloads(
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
     setups_before = mock_api.get_lookup_registers.await_count
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
     assert result["step_id"] == "unverified"
     assert result["description_placeholders"] == {"host": "10.0.0.1", "name": "Airfi Model 60 L"}
@@ -136,7 +138,7 @@ async def test_repair_keeps_the_address_when_the_new_one_fails(
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(side_effect=error)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(side_effect=error)):
         result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
 
     assert result["type"] == FlowResultType.FORM
@@ -163,7 +165,7 @@ async def test_repair_sets_up_an_entry_that_is_retrying(
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, issue_id)
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
     await process_repair_fix_flow(client, flow["flow_id"], {})
     await hass.async_block_till_done()
@@ -195,7 +197,7 @@ async def test_repair_checks_which_unit_announced_from_the_address(
     client = await hass_client()
     flow = await start_repair_fix_flow(client, DOMAIN, repair_issue)
 
-    with patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None)):
+    with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await process_repair_fix_flow(client, flow["flow_id"], {CONF_HOST: "10.0.0.1"})
     await hass.async_block_till_done()
 

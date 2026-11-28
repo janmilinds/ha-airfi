@@ -27,17 +27,18 @@ def test_feature_manager_rejects_unsupported_firmware() -> None:
     """Test that firmware version 3.2.0 is rejected."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(UnsupportedFirmwareError, match="unsupported"):
+    with pytest.raises(UnsupportedFirmwareError, match="Firmware 3.2.0"):
         manager.initialize("Airfi AIRFI-12345", [0, 320, 300])
 
 
 @pytest.mark.unit
-def test_feature_manager_rejects_too_old_modbus_map() -> None:
-    """Test that a too old Modbus map version is rejected."""
+@pytest.mark.parametrize("map_version", [pytest.param(140, id="1.4"), pytest.param(150, id="1.5")])
+def test_feature_manager_rejects_a_register_map_older_than_2_0(map_version: int) -> None:
+    """A unit on a register map older than 2.0, map 1.5 included, is refused."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(UnsupportedFirmwareError, match="below minimum"):
-        manager.initialize("Airfi AIRFI-12345", [0, 140, 140])
+    with pytest.raises(UnsupportedFirmwareError, match="not supported"):
+        manager.initialize("Airfi AIRFI-12345", [0, 381, map_version])
 
 
 @pytest.mark.unit
@@ -45,21 +46,8 @@ def test_feature_manager_rejects_short_lookup_payload() -> None:
     """Test that incomplete lookup data fails validation."""
     manager = AirfiFeatureManager()
 
-    with pytest.raises(InvalidDeviceDataError, match="Failed to retrieve data"):
+    with pytest.raises(InvalidDeviceDataError, match="Expected 3 lookup registers"):
         manager.initialize("Airfi AIRFI-12345", [0, 381])
-
-
-@pytest.mark.unit
-def test_feature_manager_fallback_register_lengths() -> None:
-    """Test that an unknown map version falls back to minimum version.
-
-    This path is defensive — normally _validate_firmware_version rejects
-    versions below MIN_MODBUS_VERSION during initialize().
-    """
-    manager = AirfiFeatureManager()
-    # Bypass validation by setting version directly
-    manager.modbus_register_version = "0.0.1"
-    assert manager.get_register_lengths() == (31, 12)
 
 
 @pytest.mark.unit
@@ -138,18 +126,6 @@ def test_feature_flags_modbus_200_none_enabled() -> None:
     """Test that no features are enabled with modbus map version 2.0.0."""
     manager = AirfiFeatureManager()
     manager.initialize("Airfi AIRFI-12345", [0, 381, 200])
-
-    assert manager.has_feature("minimum_temperature_set") is False
-    assert manager.has_feature("fireplace_function") is False
-    assert manager.has_feature("sauna_function") is False
-    assert manager.has_feature("boosted_cooling") is False
-
-
-@pytest.mark.unit
-def test_feature_flags_modbus_150_none_enabled() -> None:
-    """Test that no features are enabled with modbus map version 1.5.0."""
-    manager = AirfiFeatureManager()
-    manager.initialize("Airfi AIRFI-12345", [0, 381, 150])
 
     assert manager.has_feature("minimum_temperature_set") is False
     assert manager.has_feature("fireplace_function") is False

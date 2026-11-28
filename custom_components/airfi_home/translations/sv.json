@@ -79,7 +79,8 @@
       "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
       "invalid_serial": "Ange serienumret med enbart siffror.",
       "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen.",
-      "serial_mismatch": "Enheten på den här IP-adressen har ett annat serienummer. Kontrollera IP-adressen och serienumret."
+      "serial_mismatch": "Enheten på den här IP-adressen har ett annat serienummer. Kontrollera IP-adressen och serienumret.",
+      "unsupported_device": "Enhetens programvara är för gammal eller stöds inte. Uppdatera enhetens programvara och försök sedan igen."
     },
     "abort": {
       "already_configured": "Den här enheten är redan tillagd.",
@@ -93,7 +94,7 @@
       "message": "Det gick inte att ansluta till enheten på {host}."
     },
     "setup_firmware_error": {
-      "message": "Enhetens firmwareversion {firmware_version} stöds inte av denna integration."
+      "message": "Enhetens programvara stöds inte: firmware {firmware_version}, registerkarta {map_version}. Uppdatera enhetens programvara och läs sedan in integrationen igen."
     },
     "update_failed": {
       "message": "Misslyckades med att uppdatera data från enheten."
@@ -121,7 +122,8 @@
         "error": {
           "cannot_connect": "Det gick inte att ansluta till enheten på den här IP-adressen. Kontrollera adressen och att enheten är påslagen.",
           "cannot_retrieve_data": "Anslutningen lyckades, men enhetens data kunde inte läsas. Kontrollera att IP-adressen tillhör en Airfi-enhet.",
-          "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen."
+          "wrong_device": "Den här IP-adressen tillhör en annan Airfi-enhet. Kontrollera adressen och försök igen.",
+          "unsupported_device": "Enhetens programvara är för gammal eller stöds inte. Uppdatera enhetens programvara och försök sedan igen."
         },
         "step": {
           "init": {
@@ -142,8 +144,8 @@
       }
     },
     "unsupported_firmware": {
-      "title": "{name} har firmware som inte stöds ({firmware_version})",
-      "description": "Enhetens firmwareversion {firmware_version} är inte kompatibel med denna integration. Uppdatera eller nedgradera enhetens firmware till en version som stöds.\n\nFör mer information om hur du uppdaterar enhetens firmware, se stödsektionen på [Airfi-webbplatsen]({airfi_url}) (**airfi.fi/sv** → **Stöd** → **Programuppdatering**)."
+      "title": "{name} behöver en programvaruuppdatering",
+      "description": "Den här integrationen stöder inte enhetens programvara: firmware {firmware_version}, registerkarta {map_version}. Den kräver registerkarta 2.0 eller nyare, och firmware 3.2.0 fungerar inte med den.\n\n1. Uppdatera enhetens programvara enligt supportavsnittet på [Airfis webbplats]({airfi_url}) (**airfi.fi/sv** > **Stöd** > **Programuppdatering**).\n2. Ladda om integrationen: **Inställningar** > **Enheter och tjänster** > **Airfi** > ⋮ > **Ladda om**."
     }
   },
   "entity": {

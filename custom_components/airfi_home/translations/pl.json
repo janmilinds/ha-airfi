@@ -79,7 +79,8 @@
       "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
       "invalid_serial": "Wpisz numer seryjny, używając wyłącznie cyfr.",
       "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie.",
-      "serial_mismatch": "Urządzenie pod tym adresem IP ma inny numer seryjny. Sprawdź adres IP i numer seryjny."
+      "serial_mismatch": "Urządzenie pod tym adresem IP ma inny numer seryjny. Sprawdź adres IP i numer seryjny.",
+      "unsupported_device": "Oprogramowanie urządzenia jest zbyt stare lub nieobsługiwane. Zaktualizuj oprogramowanie urządzenia i spróbuj ponownie."
     },
     "abort": {
       "already_configured": "To urządzenie jest już dodane.",
@@ -93,7 +94,7 @@
       "message": "Nie udało się połączyć z urządzeniem pod adresem {host}."
     },
     "setup_firmware_error": {
-      "message": "Wersja firmware urządzenia {firmware_version} nie jest obsługiwana przez tę integrację."
+      "message": "Oprogramowanie urządzenia nie jest obsługiwane: firmware {firmware_version}, mapa rejestrów {map_version}. Zaktualizuj oprogramowanie urządzenia, a następnie ponownie wczytaj integrację."
     },
     "update_failed": {
       "message": "Nie udało się zaktualizować danych z urządzenia."
@@ -121,7 +122,8 @@
         "error": {
           "cannot_connect": "Nie można połączyć się z urządzeniem pod tym adresem IP. Sprawdź adres i czy urządzenie jest włączone.",
           "cannot_retrieve_data": "Połączono, ale nie można odczytać danych urządzenia. Sprawdź, czy adres IP należy do urządzenia Airfi.",
-          "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie."
+          "wrong_device": "Ten adres IP należy do innego urządzenia Airfi. Sprawdź adres i spróbuj ponownie.",
+          "unsupported_device": "Oprogramowanie urządzenia jest zbyt stare lub nieobsługiwane. Zaktualizuj oprogramowanie urządzenia i spróbuj ponownie."
         },
         "step": {
           "init": {
@@ -142,8 +144,8 @@
       }
     },
     "unsupported_firmware": {
-      "title": "{name} ma nieobsługiwaną wersję firmware ({firmware_version})",
-      "description": "Wersja firmware urządzenia {firmware_version} nie jest kompatybilna z tą integracją. Zaktualizuj lub obniż wersję firmware urządzenia do obsługiwanej wersji.\n\nAby uzyskać więcej informacji na temat aktualizacji firmware urządzenia, zapoznaj się z sekcją wsparcia na [stronie Airfi]({airfi_url}) (**airfi.fi/pl** → **Wsparcie** → **Aktualizacja oprogramowania**)."
+      "title": "{name} wymaga aktualizacji oprogramowania",
+      "description": "Ta integracja nie obsługuje oprogramowania urządzenia: firmware {firmware_version}, mapa rejestrów {map_version}. Wymaga mapy rejestrów 2.0 lub nowszej, a firmware 3.2.0 z nią nie działa.\n\n1. Zaktualizuj oprogramowanie urządzenia zgodnie z sekcją wsparcia na [stronie Airfi]({airfi_url}) (**airfi.fi/pl** > **Wsparcie** > **Aktualizacja oprogramowania**).\n2. Ponownie wczytaj integrację: **Ustawienia** > **Urządzenia oraz usługi** > **Airfi** > ⋮ > **Wczytaj ponownie**."
     }
   },
   "entity": {

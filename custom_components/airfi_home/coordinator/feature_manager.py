@@ -26,7 +26,7 @@ class AirfiFeatureManager:
     """Manage device features and validation based on firmware version."""
 
     # Minimum supported Modbus protocol version
-    MIN_MODBUS_VERSION = "1.5.0"
+    MIN_MODBUS_VERSION = "2.0.0"
 
     # Firmware versions with known issues (not supported)
     UNSUPPORTED_FIRMWARE_VERSIONS = {"3.2.0"}
@@ -39,7 +39,6 @@ class AirfiFeatureManager:
         "2.3.0": (40, 55),
         "2.1.0": (40, 51),
         "2.0.0": (40, 34),
-        "1.5.0": (31, 12),
     }
 
     # Feature flags gated by minimum Modbus map version
@@ -69,13 +68,8 @@ class AirfiFeatureManager:
             UnsupportedFirmwareError: If firmware version is not supported.
 
         """
-        if not self._validate_lookup_registers(lookup_registers):
-            msg = (
-                "Failed to retrieve data from the air handling unit. "
-                "Please check your network settings, the air handling unit is "
-                "powered on and connected to a network. Then restart Home Assistant "
-                "and try again."
-            )
+        if len(lookup_registers) < 3:
+            msg = f"Expected 3 lookup registers, got {len(lookup_registers)}"
             raise InvalidDeviceDataError(msg)
 
         # registers[0] = hardware version (3x00001)
@@ -84,7 +78,7 @@ class AirfiFeatureManager:
         self.firmware_version = version_string(lookup_registers[1])
         self.modbus_register_version = version_string(lookup_registers[2])
 
-        self._validate_firmware_version()
+        self.check_supported(lookup_registers)
         self._set_feature_flags()
         self._log_device_info(device_name)
 
@@ -95,63 +89,62 @@ class AirfiFeatureManager:
             Tuple of (input_register_count, holding_register_count).
 
         """
-        for map_version_str, (input_len, holding_len) in sorted(
-            self.REGISTER_LENGTHS_BY_MAP_VERSION.items(),
-            key=lambda x: version.parse(x[0]),
-            reverse=True,
-        ):
-            if version.parse(self.modbus_register_version) >= version.parse(map_version_str):
-                LOGGER.debug(
-                    "Setting input register length to %d and holding register length to %d",
-                    input_len,
-                    holding_len,
+        parsed = version.parse(self.modbus_register_version)
+        input_len, holding_len = next(
+            (
+                lengths
+                for map_version_str, lengths in sorted(
+                    self.REGISTER_LENGTHS_BY_MAP_VERSION.items(),
+                    key=lambda x: version.parse(x[0]),
+                    reverse=True,
                 )
-                return (input_len, holding_len)
+                if parsed >= version.parse(map_version_str)
+            ),
+            self.REGISTER_LENGTHS_BY_MAP_VERSION[self.MIN_MODBUS_VERSION],
+        )
+        LOGGER.debug(
+            "Setting input register length to %d and holding register length to %d",
+            input_len,
+            holding_len,
+        )
+        return (input_len, holding_len)
 
-        # Fallback to minimum version
-        return self.REGISTER_LENGTHS_BY_MAP_VERSION["1.5.0"]
-
-    @staticmethod
-    def _validate_lookup_registers(lookup_registers: list[int]) -> bool:
-        """Validate that lookup registers contain sufficient data.
+    @classmethod
+    def check_supported(cls, lookup_registers: list[int]) -> None:
+        """Refuse a unit whose software this integration does not support.
 
         Args:
             lookup_registers: Input registers 1-3 from device.
 
-        Returns:
-            True if valid, False otherwise.
-
-        """
-        return len(lookup_registers) >= 3
-
-    def _validate_firmware_version(self) -> None:
-        """Validate firmware version is supported.
-
         Raises:
-            UnsupportedFirmwareError: If firmware version is not supported.
+            InvalidDeviceDataError: If the lookup registers are incomplete or hold no version.
+            UnsupportedFirmwareError: If the firmware is blocklisted or the register map is older than 2.0.
 
         """
-        # Check for unsupported firmware versions
-        if self.firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
-            msg = f"Firmware version {self.firmware_version} is in the unsupported list"
+        if len(lookup_registers) < 3:
+            msg = f"Expected 3 lookup registers, got {len(lookup_registers)}"
+            raise InvalidDeviceDataError(msg)
+        if 0 in (lookup_registers[1], lookup_registers[2]):
+            msg = f"Lookup registers {lookup_registers[1:]} hold no firmware and register map version"
+            raise InvalidDeviceDataError(msg)
+        firmware_version = version_string(lookup_registers[1])
+        modbus_register_version = version_string(lookup_registers[2])
+        if cls.is_configuration_unsupported(firmware_version, modbus_register_version):
+            msg = f"Firmware {firmware_version} with register map {modbus_register_version} is not supported"
             raise UnsupportedFirmwareError(msg)
 
-        # Check minimum Modbus version
-        if version.parse(self.modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
-            msg = f"Modbus map version {self.modbus_register_version} is below minimum {self.MIN_MODBUS_VERSION}"
-            raise UnsupportedFirmwareError(msg)
-
-    def is_configuration_unsupported(self, firmware_version: str, modbus_register_version: str) -> bool:
+    @classmethod
+    def is_configuration_unsupported(cls, firmware_version: str, modbus_register_version: str) -> bool:
         """Check whether firmware or modbus version is unsupported.
 
         Combines the firmware blocklist check with the minimum Modbus version
         check so runtime validation catches both cases.
         """
-        if firmware_version in self.UNSUPPORTED_FIRMWARE_VERSIONS:
+        if firmware_version in cls.UNSUPPORTED_FIRMWARE_VERSIONS:
             return True
-        if modbus_register_version and version.parse(modbus_register_version) < version.parse(self.MIN_MODBUS_VERSION):
-            return True
-        return False
+        return bool(modbus_register_version) and version.parse(modbus_register_version) < version.parse(
+            cls.MIN_MODBUS_VERSION
+        )
 
     def _log_device_info(self, device_name: str) -> None:
         """Log device information and versions.

@@ -148,7 +148,7 @@ Ensure:
 
 ## Supported Devices
 
-The integration supports all Airfi ventilation unit models with Modbus register version 1.5.0 or newer. Supported models (L = left, R = right variant):
+The integration supports all Airfi ventilation unit models whose software has Modbus register map 2.0 or newer. The **Modbus register version** diagnostic sensor shows it. Supported models (L = left, R = right variant):
 
 | Model Family         | Variants                               |
 | -------------------- | -------------------------------------- |
@@ -172,7 +172,7 @@ The integration supports all Airfi ventilation unit models with Modbus register 
 | **350 ENT Electric** | 350 ENT L Electric, 350 ENT R Electric |
 | **350 ENT Water**    | 350 ENT L Water, 350 ENT R Water       |
 
-**Firmware note:** Firmware version 3.2.0 is known to have issues and is explicitly unsupported. Update to a newer firmware version if you encounter compatibility problems.
+**Software note:** A unit on an older register map (1.5) and firmware 3.2.0, which has known issues, are not supported. Setup refuses such a unit, and a unit already set up stops with a repair issue that says what to update; after updating the unit's software, reload the integration.
 
 ## Data Update Mechanism
 

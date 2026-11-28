@@ -73,7 +73,6 @@ def test_as_version_string(value: int, expected: str) -> None:
         (230, (40, 55)),
         (210, (40, 51)),
         (200, (40, 34)),
-        (150, (31, 12)),
     ],
 )
 def test_register_lengths_by_version(map_version_raw: int, expected: tuple[int, int]) -> None:
@@ -83,24 +82,8 @@ def test_register_lengths_by_version(map_version_raw: int, expected: tuple[int, 
 
 @pytest.mark.unit
 def test_register_lengths_fallback_for_unknown_version() -> None:
-    """Test that an unknown old version falls back to the oldest mapping."""
-    assert _register_lengths(100) == (31, 12)
-
-
-# ---------------------------------------------------------------------------
-# async_test_connection
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-async def test_async_test_connection_calls_read() -> None:
-    """Test that async_test_connection reads input registers."""
-    client = AirfiApiClient(host="192.168.1.10", port=502)
-
-    with patch.object(client, "_async_read_registers", new=AsyncMock(return_value=[0, 0, 0])) as mock_read:
-        await client.async_test_connection()
-
-    mock_read.assert_awaited_once_with(start_address=1, length=3, register_type="input")
+    """Test that an older version than the table knows falls back to the oldest mapping."""
+    assert _register_lengths(150) == (40, 34)
 
 
 # ---------------------------------------------------------------------------
@@ -826,7 +809,7 @@ async def test_clients_for_the_same_unit_share_one_connection_at_a_time() -> Non
     ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await asyncio.to_thread(started.wait, 5)
-        check = asyncio.create_task(checker.async_test_connection())
+        check = asyncio.create_task(checker.async_get_lookup_registers())
         await asyncio.sleep(0.1)
 
         assert calls == ["write"]
@@ -860,7 +843,7 @@ async def test_clients_for_different_units_do_not_wait_for_each_other() -> None:
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await asyncio.to_thread(started.wait, 5)
         async with asyncio.timeout(1):
-            await other.async_test_connection()
+            await other.async_get_lookup_registers()
         release.set()
         await write
 
@@ -887,7 +870,7 @@ async def test_abandoned_request_frees_its_worker_thread_while_the_unit_is_busy(
     ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await loop.run_in_executor(None, started.wait, 5)
-        abandoned = asyncio.create_task(checker.async_test_connection())
+        abandoned = asyncio.create_task(checker.async_get_lookup_registers())
         await asyncio.sleep(0.1)
         abandoned.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -895,7 +878,7 @@ async def test_abandoned_request_frees_its_worker_thread_while_the_unit_is_busy(
 
         try:
             async with asyncio.timeout(1):
-                await other.async_test_connection()
+                await other.async_get_lookup_registers()
         finally:
             release.set()
             await write
@@ -924,7 +907,7 @@ async def test_request_abandoned_just_before_the_unit_comes_free_never_reaches_u
     ):
         write = asyncio.create_task(writer.async_write_holding_register(address=12, value=1))
         await loop.run_in_executor(None, started.wait, 5)
-        abandoned = asyncio.create_task(checker.async_test_connection())
+        abandoned = asyncio.create_task(checker.async_get_lookup_registers())
         await asyncio.sleep(0.1)
         abandoned.cancel()
         with pytest.raises(asyncio.CancelledError):

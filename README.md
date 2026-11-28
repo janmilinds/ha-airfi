@@ -37,7 +37,7 @@ Also included: a guided repair when the unit stays unreachable, a warning for un
 
 ## Supported models
 
-The integration includes model mapping for Airfi model families and variants (L/R, Electric/Water, ENT/C5/mini where applicable), including:
+The unit's software needs Modbus register map 2.0 or newer; map 1.5 and firmware 3.2.0 are not supported. The integration includes model mapping for Airfi model families and variants (L/R, Electric/Water, ENT/C5/mini where applicable), including:
 
 - 60, 100, 130, 150
 - 250 (Electric/Water)

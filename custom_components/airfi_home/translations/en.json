@@ -79,7 +79,8 @@
       "cannot_retrieve_data": "Connected, but could not read the device's data. Check that the IP address belongs to an Airfi device.",
       "invalid_serial": "Enter the serial number as digits only.",
       "wrong_device": "This IP address belongs to a different Airfi device. Check the address and try again.",
-      "serial_mismatch": "The device at this IP address has a different serial number. Check the IP address and the serial number."
+      "serial_mismatch": "The device at this IP address has a different serial number. Check the IP address and the serial number.",
+      "unsupported_device": "The device's software is too old or not supported. Update the device's software, then try again."
     },
     "abort": {
       "already_configured": "This device is already set up.",
@@ -93,7 +94,7 @@
       "message": "Unable to connect to device at {host}."
     },
     "setup_firmware_error": {
-      "message": "Device firmware version {firmware_version} is not supported by this integration."
+      "message": "The device's software is not supported: firmware {firmware_version}, register map {map_version}. Update the device's software, then reload the integration."
     },
     "update_failed": {
       "message": "Failed to update data from the device."
@@ -121,7 +122,8 @@
         "error": {
           "cannot_connect": "Could not connect to the device at this IP address. Check the address and that the device is powered on.",
           "cannot_retrieve_data": "Connected, but could not read the device's data. Check that the IP address belongs to an Airfi device.",
-          "wrong_device": "This IP address belongs to a different Airfi device. Check the address and try again."
+          "wrong_device": "This IP address belongs to a different Airfi device. Check the address and try again.",
+          "unsupported_device": "The device's software is too old or not supported. Update the device's software, then try again."
         },
         "step": {
           "init": {
@@ -142,8 +144,8 @@
       }
     },
     "unsupported_firmware": {
-      "title": "{name} has unsupported firmware ({firmware_version})",
-      "description": "The device firmware version {firmware_version} is not compatible with this integration. Please update or downgrade the device firmware to a supported version.\n\nFor more information on updating your device firmware, please refer to support section on [Airfi website]({airfi_url}) (**airfi.fi/en** → **Support** → **Software update**)."
+      "title": "{name} needs a software update",
+      "description": "This integration does not support the device's software: firmware {firmware_version}, register map {map_version}. It needs register map 2.0 or newer, and firmware 3.2.0 does not work with it.\n\n1. Update the device's software as the support section of the [Airfi website]({airfi_url}) describes (**airfi.fi/en** > **Support** > **Software update**).\n2. Reload the integration: **Settings** > **Devices & services** > **Airfi** > ⋮ > **Reload**."
     }
   },
   "entity": {

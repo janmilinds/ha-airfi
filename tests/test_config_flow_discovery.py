@@ -20,6 +20,8 @@ from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 UNIT = AirfiDiscoveredDevice(host="192.168.1.60", serial=67890, model_id=3)
 
+SUPPORTED_UNIT_LOOKUP = [100, 310, 270]
+
 
 def _scan_finds(*devices: AirfiDiscoveredDevice) -> AbstractContextManager[AsyncMock]:
     """Patch the network scan to find the given units; like a real scan, it does not finish at once."""
@@ -33,7 +35,7 @@ def _scan_finds(*devices: AirfiDiscoveredDevice) -> AbstractContextManager[Async
 
 def _connection_works() -> AbstractContextManager[AsyncMock]:
     """Patch the connection check to pass."""
-    return patch.object(AirfiApiClient, "async_test_connection", AsyncMock(return_value=None))
+    return patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP))
 
 
 async def _dhcp_sees(hass: HomeAssistant, ip: str, macaddress: str = "bc974070a1b2") -> ConfigFlowResult:
