@@ -1336,3 +1336,54 @@ async def test_unit_that_stops_answering_its_modbus_id_raises_the_unreachable_is
             await hass.async_block_till_done()
 
     assert issue_registry.async_get_issue(DOMAIN, f"{ISSUE_DEVICE_UNREACHABLE}_{config_entry.entry_id}") is not None
+
+
+def _open_unreachable_issue(hass: HomeAssistant, entry: MockConfigEntry) -> str:
+    """Open the unreachable-unit issue the way a long outage leaves it, and return its ID."""
+    issue_id = f"{ISSUE_DEVICE_UNREACHABLE}_{entry.entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        config_entry_id=entry.entry_id,
+        is_fixable=True,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=ISSUE_DEVICE_UNREACHABLE,
+        translation_placeholders={"name": entry.title},
+    )
+    return issue_id
+
+
+@pytest.mark.integration
+async def test_reload_that_reaches_the_unit_closes_the_unreachable_issue(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """A reconfigure or a manual reload while the issue is open must not leave it open once the unit answers."""
+    issue_id = _open_unreachable_issue(hass, init_integration)
+
+    await hass.config_entries.async_reload(init_integration.entry_id)
+    await hass.async_block_till_done()
+
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+@pytest.mark.integration
+async def test_reload_that_cannot_reach_the_unit_keeps_the_unreachable_issue(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_api: SimpleNamespace,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """The issue is the user's way to the repair, so it stays while the unit is still out of reach."""
+    issue_id = _open_unreachable_issue(hass, init_integration)
+    mock_api.get_lookup_registers.side_effect = AirfiApiClientConnectionError("unreachable")
+
+    with patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=[])):
+        await hass.config_entries.async_reload(init_integration.entry_id)
+        await hass.async_block_till_done()
+
+    assert init_integration.state is ConfigEntryState.SETUP_RETRY
+    assert issue_registry.async_get_issue(DOMAIN, issue_id) is not None
