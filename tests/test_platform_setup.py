@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from custom_components.airfi_home.binary_sensor import async_setup_entry as binary_sensor_setup
 from custom_components.airfi_home.data import AirfiData
 from custom_components.airfi_home.fan import async_setup_entry as fan_setup
 from custom_components.airfi_home.number import async_setup_entry as number_setup
@@ -28,15 +27,6 @@ def _make_entry(hass, *, features: dict[str, bool] | None = None) -> MagicMock:
     )
     entry.entry_id = "test-entry-id"
     return entry
-
-
-@pytest.mark.unit
-async def test_binary_sensor_setup_entry_adds_entities(hass) -> None:
-    """Test that binary_sensor platform adds connectivity entities."""
-    entry = _make_entry(hass)
-    added = []
-    await binary_sensor_setup(hass, entry, added.extend)
-    assert len(added) >= 1
 
 
 @pytest.mark.unit

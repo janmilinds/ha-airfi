@@ -76,7 +76,8 @@ place. The move takes a few steps:
 8. Create again the helpers that used the unit's entities, with the entity IDs they had. Statistics, Trend, History
    stats and Change device type helpers are deleted together with the entity they follow.
 9. Change templates and cards that read the measured temperature from the Supply air temperature setting: read it
-   from the Supply air sensor. Device connection no longer shows the update interval and connection type.
+   from the Supply air sensor. The Device connection sensor is gone: when the unit cannot be reached, its entities
+   show Unavailable.
 
 Once the entity IDs are the same as before, history, automations and dashboards carry on. Areas, custom names and
 icons, labels and hidden entities are set again. The full steps are in
@@ -170,10 +171,6 @@ Available when the device's Modbus register map version supports them:
 
 These switches must be manually enabled. See [Configuration Reference](docs/user/CONFIGURATION.md) for details.
 
-### Binary sensors
-
-- Device connection (diagnostic, disabled by default)
-
 ### Diagnostic sensors (disabled by default)
 
 - Firmware version
@@ -221,7 +218,7 @@ a repair issue for the integration. The repair flow lets you:
 ## Troubleshooting
 
 - Check that the unit is reachable on your network, on Modbus TCP port `502`
-- Look at the **Device connection** entity
+- Entities that show **Unavailable** mean Home Assistant cannot reach or read the unit
 - If units are not found, check that multicast reaches Home Assistant on your network
 - Download diagnostics from **Settings** > **Devices & services** > **Airfi** for a closer look
 

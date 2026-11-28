@@ -9,7 +9,6 @@ Airfi is a Home Assistant integration for **Airfi ventilation units** (heat reco
 - **Fan control** — turn ventilation on/off and set speed (5 levels)
 - **Temperature sensors** — outdoor, extract, exhaust, and supply air temperatures
 - **Humidity sensor** — relative humidity measurement
-- **Connectivity monitoring** — device reachability status
 - **Automatic device discovery** — finds Airfi units on your network
 
 ## Prerequisites
@@ -84,9 +83,9 @@ long-term statistics, automations and dashboards carry on.
 8. **Create the helpers again** that used the unit's entities, and give each the entity ID it had. Statistics, Trend,
    History stats and Change device type helpers are deleted together with the entity they follow; other helpers stay,
    and work again once the entity IDs are the same as before.
-9. **Change templates and cards that read an attribute.** The **Supply air temperature** setting no longer carries
+9. **Change templates, cards and automations that used what is gone.** The **Supply air temperature** setting no longer carries
    the measured temperature: read it from the **Supply air** sensor, such as `sensor.airfi_model_60_l_supply_air`.
-   **Device connection** no longer shows the update interval and connection type.
+   The **Device connection** sensor is gone: when the unit cannot be reached, its entities show **Unavailable**.
 
 ## Initial Setup
 
@@ -136,17 +135,16 @@ A device entry representing your Airfi ventilation unit with:
 
 ### Entities
 
-| Entity                      | Type            | Description                                                     |
-| --------------------------- | --------------- | --------------------------------------------------------------- |
-| **Fan**                     | `fan`           | Main ventilation control — on/off and 5-speed control           |
-| **Outdoor air temperature** | `sensor`        | Temperature of incoming outdoor air (°C)                        |
-| **Extract air temperature** | `sensor`        | Temperature of air extracted from the building (°C)             |
-| **Exhaust air temperature** | `sensor`        | Temperature of air exhausted outdoors (°C)                      |
-| **Supply air temperature**  | `sensor`        | Temperature of air supplied to the building (°C)                |
-| **Relative humidity**       | `sensor`        | Indoor relative humidity (%)                                    |
-| **Device connection**       | `binary_sensor` | Whether the unit is reachable (diagnostic, disabled by default) |
-| **Firmware version**        | `sensor`        | Current firmware version (diagnostic, disabled by default)      |
-| **Modbus register version** | `sensor`        | Modbus register map version (diagnostic, disabled by default)   |
+| Entity                      | Type     | Description                                                   |
+| --------------------------- | -------- | ------------------------------------------------------------- |
+| **Fan**                     | `fan`    | Main ventilation control — on/off and 5-speed control         |
+| **Outdoor air temperature** | `sensor` | Temperature of incoming outdoor air (°C)                      |
+| **Extract air temperature** | `sensor` | Temperature of air extracted from the building (°C)           |
+| **Exhaust air temperature** | `sensor` | Temperature of air exhausted outdoors (°C)                    |
+| **Supply air temperature**  | `sensor` | Temperature of air supplied to the building (°C)              |
+| **Relative humidity**       | `sensor` | Indoor relative humidity (%)                                  |
+| **Firmware version**        | `sensor` | Current firmware version (diagnostic, disabled by default)    |
+| **Modbus register version** | `sensor` | Modbus register map version (diagnostic, disabled by default) |
 
 All temperature and humidity sensors support **long-term statistics** in Home Assistant.
 
@@ -233,13 +231,12 @@ If setup or a repair asks for the unit's Modbus ID, Home Assistant reached the u
 
 ### Entities Not Updating
 
-If entities show "Unavailable" or don't update:
+Entities show "Unavailable" when Home Assistant cannot reach or read the unit. If they do, or if they stop updating:
 
 1. Check that the ventilation unit is powered on and on the network
-2. Look at the **Device connection** binary sensor — it shows `off` when the unit is unreachable
-3. The integration automatically attempts to rediscover the device if its IP changes (e.g., DHCP lease renewal)
-4. Review logs: **Settings** → **System** → **Logs**
-5. Try reloading the integration
+2. The integration automatically attempts to rediscover the device if its IP changes (e.g., DHCP lease renewal)
+3. Review logs: **Settings** → **System** → **Logs**
+4. Try reloading the integration
 
 ### Device Unreachable Repair
 

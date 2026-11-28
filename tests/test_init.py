@@ -16,6 +16,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 
 
 @pytest.fixture
@@ -155,3 +156,22 @@ async def test_unit_is_read_with_the_stored_modbus_id(
 
     assert config_entry.state is ConfigEntryState.LOADED
     assert {call.kwargs["device_id"] for call in modbus_unit.connection.read_input_registers.call_args_list} == {5}
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_api")
+async def test_setup_deletes_the_device_connection_sensor_a_beta_left(
+    hass: HomeAssistant, config_entry: MockConfigEntry, entity_registry: er.EntityRegistry
+) -> None:
+    """The sensor is no longer provided, so its registry entry would otherwise stay as unavailable for good."""
+    config_entry.add_to_hass(hass)
+    left_over = entity_registry.async_get_or_create(
+        "binary_sensor", DOMAIN, f"{config_entry.unique_id}_device_connectivity", config_entry=config_entry
+    )
+
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert config_entry.state is ConfigEntryState.LOADED
+    assert entity_registry.async_get(left_over.entity_id) is None
+    assert hass.states.get(left_over.entity_id) is None

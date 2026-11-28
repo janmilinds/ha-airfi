@@ -183,11 +183,6 @@
     }
   },
   "entity": {
-    "binary_sensor": {
-      "device_connectivity": {
-        "name": "Enhetens anslutning"
-      }
-    },
     "fan": {
       "fan": {
         "name": "Ventilation"

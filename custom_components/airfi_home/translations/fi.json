@@ -183,11 +183,6 @@
     }
   },
   "entity": {
-    "binary_sensor": {
-      "device_connectivity": {
-        "name": "Laitteen yhteys"
-      }
-    },
     "fan": {
       "fan": {
         "name": "Ilmanvaihto"
