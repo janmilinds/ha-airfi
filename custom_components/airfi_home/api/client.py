@@ -211,15 +211,20 @@ class AirfiApiClient:
             "model": "Airfi",
         }
 
-    async def _async_run_on_device[T](self, request: Callable[[], T]) -> T:
+    async def _async_run_on_device[T](self, request: Callable[[], T], *, timeout: float, action: str) -> T:
         """Run a blocking request in a worker thread, never alongside another connection to the same address.
 
         The thread lock is shared by every client for that address, so the config flow's connection check and a
         reloaded entry's new client wait as well. It also holds while a thread outlives the timeout or cancellation of
         the task awaiting it, which the asyncio lock cannot. A request abandoned while it waited is dropped without
         reaching the unit, so a write reported as failed is never sent later, and its thread does not wait out the lock.
+
+        Raises:
+            AirfiApiClientNoResponseError: If the timeout passes after the request reached the unit.
+            AirfiApiClientConnectionError: If it passes while the request still waits for another connection to end.
         """
         abandoned = threading.Event()
+        started = threading.Event()
         device_lock = self._device_lock
 
         def _run() -> T:
@@ -231,15 +236,23 @@ class AirfiApiClient:
                 if abandoned.is_set():
                     msg = "Request abandoned before it reached the device"
                     raise AirfiApiClientConnectionError(msg)
+                started.set()
                 return request()
             finally:
                 device_lock.release()
 
         try:
-            return await asyncio.to_thread(_run)
-        except asyncio.CancelledError:
-            abandoned.set()
-            raise
+            async with asyncio.timeout(timeout):
+                try:
+                    return await asyncio.to_thread(_run)
+                except asyncio.CancelledError:
+                    abandoned.set()
+                    raise
+        except TimeoutError as exception:
+            msg = f"Timeout while {action}: {exception}"
+            if started.is_set():
+                raise AirfiApiClientNoResponseError(msg) from exception
+            raise AirfiApiClientConnectionError(msg) from exception
 
     async def _async_read_registers(
         self,
@@ -287,11 +300,7 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with asyncio.timeout(10):
-                return await self._async_run_on_device(_read)
-        except TimeoutError as exception:
-            msg = f"Timeout while reading Modbus registers: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            return await self._async_run_on_device(_read, timeout=10, action="reading Modbus registers")
         except AirfiApiClientError:
             raise
         except Exception as exception:
@@ -323,11 +332,7 @@ class AirfiApiClient:
         poll_timeout = (holding_chunks + input_chunks) * self._timeout_seconds
 
         try:
-            async with asyncio.timeout(poll_timeout):
-                return await self._async_run_on_device(_read_all)
-        except TimeoutError as exception:
-            msg = f"Timeout while reading Modbus registers: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            return await self._async_run_on_device(_read_all, timeout=poll_timeout, action="reading Modbus registers")
         except AirfiApiClientError:
             raise
         except Exception as exception:
@@ -395,11 +400,8 @@ class AirfiApiClient:
                 client.close()
 
         try:
-            async with self._lock, asyncio.timeout(10):
-                await self._async_run_on_device(_write)
-        except TimeoutError as exception:
-            msg = f"Timeout while writing Modbus register: {exception}"
-            raise AirfiApiClientConnectionError(msg) from exception
+            async with self._lock:
+                await self._async_run_on_device(_write, timeout=10, action="writing Modbus register")
         except AirfiApiClientError:
             raise
         except Exception as exception:

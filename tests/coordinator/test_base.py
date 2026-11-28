@@ -1330,7 +1330,7 @@ async def test_unit_that_stops_answering_its_modbus_id_raises_the_unreachable_is
     modbus_unit.modbus_id = 5
 
     with patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=[])):
-        for step in (UPDATE_INTERVAL, timedelta(seconds=RECOVERY_ISSUE_SECONDS)):
+        for step in (UPDATE_INTERVAL, timedelta(seconds=RECOVERY_ISSUE_SECONDS) + UPDATE_INTERVAL):
             freezer.tick(step)
             async_fire_time_changed(hass)
             await hass.async_block_till_done()

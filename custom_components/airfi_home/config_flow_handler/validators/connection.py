@@ -2,9 +2,9 @@
 
 from typing import TYPE_CHECKING
 
-from custom_components.airfi_home.api import AirfiApiClient
+from custom_components.airfi_home.api import AirfiApiClient, AirfiApiClientError
 from custom_components.airfi_home.const import DEFAULT_MODBUS_PORT, LOGGER
-from custom_components.airfi_home.coordinator.feature_manager import AirfiFeatureManager
+from custom_components.airfi_home.coordinator.feature_manager import AirfiDeviceError, AirfiFeatureManager
 from custom_components.airfi_home.utils.error_mapping import map_connection_exception_to_error
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ async def connection_error(hass: HomeAssistant, host: str, unit_id: int) -> str 
     """
     try:
         await validate_connection(hass, host, unit_id)
-    except Exception as exception:  # noqa: BLE001 - any failure is shown on the form, never raised from it
+    except (AirfiApiClientError, AirfiDeviceError) as exception:
         LOGGER.warning("Unit at %s did not pass the check: %s", host, exception)
         return map_connection_exception_to_error(exception)
     return None

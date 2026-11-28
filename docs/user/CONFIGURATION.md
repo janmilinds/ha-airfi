@@ -21,7 +21,7 @@ These values are set during initial setup and stored in the config entry:
 - **No authentication** — Modbus TCP does not use credentials
 - **No SSL** — communication is local-network Modbus TCP
 
-When using **automatic discovery**, all three fields are populated from the device's UDP announcement. When using **manual setup**, you must enter all three fields yourself: host IP, serial number (from the unit's type plate, or the Airfi app or web interface), and model (selected from a dropdown). The optional name in either path names the device; left empty, it is Airfi and the model. The entity IDs are formed from that name.
+When using **automatic discovery**, the host, serial number and model are populated from the device's UDP announcement. When using **manual setup**, you must enter these three yourself: host IP, serial number (from the unit's type plate, or the Airfi app or web interface), and model (selected from a dropdown). The optional name in either path names the device; left empty, it is Airfi and the model. The entity IDs are formed from that name.
 
 ### Modbus ID
 

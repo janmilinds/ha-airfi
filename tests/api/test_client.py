@@ -997,3 +997,43 @@ async def test_requests_go_to_the_clients_modbus_id() -> None:
     mock_tcp_client.assert_called_with("192.168.1.10", port=502, timeout=2.0, retries=0)
     mock_instance.read_input_registers.assert_called_once_with(1, count=3, device_id=5)
     mock_instance.write_register.assert_called_once_with(1, 3, device_id=5)
+
+
+@pytest.mark.unit
+async def test_timeout_after_the_request_reached_the_unit_is_no_response() -> None:
+    """A poll that runs out of time while the unit holds the request unanswered is a unit that did not answer."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    release = threading.Event()
+
+    def _silent(*_args: object, **_kwargs: object) -> MagicMock:
+        release.wait(timeout=5)
+        return MagicMock(isError=MagicMock(return_value=False), registers=[0])
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        mock_instance = mock_tcp_client.return_value
+        mock_instance.connect.return_value = True
+        mock_instance.read_holding_registers.side_effect = _silent
+
+        try:
+            with pytest.raises(AirfiApiClientNoResponseError, match="Timeout while reading"):
+                await client._async_read_all_registers(input_length=1, holding_length=1)  # noqa: SLF001
+        finally:
+            release.set()
+
+
+@pytest.mark.unit
+async def test_timeout_while_another_connection_holds_the_unit_is_not_no_response() -> None:
+    """A request that never got its turn at the unit says nothing about the unit's Modbus ID."""
+    client = AirfiApiClient(host="192.168.1.10", port=502, timeout_seconds=0.05)
+    device_lock = _device_lock_for("192.168.1.10", 502)
+    device_lock.acquire()
+
+    with patch("custom_components.airfi_home.api.client.ModbusTcpClient") as mock_tcp_client:
+        try:
+            with pytest.raises(AirfiApiClientConnectionError, match="Timeout while reading") as exc_info:
+                await client._async_read_all_registers(input_length=1, holding_length=1)  # noqa: SLF001
+        finally:
+            device_lock.release()
+
+    assert not isinstance(exc_info.value, AirfiApiClientNoResponseError)
+    mock_tcp_client.assert_not_called()
