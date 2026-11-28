@@ -64,7 +64,7 @@
           "modbus_id": "Modbus ID"
         },
         "data_description": {
-          "modbus_id": "Usually 1. You can find it in the Airfi app, or on the device in the potentiometric setup menu, item U1."
+          "modbus_id": "Usually 1. You can find it in the Airfi app under Info, or on the device in the Potentiometric setup menu, item U1."
         }
       },
       "reconfigure": {
@@ -82,7 +82,7 @@
               "modbus_id": "Modbus ID"
             },
             "data_description": {
-              "modbus_id": "Change this only if the device's Modbus ID is not 1. You can find it in the Airfi app, or on the device in the potentiometric setup menu, item U1."
+              "modbus_id": "Change this only if the device's Modbus ID is not 1. You can find it in the Airfi app under Info, or on the device in the Potentiometric setup menu, item U1."
             }
           }
         }
@@ -167,7 +167,7 @@
               "modbus_id": "Modbus ID"
             },
             "data_description": {
-              "modbus_id": "Usually 1. You can find it in the Airfi app, or on the device in the potentiometric setup menu, item U1."
+              "modbus_id": "Usually 1. You can find it in the Airfi app under Info, or on the device in the Potentiometric setup menu, item U1."
             }
           },
           "unverified": {

@@ -64,7 +64,7 @@
           "modbus_id": "Modbus-ID"
         },
         "data_description": {
-          "modbus_id": "Oftast 1. Du hittar det i Airfi-appen, eller på enheten i menyn potentiometric setup, punkt U1."
+          "modbus_id": "Oftast 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
         }
       },
       "reconfigure": {
@@ -82,7 +82,7 @@
               "modbus_id": "Modbus-ID"
             },
             "data_description": {
-              "modbus_id": "Ändra detta bara om enhetens Modbus-ID inte är 1. Du hittar det i Airfi-appen, eller på enheten i menyn potentiometric setup, punkt U1."
+              "modbus_id": "Ändra detta bara om enhetens Modbus-ID inte är 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
             }
           }
         }
@@ -167,7 +167,7 @@
               "modbus_id": "Modbus-ID"
             },
             "data_description": {
-              "modbus_id": "Oftast 1. Du hittar det i Airfi-appen, eller på enheten i menyn potentiometric setup, punkt U1."
+              "modbus_id": "Oftast 1. Du hittar det i Airfi-appen under Info, eller på enheten i menyn Inställning med potentiometer, punkt U1."
             }
           },
           "unverified": {

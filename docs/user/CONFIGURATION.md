@@ -27,7 +27,7 @@ When using **automatic discovery**, the host, serial number and model are popula
 
 Almost every unit answers to Modbus ID 1, so setup uses 1 without asking. Some installations give a unit another ID, for example the number of the flat. When Home Assistant finds the unit but the unit does not answer, setup asks for its Modbus ID and tries it before adding the unit.
 
-You can find the Modbus ID in the Airfi app, or on the unit in the potentiometric setup menu, item U1. It is a number from 1 to 247.
+You can find the Modbus ID in the Airfi app under **Info**, or on the unit in the **Potentiometric setup** menu, item **U1**. It is a number from 1 to 247.
 
 ### Reconfigure
 

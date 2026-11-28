@@ -225,7 +225,7 @@ If setup fails with connection errors:
 
 If setup or a repair asks for the unit's Modbus ID, Home Assistant reached the unit, but the unit did not answer. This usually means the unit uses a Modbus ID other than 1.
 
-1. Look up the Modbus ID in the Airfi app, or on the unit in the potentiometric setup menu, item U1.
+1. Look up the Modbus ID in the Airfi app under **Info**, or on the unit in the **Potentiometric setup** menu, item **U1**.
 2. Enter it and select **Submit**. Home Assistant tries the ID before saving it.
 
 ### Entities Not Updating
