@@ -77,13 +77,12 @@ All sensors report `measurement` state class, making them suitable for long-term
 
 These entities are disabled by default and can be enabled in entity settings if needed:
 
-| Entity                      | Type          | Category   | Description                                  |
-| --------------------------- | ------------- | ---------- | -------------------------------------------- |
-| **Device connection**       | binary_sensor | diagnostic | Whether the unit is reachable via Modbus TCP |
-| **Firmware version**        | sensor        | diagnostic | Current firmware version of the unit         |
-| **Modbus register version** | sensor        | diagnostic | Modbus register map version                  |
+| Entity                      | Type   | Category   | Description                          |
+| --------------------------- | ------ | ---------- | ------------------------------------ |
+| **Firmware version**        | sensor | diagnostic | Current firmware version of the unit |
+| **Modbus register version** | sensor | diagnostic | Modbus register map version          |
 
-The connectivity sensor is redundant in most cases — all entities automatically become unavailable when the device is unreachable. The version sensors are useful for tracking firmware updates.
+The version sensors are useful for tracking firmware updates. Whether the unit can be reached needs no entity of its own: when it cannot, every entity of the unit shows **Unavailable**.
 
 ### Special Function Switches (Disabled by Default, Feature-Gated)
 

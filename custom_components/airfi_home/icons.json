@@ -1,13 +1,5 @@
 {
   "entity": {
-    "binary_sensor": {
-      "device_connectivity": {
-        "default": "mdi:network-off",
-        "state": {
-          "on": "mdi:check-network"
-        }
-      }
-    },
     "fan": {
       "fan": {
         "default": "mdi:fan-off",

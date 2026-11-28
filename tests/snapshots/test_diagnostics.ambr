@@ -126,13 +126,6 @@
       dict({
         'entities': list([
           dict({
-            'disabled': True,
-            'disabled_by': 'integration',
-            'entity_id': 'binary_sensor.airfi_model_60_l_device_connection',
-            'original_name': 'Device connection',
-            'platform': 'airfi_home',
-          }),
-          dict({
             'disabled': False,
             'disabled_by': None,
             'entity_id': 'fan.airfi_model_60_l_ventilation',
@@ -217,7 +210,7 @@
             'platform': 'airfi_home',
           }),
         ]),
-        'entity_count': 13,
+        'entity_count': 12,
         'manufacturer': 'Airfi',
         'model': 'Model 60 L',
         'name': 'Airfi Model 60 L',

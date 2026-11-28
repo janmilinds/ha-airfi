@@ -17,9 +17,6 @@ custom_components/airfi_home/
 ├── api/                     # Modbus TCP communication
 │   ├── __init__.py          # Exports AirfiApiClient, exceptions
 │   └── client.py            # Modbus TCP client (pymodbus)
-├── binary_sensor/           # Binary sensor platform
-│   ├── __init__.py          # Platform setup
-│   └── connectivity.py      # Device connectivity entity
 ├── config_flow_handler/     # Config flow implementation
 │   ├── __init__.py          # Package exports
 │   ├── config_flow.py       # Main flow (user, discovery, reconfigure)

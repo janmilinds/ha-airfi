@@ -23,7 +23,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_HOST, EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import discovery_flow
+from homeassistant.helpers import discovery_flow, entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.loader import async_get_loaded_integration
@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from .data import AirfiConfigEntry
 
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
     Platform.FAN,
     Platform.NUMBER,
     Platform.SENSOR,
@@ -122,7 +121,8 @@ async def async_setup_entry(
     For more information:
     https://developers.home-assistant.io/docs/config_entries_index/#setting-up-an-entry
     """
-    # Initialize client first
+    _async_remove_connectivity_sensor(hass, entry)
+
     client = AirfiApiClient(
         host=entry.data[CONF_HOST],
         port=DEFAULT_MODBUS_PORT,
@@ -159,6 +159,16 @@ async def async_setup_entry(
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
+
+
+@callback
+def _async_remove_connectivity_sensor(hass: HomeAssistant, entry: AirfiConfigEntry) -> None:
+    """Delete the Device connection sensor an entry set up by a 2.0.0 beta still has in the entity registry."""
+    entity_registry = er.async_get(hass)
+    if entity_id := entity_registry.async_get_entity_id(
+        Platform.BINARY_SENSOR, DOMAIN, f"{entry.unique_id}_device_connectivity"
+    ):
+        entity_registry.async_remove(entity_id)
 
 
 async def async_unload_entry(
