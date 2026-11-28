@@ -35,7 +35,7 @@
 - [x] `entity-unavailable` — CoordinatorEntity auto-marks unavailable on update failures
 - [x] `integration-owner` — `@janmilinds` in manifest.json codeowners
 - [x] `log-when-unavailable` — Coordinator logs connection loss + recovery with outage timing
-- [x] `parallel-updates` — `PARALLEL_UPDATES = 1` in const.py, re-exported in all platforms
+- [x] `parallel-updates` — each platform declares it: `0` on the read-only sensor platform, `1` on the platforms that write
 - [ ] `reauthentication-flow` — N/A: Modbus TCP has no authentication (see DECISIONS.md)
 - [x] `test-coverage` — Tests for all major modules (config flow, coordinator, API, entities, repairs)
 

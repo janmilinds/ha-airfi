@@ -162,11 +162,12 @@ class AirfiDiscoveryService:
 
         self.sock = create_discovery_socket()
 
+        loop = asyncio.get_running_loop()
         try:
-            end_time = asyncio.get_running_loop().time() + timeout_seconds
+            end_time = loop.time() + timeout_seconds
 
             while True:
-                now = asyncio.get_running_loop().time()
+                now = loop.time()
                 remaining = end_time - now
                 if remaining <= 0:
                     break
@@ -193,7 +194,7 @@ class AirfiDiscoveryService:
                         if device:
                             # Store by unique key (deduplication)
                             self.discovered[device.unique_key] = device
-                            last_found_time = asyncio.get_running_loop().time()
+                            last_found_time = loop.time()
                             LOGGER.debug("Discovered device: %s (model %s)", device.host, device.model_name)
 
                 except TimeoutError:
