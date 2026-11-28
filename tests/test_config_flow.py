@@ -438,6 +438,7 @@ async def test_reconfigure_sets_a_loaded_entry_up_once(
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
+    assert "translation_domain" not in result
     assert init_integration.data[CONF_HOST] == "10.0.0.1"
     assert init_integration.state is ConfigEntryState.LOADED
     assert mock_api.get_lookup_registers.await_count == setups_before + 1
@@ -461,9 +462,11 @@ async def test_reconfigure_sets_up_an_entry_that_is_retrying(
 
     with patch.object(AirfiApiClient, "async_get_lookup_registers", AsyncMock(return_value=SUPPORTED_UNIT_LOOKUP)):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], _reconfigure_input("10.0.0.1"))
-    await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
 
+    assert result["reason"] == "reconfigure_successful"
+    assert "translation_domain" not in result
     assert config_entry.state is ConfigEntryState.LOADED
 
 

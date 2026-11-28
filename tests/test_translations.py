@@ -244,24 +244,25 @@ def test_every_form_field_has_a_label_and_a_description(path: str, schema: proba
     assert not stale, f"not in the form: {stale}"
 
 
-# Reasons Home Assistant's own helpers abort a config flow with, which no async_abort call in the flow names.
-IMPLICIT_ABORT_REASONS = frozenset({"already_configured", "already_in_progress", "reconfigure_successful"})
+# A reason Home Assistant's helpers abort with in this integration's strings, which no call in the flow names.
+IMPLICIT_ABORT_REASONS = frozenset({"already_configured"})
+ABORTING_CALLS = frozenset({"async_abort", "async_update_and_abort", "async_update_reload_and_abort"})
 
 
 def _abort_reasons() -> set[str]:
-    """Return the reason of every `async_abort` call in the config flow."""
+    """Return the reason of every call that ends the config flow; each must name it, or Home Assistant's text shows."""
     reasons = set()
     for path in sorted((INTEGRATION / "config_flow_handler").rglob("*.py")):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "async_abort":
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ABORTING_CALLS:
                 reason = _keyword(node, "reason")
-                assert isinstance(reason, ast.Constant), f"{path.name}:{node.lineno} has no literal reason"
+                assert isinstance(reason, ast.Constant), f"{path.name}:{node.lineno} names no literal reason"
                 reasons.add(reason.value)
     return reasons
 
 
 def test_every_abort_reason_is_translated() -> None:
-    """Each way a config flow can end has its own text, so Home Assistant never falls back to its English one."""
+    """Each way a config flow can end shows this integration's text, in every language it is translated to."""
     abort = _load(TRANSLATIONS / "en.json")["config"]["abort"]
 
     missing = sorted((_abort_reasons() | IMPLICIT_ABORT_REASONS) - set(abort))

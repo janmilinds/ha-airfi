@@ -287,9 +287,10 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Store the new address and Modbus ID; a loaded entry reloads through its update listener."""
         entry = self._get_reconfigure_entry()
         data = {**entry.data, CONF_HOST: host, CONF_MODBUS_ID: modbus_id}
+        # A named reason shows this integration's translated text; without one, Home Assistant shows its own.
         if entry.state is config_entries.ConfigEntryState.LOADED:
-            return self.async_update_and_abort(entry, data=data)
-        return self.async_update_reload_and_abort(entry, data=data)
+            return self.async_update_and_abort(entry, data=data, reason="reconfigure_successful")
+        return self.async_update_reload_and_abort(entry, data=data, reason="reconfigure_successful")
 
     async def async_step_integration_discovery(
         self,
