@@ -68,7 +68,7 @@
         }
       },
       "reconfigure": {
-        "description": "Wpisz adres IP, pod którym {name} jest teraz dostępne.",
+        "description": "Wpisz aktualny adres IP urządzenia {name}.",
         "data": {
           "host": "Adres IP"
         },
@@ -108,7 +108,8 @@
       "already_configured": "To urządzenie jest już dodane.",
       "invalid_selection": "Wybrane urządzenie nie jest już dostępne.",
       "already_in_progress": "To urządzenie jest już dodawane.",
-      "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi."
+      "not_airfi_device": "To urządzenie nie jest urządzeniem Airfi.",
+      "reconfigure_successful": "Ponowna konfiguracja zakończyła się pomyślnie."
     }
   },
   "exceptions": {
@@ -156,7 +157,7 @@
               "host": "Adres IP"
             },
             "data_description": {
-              "host": "Adres IP, pod którym urządzenie Airfi jest teraz dostępne."
+              "host": "Aktualny adres IP urządzenia Airfi."
             }
           },
           "modbus_id": {

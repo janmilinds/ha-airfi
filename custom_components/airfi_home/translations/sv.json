@@ -68,7 +68,7 @@
         }
       },
       "reconfigure": {
-        "description": "Ange IP-adressen där {name} nås nu.",
+        "description": "Ange den nuvarande IP-adressen för {name}.",
         "data": {
           "host": "IP-adress"
         },
@@ -108,7 +108,8 @@
       "already_configured": "Den här enheten är redan tillagd.",
       "invalid_selection": "Den valda enheten är inte längre tillgänglig.",
       "already_in_progress": "Den här enheten håller redan på att läggas till.",
-      "not_airfi_device": "Den här enheten är inte en Airfi-enhet."
+      "not_airfi_device": "Den här enheten är inte en Airfi-enhet.",
+      "reconfigure_successful": "Omkonfigureringen lyckades."
     }
   },
   "exceptions": {
@@ -156,7 +157,7 @@
               "host": "IP-adress"
             },
             "data_description": {
-              "host": "IP-adressen där Airfi-enheten nu kan nås."
+              "host": "Airfi-enhetens nuvarande IP-adress."
             }
           },
           "modbus_id": {

@@ -68,7 +68,7 @@
         }
       },
       "reconfigure": {
-        "description": "Syötä IP-osoite, josta {name} tavoitetaan nyt.",
+        "description": "Syötä laitteen {name} nykyinen IP-osoite.",
         "data": {
           "host": "IP-osoite"
         },
@@ -108,7 +108,8 @@
       "already_configured": "Tämä laite on jo lisätty.",
       "invalid_selection": "Valittu laite ei ole enää saatavilla.",
       "already_in_progress": "Tämän laitteen lisääminen on jo käynnissä.",
-      "not_airfi_device": "Tämä laite ei ole Airfi-laite."
+      "not_airfi_device": "Tämä laite ei ole Airfi-laite.",
+      "reconfigure_successful": "Uudelleenmääritys onnistui."
     }
   },
   "exceptions": {
@@ -156,7 +157,7 @@
               "host": "IP-osoite"
             },
             "data_description": {
-              "host": "IP-osoite, josta Airfi-laite tavoitetaan nyt."
+              "host": "Airfi-laitteen nykyinen IP-osoite."
             }
           },
           "modbus_id": {
