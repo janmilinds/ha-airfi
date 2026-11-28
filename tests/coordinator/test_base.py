@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import contextlib
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -1329,8 +1330,8 @@ async def test_unit_that_stops_answering_its_modbus_id_raises_the_unreachable_is
     modbus_unit.modbus_id = 5
 
     with patch.object(AirfiDiscoveryService, "async_scan", AsyncMock(return_value=[])):
-        for _ in range(RECOVERY_ISSUE_SECONDS // int(UPDATE_INTERVAL.total_seconds()) + 2):
-            freezer.tick(UPDATE_INTERVAL)
+        for step in (UPDATE_INTERVAL, timedelta(seconds=RECOVERY_ISSUE_SECONDS)):
+            freezer.tick(step)
             async_fire_time_changed(hass)
             await hass.async_block_till_done()
 

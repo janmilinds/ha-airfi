@@ -16,12 +16,13 @@ When validators grow (>300 lines per file), split further:
 All validators are re-exported from this __init__.py for convenient imports.
 """
 
-from custom_components.airfi_home.config_flow_handler.validators.connection import validate_connection
+from custom_components.airfi_home.config_flow_handler.validators.connection import connection_error, validate_connection
 from custom_components.airfi_home.config_flow_handler.validators.identity import AddressIdentity, check_address_identity
 
 # Re-export all validators for convenient imports
 __all__ = [
     "AddressIdentity",
     "check_address_identity",
+    "connection_error",
     "validate_connection",
 ]

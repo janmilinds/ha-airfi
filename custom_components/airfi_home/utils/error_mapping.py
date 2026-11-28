@@ -7,6 +7,8 @@ from custom_components.airfi_home.api import (
 )
 from custom_components.airfi_home.coordinator.feature_manager import InvalidDeviceDataError, UnsupportedFirmwareError
 
+ERROR_NO_RESPONSE = "no_response"
+
 
 def map_connection_exception_to_error(exception: Exception) -> str:
     """Map connection validation exceptions to form error keys."""
@@ -17,7 +19,7 @@ def map_connection_exception_to_error(exception: Exception) -> str:
         return "cannot_retrieve_data"
 
     if isinstance(exception, AirfiApiClientNoResponseError):
-        return "no_response"
+        return ERROR_NO_RESPONSE
 
     if isinstance(exception, AirfiApiClientConnectionError):
         return "cannot_connect"

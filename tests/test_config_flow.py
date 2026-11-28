@@ -31,6 +31,7 @@ from custom_components.airfi_home.const import (
     SECTION_ADVANCED,
 )
 from custom_components.airfi_home.utils.discovery import AirfiDiscoveredDevice, AirfiDiscoveryService
+from custom_components.airfi_home.utils.error_mapping import map_connection_exception_to_error
 from homeassistant.config_entries import SOURCE_USER, ConfigEntryState, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
@@ -562,7 +563,7 @@ async def test_discovery_select_picks_device(hass) -> None:
 
     with (
         patch(
-            "custom_components.airfi_home.config_flow_handler.config_flow.validate_connection",
+            "custom_components.airfi_home.config_flow_handler.validators.connection.validate_connection",
             new=AsyncMock(return_value=None),
         ),
     ):
@@ -674,7 +675,7 @@ async def test_discovery_confirm_shows_error_on_failure(hass) -> None:
     handler.selected_device = _discovered_device()
 
     with patch(
-        "custom_components.airfi_home.config_flow_handler.config_flow.validate_connection",
+        "custom_components.airfi_home.config_flow_handler.validators.connection.validate_connection",
         new=AsyncMock(side_effect=AirfiApiClientConnectionError("timeout")),
     ):
         result = await handler.async_step_discovery_confirm(
@@ -806,40 +807,23 @@ async def test_run_discovery_accumulate_mode(hass) -> None:
 
 
 # ---------------------------------------------------------------------------
-# _map_exception_to_error
+# map_connection_exception_to_error
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
-def test_map_exception_to_error_connection(hass) -> None:
-    """Test that connection errors map to cannot_connect."""
-    handler = _make_handler(hass)
-    result = handler._map_exception_to_error(AirfiApiClientConnectionError("timeout"))  # noqa: SLF001
-    assert result == "cannot_connect"
-
-
-@pytest.mark.unit
-def test_map_exception_to_error_modbus(hass) -> None:
-    """Test that Modbus errors map to cannot_retrieve_data."""
-    handler = _make_handler(hass)
-    result = handler._map_exception_to_error(AirfiApiClientModbusError("bad"))  # noqa: SLF001
-    assert result == "cannot_retrieve_data"
-
-
-@pytest.mark.unit
-def test_map_exception_to_error_no_response(hass) -> None:
-    """Test that a unit that takes the connection but does not answer maps to no_response."""
-    handler = _make_handler(hass)
-    result = handler._map_exception_to_error(AirfiApiClientNoResponseError("silent"))  # noqa: SLF001
-    assert result == "no_response"
-
-
-@pytest.mark.unit
-def test_map_exception_to_error_generic(hass) -> None:
-    """Test that generic exceptions map to cannot_connect."""
-    handler = _make_handler(hass)
-    result = handler._map_exception_to_error(RuntimeError("unknown"))  # noqa: SLF001
-    assert result == "cannot_connect"
+@pytest.mark.parametrize(
+    ("exception", "error"),
+    [
+        pytest.param(AirfiApiClientConnectionError("timeout"), "cannot_connect", id="unreachable"),
+        pytest.param(AirfiApiClientNoResponseError("silent"), "no_response", id="no-answer"),
+        pytest.param(AirfiApiClientModbusError("bad"), "cannot_retrieve_data", id="unreadable"),
+        pytest.param(RuntimeError("unknown"), "cannot_connect", id="unexpected"),
+    ],
+)
+def test_each_failure_has_its_form_error(exception: Exception, error: str) -> None:
+    """Each kind of failed check is shown on the form with its own error."""
+    assert map_connection_exception_to_error(exception) == error
 
 
 @pytest.mark.unit

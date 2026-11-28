@@ -271,7 +271,7 @@ class AirfiApiClient:
             client = self._connect()
 
             try:
-                response = self._read(client, register_type, start_address, length)
+                response = self._request_registers(client, register_type, start_address, length)
 
                 if response.isError():
                     msg = f"Modbus read error for {register_type} registers at {start_address}"
@@ -352,7 +352,7 @@ class AirfiApiClient:
                 read_start,
                 read_length,
             )
-            response = self._read(client, register_type, read_start, read_length)
+            response = self._request_registers(client, register_type, read_start, read_length)
 
             if response.isError():
                 msg = f"Modbus read error for {register_type} registers at {read_start}"
@@ -423,7 +423,7 @@ class AirfiApiClient:
         msg = f"No answer from device at {self._host}:{self._port} to Modbus ID {self._unit_id}: {exception}"
         return AirfiApiClientNoResponseError(msg)
 
-    def _read(self, client: ModbusTcpClient, register_type: str, start_address: int, length: int) -> Any:
+    def _request_registers(self, client: ModbusTcpClient, register_type: str, start_address: int, length: int) -> Any:
         """Read holding or input registers on an open connection.
 
         Raises:

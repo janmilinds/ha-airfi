@@ -66,10 +66,13 @@ sys.path.insert(0, str(Path(__file__).parent / ".."))
 from custom_components.airfi_home.api.client import REGISTER_LENGTHS_BY_MAP_VERSION
 from custom_components.airfi_home.const import (
     AIRFI_MODELS,
+    DEFAULT_MODBUS_ID,
     DEFAULT_MODBUS_PORT,
     DISCOVERY_DEVICE_PORT,
     DISCOVERY_MULTICAST_GROUP,
     DISCOVERY_MULTICAST_PORT,
+    MODBUS_ID_MAX,
+    MODBUS_ID_MIN,
 )
 from custom_components.airfi_home.sensor.humidity import INPUT_REGISTER_RELATIVE_HUMIDITY
 from custom_components.airfi_home.utils.discovery import get_model_name
@@ -92,8 +95,6 @@ logging.basicConfig(
 LOGGER = logging.getLogger("mock-airfi")
 
 BROADCAST_UNIT_ID = 0
-DEFAULT_UNIT_ID = 1
-MAX_UNIT_ID = 247
 WRONG_UNIT_ID_CLOSE_SECONDS = 3.0
 MAX_FRAME_LENGTH = 254
 
@@ -218,7 +219,7 @@ class MockAirfiUnit:
         input_registers: list[int],
         holding_registers: list[int],
         hidden_input_registers: frozenset[int] = frozenset(),
-        unit_id: int = DEFAULT_UNIT_ID,
+        unit_id: int = DEFAULT_MODBUS_ID,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         """Initialize the unit with its register values."""
@@ -236,7 +237,7 @@ class MockAirfiUnit:
         *,
         firmware: Version,
         map_version: Version,
-        unit_id: int = DEFAULT_UNIT_ID,
+        unit_id: int = DEFAULT_MODBUS_ID,
         clock: Callable[[], float] = time.monotonic,
     ) -> Self:
         """Build a unit with the registers and quirks of a firmware and register map version."""
@@ -471,9 +472,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--unit-id",
         type=int,
-        default=DEFAULT_UNIT_ID,
-        choices=range(1, MAX_UNIT_ID + 1),
-        metavar=f"1-{MAX_UNIT_ID}",
+        default=DEFAULT_MODBUS_ID,
+        choices=range(MODBUS_ID_MIN, MODBUS_ID_MAX + 1),
+        metavar=f"{MODBUS_ID_MIN}-{MODBUS_ID_MAX}",
         help="Modbus ID the unit answers to, besides 0",
     )
     parser.add_argument("--no-announce", action="store_true", help="do not send announcements")

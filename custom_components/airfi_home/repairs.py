@@ -8,9 +8,9 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
 from .config_flow_handler.schemas import get_address_schema, get_confirm_schema, get_modbus_id_schema
-from .config_flow_handler.validators import AddressIdentity, check_address_identity, validate_connection
+from .config_flow_handler.validators import AddressIdentity, check_address_identity, connection_error
 from .const import CONF_MODBUS_ID, CONF_SERIAL_NUMBER, DEFAULT_MODBUS_ID, ISSUE_DEVICE_UNREACHABLE
-from .utils.error_mapping import map_connection_exception_to_error
+from .utils.error_mapping import ERROR_NO_RESPONSE
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -52,9 +52,9 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
             self._identity = check_address_identity(self.hass, self._host, self._entry.data[CONF_SERIAL_NUMBER])
             if self._identity is AddressIdentity.OTHER_UNIT:
                 errors["base"] = "wrong_device"
-            elif (error := await self._async_connection_error()) is None:
+            elif (error := await connection_error(self.hass, self._host, self._modbus_id)) is None:
                 return await self._async_confirm_or_store()
-            elif error == "no_response":
+            elif error == ERROR_NO_RESPONSE:
                 return await self.async_step_modbus_id()
             else:
                 errors["base"] = error
@@ -73,7 +73,7 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             self._modbus_id = int(user_input[CONF_MODBUS_ID])
-            if (error := await self._async_connection_error()) is None:
+            if (error := await connection_error(self.hass, self._host, self._modbus_id)) is None:
                 return await self._async_confirm_or_store()
             errors["base"] = error
         return self.async_show_form(
@@ -92,14 +92,6 @@ class DeviceUnreachableRepairFlow(RepairsFlow):
             data_schema=get_confirm_schema(),
             description_placeholders={"host": self._host, "name": self._entry.title},
         )
-
-    async def _async_connection_error(self) -> str | None:
-        """Return the form error for a unit that does not answer at the address and ID, or None when it does."""
-        try:
-            await validate_connection(self.hass, host=self._host, unit_id=self._modbus_id)
-        except Exception as exception:  # noqa: BLE001
-            return map_connection_exception_to_error(exception)
-        return None
 
     async def _async_confirm_or_store(self) -> RepairsFlowResult:
         """Store a unit that answered, after asking when no unit was heard announcing itself from the address."""

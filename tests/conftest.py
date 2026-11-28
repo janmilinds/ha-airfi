@@ -28,6 +28,8 @@ from homeassistant.core import HomeAssistant
 LOOKUP_REGISTERS = [100, 310, 270]
 INPUT_REGISTER_COUNT = 42
 HOLDING_REGISTER_COUNT = 59
+INPUT_REGISTERS = [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))]
+HOLDING_REGISTERS = [0] * HOLDING_REGISTER_COUNT
 
 
 @pytest.fixture(autouse=True)
@@ -101,8 +103,8 @@ def mock_api() -> Generator[SimpleNamespace]:
     data = {
         "firmware_version": "3.1.0",
         "modbus_register_version": "2.7.0",
-        "input_registers": [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))],
-        "holding_registers": [0] * HOLDING_REGISTER_COUNT,
+        "input_registers": list(INPUT_REGISTERS),
+        "holding_registers": list(HOLDING_REGISTERS),
         "lookup_registers": [],
         "model": "Airfi",
     }
@@ -129,8 +131,6 @@ def modbus_unit() -> Generator[SimpleNamespace]:
     `connection` is the patched pymodbus client, for asserting which ID a request used.
     """
     unit = SimpleNamespace(modbus_id=DEFAULT_MODBUS_ID, connection=MagicMock())
-    input_registers = [*LOOKUP_REGISTERS, *[0] * (INPUT_REGISTER_COUNT - len(LOOKUP_REGISTERS))]
-    holding_registers = [0] * HOLDING_REGISTER_COUNT
 
     def _reader(registers: list[int]) -> Callable[..., MagicMock]:
         def _read(address: int, *, count: int, device_id: int) -> MagicMock:
@@ -143,8 +143,8 @@ def modbus_unit() -> Generator[SimpleNamespace]:
         return _read
 
     unit.connection.connect.return_value = True
-    unit.connection.read_input_registers.side_effect = _reader(input_registers)
-    unit.connection.read_holding_registers.side_effect = _reader(holding_registers)
+    unit.connection.read_input_registers.side_effect = _reader(INPUT_REGISTERS)
+    unit.connection.read_holding_registers.side_effect = _reader(HOLDING_REGISTERS)
     with patch("custom_components.airfi_home.api.client.ModbusTcpClient", return_value=unit.connection):
         yield unit
 

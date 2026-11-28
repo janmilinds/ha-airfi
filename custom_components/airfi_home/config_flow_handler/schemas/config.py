@@ -61,14 +61,7 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schem
     defaults = defaults or {}
     return probatio.Schema(
         {
-            probatio.Required(
-                CONF_HOST,
-                default=defaults.get(CONF_HOST, probatio.UNDEFINED),
-            ): selector.TextSelector(
-                selector.TextSelectorConfig(
-                    type=selector.TextSelectorType.TEXT,
-                ),
-            ),
+            **_host_field(defaults.get(CONF_HOST, probatio.UNDEFINED)),
             probatio.Required(
                 CONF_SERIAL_NUMBER,
                 default=defaults.get(CONF_SERIAL_NUMBER, probatio.UNDEFINED),
@@ -90,7 +83,7 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> probatio.Schem
     )
 
 
-def _host_field(host: str) -> dict[probatio.Required, selector.TextSelector]:
+def _host_field(host: Any) -> dict[probatio.Required, selector.TextSelector]:
     """Return the address field, pre-filled."""
     return {
         probatio.Required(CONF_HOST, default=host): selector.TextSelector(

@@ -25,7 +25,7 @@ from custom_components.airfi_home.config_flow_handler.schemas import (
 from custom_components.airfi_home.config_flow_handler.validators import (
     AddressIdentity,
     check_address_identity,
-    validate_connection,
+    connection_error,
 )
 from custom_components.airfi_home.const import (
     AIRFI_MAC_PREFIX,
@@ -47,7 +47,7 @@ from custom_components.airfi_home.utils.discovery import (
     AirfiDiscoveryService,
     announced_device_at,
 )
-from custom_components.airfi_home.utils.error_mapping import map_connection_exception_to_error
+from custom_components.airfi_home.utils.error_mapping import ERROR_NO_RESPONSE
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
@@ -252,7 +252,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             identity = check_address_identity(self.hass, host, entry.data[CONF_SERIAL_NUMBER])
             if identity is AddressIdentity.OTHER_UNIT:
                 errors["base"] = "wrong_device"
-            elif error := await self._async_connection_error(host, modbus_id):
+            elif error := await connection_error(self.hass, host, modbus_id):
                 errors["base"] = error
             elif identity is AddressIdentity.UNHEARD:
                 self._unverified_host = host
@@ -263,7 +263,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=get_reconfigure_schema(host, modbus_id, show_advanced=errors.get("base") == "no_response"),
+            data_schema=get_reconfigure_schema(host, modbus_id, show_advanced=errors.get("base") == ERROR_NO_RESPONSE),
             errors=errors,
             description_placeholders={"name": entry.title},
         )
@@ -443,7 +443,7 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             self._modbus_id = int(user_input[CONF_MODBUS_ID])
-            if (error := await self._async_connection_error(self._new_unit.host, self._modbus_id)) is None:
+            if (error := await connection_error(self.hass, self._new_unit.host, self._modbus_id)) is None:
                 return await self._async_create_unit_entry(self._new_unit, self._modbus_id)
             errors["base"] = error
         return self.async_show_form(
@@ -461,22 +461,13 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             The next flow result, or None after putting the form error for any other failure into errors.
 
         """
-        error = await self._async_connection_error(unit.host, DEFAULT_MODBUS_ID)
+        error = await connection_error(self.hass, unit.host, DEFAULT_MODBUS_ID)
         if error is None:
             return await self._async_create_unit_entry(unit, DEFAULT_MODBUS_ID)
-        if error == "no_response":
+        if error == ERROR_NO_RESPONSE:
             self._new_unit = unit
-            self._modbus_id = DEFAULT_MODBUS_ID
             return await self.async_step_modbus_id()
         errors["base"] = error
-        return None
-
-    async def _async_connection_error(self, host: str, modbus_id: int) -> str | None:
-        """Return the form error for a unit that does not answer at this address and ID, or None when it does."""
-        try:
-            await validate_connection(self.hass, host=host, unit_id=modbus_id)
-        except Exception as exception:  # noqa: BLE001
-            return self._map_exception_to_error(exception)
         return None
 
     async def _async_create_unit_entry(self, unit: _NewUnit, modbus_id: int) -> config_entries.ConfigFlowResult:
@@ -492,20 +483,6 @@ class AirfiConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_MODBUS_ID: modbus_id,
             },
         )
-
-    def _map_exception_to_error(self, exception: Exception) -> str:
-        """
-        Map API exceptions to user-facing error keys.
-
-        Args:
-            exception: The exception that was raised.
-
-        Returns:
-            The error key for display in the config flow form.
-
-        """
-        LOGGER.warning("Error in config flow: %s", exception)
-        return map_connection_exception_to_error(exception)
 
 
 __all__ = ["AirfiConfigFlowHandler"]
