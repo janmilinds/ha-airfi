@@ -192,8 +192,6 @@ class AirfiApiClient:
             "modbus_register_version": live_modbus_register_version,
             "holding_registers": holding_registers,
             "input_registers": input_registers,
-            "lookup_registers": [],
-            "model": "Airfi",
         }
 
     async def _async_run_on_device[T](self, request: Callable[[], T], *, timeout: float, action: str) -> T:

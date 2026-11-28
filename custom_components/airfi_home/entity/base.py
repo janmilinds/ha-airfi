@@ -64,5 +64,5 @@ class AirfiEntity(CoordinatorEntity[AirfiDataUpdateCoordinator]):
             model=coordinator.config_entry.data.get(CONF_MODEL_NAME, "Airfi"),
             serial_number=serial,
             hw_version=coordinator.hw_version or None,
-            sw_version=coordinator.data.firmware_version if coordinator.data else "Unknown",
+            sw_version=coordinator.data.firmware_version,
         )

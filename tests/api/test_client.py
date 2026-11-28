@@ -95,7 +95,6 @@ async def test_async_get_data_uses_cached_register_profile() -> None:
     lookup_mock.assert_not_awaited()
     assert result["firmware_version"] == "3.8.1"
     assert result["modbus_register_version"] == "3.0.0"
-    assert result["lookup_registers"] == []
 
 
 @pytest.mark.unit

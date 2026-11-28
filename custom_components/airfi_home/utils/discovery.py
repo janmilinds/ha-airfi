@@ -100,8 +100,7 @@ def parse_announcement(data: bytes, sender_ip: str) -> AirfiDiscoveredDevice | N
         # Parse model ID (byte 11)
         model_id = data[11]
 
-        # Validate model_id is in reasonable range (1-8 for MVP)
-        if model_id < 1 or model_id > 255:
+        if model_id == 0:
             LOGGER.debug("Invalid model_id: %d", model_id)
             return None
 
@@ -165,10 +164,10 @@ class AirfiDiscoveryService:
         self.sock = create_discovery_socket()
 
         try:
-            end_time = asyncio.get_event_loop().time() + timeout_seconds
+            end_time = asyncio.get_running_loop().time() + timeout_seconds
 
             while True:
-                now = asyncio.get_event_loop().time()
+                now = asyncio.get_running_loop().time()
                 remaining = end_time - now
                 if remaining <= 0:
                     break
@@ -195,14 +194,14 @@ class AirfiDiscoveryService:
                         if device:
                             # Store by unique key (deduplication)
                             self.discovered[device.unique_key] = device
-                            last_found_time = asyncio.get_event_loop().time()
+                            last_found_time = asyncio.get_running_loop().time()
                             LOGGER.debug("Discovered device: %s (model %s)", device.host, device.model_name)
 
                 except TimeoutError:
                     # Continue scanning
                     continue
 
-        except Exception as err:  # noqa: BLE001
+        except OSError as err:
             LOGGER.error("Discovery scan error: %s", err)
 
         finally:
@@ -215,7 +214,7 @@ class AirfiDiscoveryService:
     async def _async_receive(self) -> tuple[bytes, tuple[str, int]]:
         """Receive a single UDP packet asynchronously."""
         assert self.sock is not None, "Socket must be initialized"
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.sock_recvfrom(self.sock, 1024)
 
     def get_discovered_devices(self) -> list[AirfiDiscoveredDevice]:

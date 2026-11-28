@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from custom_components.airfi_home.coordinator.data_processing import AirfiDeviceData
 from custom_components.airfi_home.data import AirfiData
 from custom_components.airfi_home.fan import async_setup_entry as fan_setup
 from custom_components.airfi_home.number import async_setup_entry as number_setup
@@ -17,7 +18,9 @@ def _make_entry(hass, *, features: dict[str, bool] | None = None) -> MagicMock:
     feature_manager.has_feature = MagicMock(side_effect=lambda f: (features or {}).get(f, False))
 
     coordinator = MagicMock()
-    coordinator.data = {}
+    coordinator.data = AirfiDeviceData(
+        firmware_version="3.8.1", modbus_register_version="3.0.0", holding_registers=[], input_registers=[]
+    )
     coordinator.feature_manager = feature_manager
     entry = MagicMock()
     entry.runtime_data = AirfiData(

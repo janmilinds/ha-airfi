@@ -269,14 +269,14 @@ async def test_async_scan_deduplicates_same_device() -> None:
 
 
 @pytest.mark.unit
-async def test_async_scan_generic_error() -> None:
-    """Test that generic exceptions in scan loop are caught and logged."""
+async def test_async_scan_socket_error() -> None:
+    """A socket error while receiving ends the scan with what it found."""
     service = AirfiDiscoveryService()
     mock_sock = MagicMock()
 
     with (
         patch("custom_components.airfi_home.utils.discovery.create_discovery_socket", return_value=mock_sock),
-        patch.object(service, "_async_receive", new=AsyncMock(side_effect=RuntimeError("boom"))),
+        patch.object(service, "_async_receive", new=AsyncMock(side_effect=OSError("boom"))),
     ):
         result = await service.async_scan(timeout_seconds=0.1)
 

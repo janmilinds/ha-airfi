@@ -27,10 +27,8 @@ def _build_coordinator(
     coordinator.data = AirfiDeviceData(
         firmware_version=firmware_version,
         modbus_register_version=modbus_register_version,
-        model="Airfi",
         holding_registers=[],
         input_registers=[],
-        lookup_registers=[],
     )
     return coordinator
 
@@ -56,26 +54,6 @@ def test_modbus_register_version_sensor_reads_coordinator_data() -> None:
     sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
 
     assert sensor.native_value == "2.7.0"
-
-
-@pytest.mark.unit
-def test_firmware_version_sensor_returns_none_when_missing() -> None:
-    """Test firmware version sensor returns None when key absent from data."""
-    coordinator = _build_coordinator()
-    coordinator.data = {}
-    sensor = AirfiDiagnosticSensor(coordinator, _desc("firmware_version"))
-
-    assert sensor.native_value is None
-
-
-@pytest.mark.unit
-def test_modbus_register_version_sensor_returns_none_when_missing() -> None:
-    """Test modbus map version sensor returns None when key absent from data."""
-    coordinator = _build_coordinator()
-    coordinator.data = {}
-    sensor = AirfiDiagnosticSensor(coordinator, _desc("modbus_register_version"))
-
-    assert sensor.native_value is None
 
 
 @pytest.mark.unit

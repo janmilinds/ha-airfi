@@ -109,8 +109,6 @@ def mock_api() -> Generator[SimpleNamespace]:
         "modbus_register_version": "2.7.0",
         "input_registers": list(INPUT_REGISTERS),
         "holding_registers": list(HOLDING_REGISTERS),
-        "lookup_registers": [],
-        "model": "Airfi",
     }
     with (
         patch.object(

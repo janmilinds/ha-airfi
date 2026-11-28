@@ -129,18 +129,19 @@ class AirfiFeatureManager:
         )
 
     def _log_device_info(self, device_name: str) -> None:
-        """Log device information and versions.
+        """Log the unit's software versions and the features they enable.
 
         Args:
             device_name: Display name for logging.
 
         """
-        headline = f"----- {device_name} -----"
-        LOGGER.info(headline)
-        LOGGER.info("  Firmware version: %s", self.firmware_version)
-        LOGGER.info("  Modbus map version: %s", self.modbus_register_version)
-        LOGGER.info("-" * len(headline))
-        LOGGER.debug("  Feature flags: %s", self._feature_flags)
+        LOGGER.debug(
+            "%s: firmware %s, register map %s, features %s",
+            device_name,
+            self.firmware_version,
+            self.modbus_register_version,
+            self._feature_flags,
+        )
 
     def has_feature(self, feature: str) -> bool:
         """Check whether the device supports a given feature.

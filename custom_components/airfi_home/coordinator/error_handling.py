@@ -4,13 +4,8 @@ Error handling utilities for the Airfi coordinator.
 This module centralises error classification and logging decisions so that
 coordinator/base.py stays focused on data fetching and recovery flow.
 
-Current responsibilities:
-- Classifying whether a connection error warrants a rediscovery attempt
-- Logging Modbus failures at the appropriate severity
-
-Planned future responsibilities (not yet implemented):
-- Graceful degradation via handle_partial_data when register groups are
-  fetched independently and a partial result is available
+It classifies whether a connection error warrants a rediscovery attempt and
+logs Modbus failures at the appropriate severity.
 """
 
 from custom_components.airfi_home.api import AirfiApiClientConnectionError

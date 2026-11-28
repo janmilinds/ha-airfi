@@ -45,7 +45,7 @@ async def connection_error(hass: HomeAssistant, host: str, unit_id: int) -> str 
     try:
         await validate_connection(hass, host, unit_id)
     except (AirfiApiClientError, AirfiDeviceError) as exception:
-        LOGGER.warning("Unit at %s did not pass the check: %s", host, exception)
+        LOGGER.debug("Unit at %s did not pass the check: %s", host, exception)
         return map_connection_exception_to_error(exception)
     return None
 
