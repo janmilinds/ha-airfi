@@ -21,7 +21,6 @@ def _build_coordinator(*, last_update_success: bool = True) -> MagicMock:
     coordinator = MagicMock()
     coordinator.config_entry = config_entry
     coordinator.last_update_success = last_update_success
-    coordinator.update_interval = 10
     coordinator.data = {}
     return coordinator
 
@@ -42,17 +41,6 @@ def test_connectivity_sensor_is_off_when_update_failed() -> None:
     sensor = AirfiConnectivitySensor(coordinator, ENTITY_DESCRIPTIONS[0])
 
     assert sensor.is_on is False
-
-
-@pytest.mark.unit
-def test_connectivity_sensor_extra_state_attributes() -> None:
-    """Test that extra state attributes include update interval and transport."""
-    coordinator = _build_coordinator()
-    sensor = AirfiConnectivitySensor(coordinator, ENTITY_DESCRIPTIONS[0])
-
-    attrs = sensor.extra_state_attributes
-    assert attrs["transport"] == "modbus_tcp"
-    assert "update_interval" in attrs
 
 
 @pytest.mark.unit
