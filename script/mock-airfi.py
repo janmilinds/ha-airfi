@@ -1,58 +1,51 @@
 #!/usr/bin/env python3
 """Mock Airfi air handling unit for local development.
 
-Runs a pymodbus TCP server simulating an Airfi device with configurable
-register profiles, plus sends UDP multicast discovery packets so the
-HA integration can auto-discover the mock device.
+Runs a small Modbus TCP server that answers like an Airfi unit, plus the
+unit's UDP multicast announcements so Home Assistant can discover it.
+Run it with the Home Assistant venv's Python; it takes register numbers,
+ports and model names from the integration. `--help` lists the options.
 
 Usage
 -----
-Basic (single device):
+Basic (single unit, like firmware 3.8.1 on register map 3.0):
     python3 script/mock-airfi.py --serial=12345678
 
-Full options:
+Older unit:
     python3 script/mock-airfi.py --serial=12345678 --firmware=3.1.0 --modbus=2.5.0 --model=3
 
-Fixed IP in discovery packets (useful for rediscovery testing):
+Fixed IP in announcements (useful for rediscovery testing):
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
 
 Rediscovery test workflow:
-    # Step 1 - start mock advertising 127.0.0.2
+    # Step 1 - start the mock announcing 127.0.0.2
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
-    # Configure HA integration with host=127.0.0.2
-    # Step 2 - restart mock advertising 127.0.0.3 (simulates IP change)
+    # Add the unit in Home Assistant with host=127.0.0.2
+    # Step 2 - restart the mock announcing 127.0.0.3 (simulates an IP change)
     python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.3
-    # HA loses connection to 127.0.0.2, triggers rediscovery, finds 127.0.0.3
-    # Any 127.x.x.x address works without 'ip addr add' on Linux (entire /8 is loopback)
+    # Any 127.x.x.x address works without 'ip addr add' on Linux (the whole /8 is loopback)
 
-Multiple devices (open separate terminals):
-    python3 script/mock-airfi.py --serial=12345678
-    python3 script/mock-airfi.py --serial=87654321
+Multiple units (separate terminals):
+    python3 script/mock-airfi.py --serial=12345678 --ip=127.0.0.2
+    python3 script/mock-airfi.py --serial=87654321 --ip=127.0.0.3
 
-Arguments:
+Behaviour
 ---------
---serial        Device serial number (default: 12345678)
---firmware      Firmware version string, e.g. 3.1.0 (default: 3.1.0)
---modbus        Modbus register map version, e.g. 2.7.0 (default: 2.7.0)
---model         Model ID 1-38 (default: 3, i.e. "150 L")
---ip            IP address to advertise in discovery packets AND to bind the Modbus
-                server to. The server only responds to connections on this address,
-                which enables rediscovery testing (see usage examples above).
-                Use 127.0.0.x addresses - the full 127/8 loopback block is always
-                available on Linux without 'ip addr add'.
-                (default: auto-detect local IP, bind to 0.0.0.0)
-
-Notes:
------
-- Registers are initialized with realistic simulated values.
-- Register profile is loaded from the --modbus version parameter.
-- SO_REUSEADDR is set for the discovery socket.
+- Register counts follow the register map version; the highest known map at or
+  below the requested one decides. Map 1.5 is kept to try the refusal.
+- Requests for a Modbus ID other than the unit's own (1) or 0 get no answer, as on the unit.
+- Firmware 3.2.0 hides input register 10: any read covering it fails.
+- Temperatures and humidity drift slightly.
+- Announcements keep retrying after a send error (no route, VPN).
 - Stop with Ctrl+C.
 """
 
 import argparse
 import asyncio
+from collections.abc import Callable
 import contextlib
+import errno
+import ipaddress
 import logging
 from pathlib import Path
 import random
@@ -61,17 +54,31 @@ import socket
 import struct
 import sys
 import time
+from typing import Self
 
-from packaging import version as pkg_version
-
-# Allow running from repo root without install
 sys.path.insert(0, str(Path(__file__).parent / ".."))
 
-from pymodbus.constants import ExcCodes
-from pymodbus.server import ModbusTcpServer
-from pymodbus.simulator import DataType, SimData, SimDevice
-
-from custom_components.airfi_home.const import AIRFI_MODELS
+from custom_components.airfi_home.api.client import REGISTER_LENGTHS_BY_MAP_VERSION
+from custom_components.airfi_home.const import (
+    AIRFI_MODELS,
+    DEFAULT_MODBUS_PORT,
+    DISCOVERY_DEVICE_PORT,
+    DISCOVERY_MULTICAST_GROUP,
+    DISCOVERY_MULTICAST_PORT,
+)
+from custom_components.airfi_home.sensor.humidity import INPUT_REGISTER_RELATIVE_HUMIDITY
+from custom_components.airfi_home.utils.discovery import get_model_name
+from custom_components.airfi_home.utils.fan import HOLDING_REGISTER_FAN_SPEED
+from custom_components.airfi_home.utils.number import (
+    HOLDING_REGISTER_MINIMUM_TEMPERATURE,
+    HOLDING_REGISTER_TARGET_TEMPERATURE,
+)
+from custom_components.airfi_home.utils.temperature import (
+    INPUT_REGISTER_EXHAUST_AIR_TEMP,
+    INPUT_REGISTER_EXTRACT_AIR_TEMP,
+    INPUT_REGISTER_OUTDOOR_AIR_TEMP,
+    INPUT_REGISTER_SUPPLY_AIR_TEMP,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,444 +86,371 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger("mock-airfi")
 
+BROADCAST_UNIT_ID = 0
+DEFAULT_UNIT_ID = 1
+MAX_FRAME_LENGTH = 254
 
-FUNCTION_READ_INPUT_REGISTERS = 4
+READ_HOLDING_REGISTERS = 3
+READ_INPUT_REGISTERS = 4
+WRITE_SINGLE_REGISTER = 6
+ILLEGAL_FUNCTION = 1
+ILLEGAL_DATA_ADDRESS = 2
+ILLEGAL_DATA_VALUE = 3
 
-# Input registers that drift, as protocol addresses: outdoor, extract, exhaust and supply air, then humidity
-TEMPERATURE_REGISTERS = (4, 6, 7, 8)
-HUMIDITY_REGISTER = 23
+MBAP_HEADER = struct.Struct(">HHHB")
+
+HARDWARE_VERSION = 160
+TEMPERATURE_REGISTERS = (
+    INPUT_REGISTER_OUTDOOR_AIR_TEMP,
+    INPUT_REGISTER_EXTRACT_AIR_TEMP,
+    INPUT_REGISTER_EXHAUST_AIR_TEMP,
+    INPUT_REGISTER_SUPPLY_AIR_TEMP,
+)
 DRIFT_INTERVAL_SECONDS = 5.0
+ANNOUNCE_INTERVAL_SECONDS = 2.0
+
+type Version = tuple[int, int, int]
+
+FIRMWARE_HIDING_INPUT_REGISTER_10: Version = (3, 2, 0)
+REGISTER_PROFILES: tuple[tuple[Version, tuple[int, int]], ...] = (
+    *REGISTER_LENGTHS_BY_MAP_VERSION,
+    ((1, 5, 0), (31, 12)),
+)
 
 
-class MockAirfiBehaviour:
-    """Device behaviour that plain register storage cannot express.
-
-    pymodbus calls ``on_access`` on every request with the whole register block
-    of the addressed type, which it may modify in place or answer with an error.
-
-    - Firmware 3.2.0 has a hidden input register at address 10. Any read whose
-      range includes it returns a Modbus error, breaking multi-register reads
-      that span across it.
-    - Sensor values drift slightly, at most once per ``DRIFT_INTERVAL_SECONDS``,
-      to simulate a live device.
-    """
-
-    HIDDEN_ADDRESS = 10
-
-    def __init__(self, *, hide_register_10: bool) -> None:
-        """Initialize the behaviour."""
-        self._hide_register_10 = hide_register_10
-        self._last_drift = time.monotonic()
-
-    async def on_access(
-        self,
-        function_code: int,
-        start_address: int,
-        address: int,
-        count: int,
-        registers: list[int],
-        _set_values: list[int] | list[bool] | None,
-    ) -> ExcCodes | None:
-        """Reject reads across the hidden register and drift the sensor values."""
-        if function_code != FUNCTION_READ_INPUT_REGISTERS:
-            return None
-        end_address = address + count - 1
-        if self._hide_register_10 and address <= self.HIDDEN_ADDRESS <= end_address:
-            LOGGER.debug(
-                "FW 3.2.0 simulation: rejecting read [%d..%d] (hidden reg %d)",
-                address,
-                end_address,
-                self.HIDDEN_ADDRESS,
-            )
-            return ExcCodes.ILLEGAL_ADDRESS
-        if time.monotonic() - self._last_drift >= DRIFT_INTERVAL_SECONDS:
-            self._last_drift = time.monotonic()
-            _drift(registers, start_address)
-        return None
+def parse_version(text: str) -> Version:
+    """Parse a version such as 3.1.0."""
+    parts = text.split(".")
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        raise argparse.ArgumentTypeError(f"invalid version: {text}")
+    major, minor, patch = (int(part) for part in parts)
+    if not 1 <= major <= 9 or minor > 9 or patch > 9:
+        raise argparse.ArgumentTypeError(
+            f"invalid version: {text} (the unit reports each part as one digit, major 1-9)"
+        )
+    return major, minor, patch
 
 
-def _drift(registers: list[int], start_address: int) -> None:
-    """Move each temperature by up to 2 and the humidity by up to 1, in place."""
-    for reg_addr in TEMPERATURE_REGISTERS:
-        index = reg_addr - start_address
-        registers[index] = max(0, min(65535, registers[index] + random.randint(-2, 2)))
-    index = HUMIDITY_REGISTER - start_address
-    registers[index] = max(20, min(80, registers[index] + random.randint(-1, 1)))
-
-
-# Discovery constants (must match integration)
-DISCOVERY_MULTICAST_GROUP = "239.255.100.200"
-DISCOVERY_MULTICAST_PORT = 3000
-DISCOVERY_DEVICE_PORT = 4000
-
-# Register length profiles by modbus map version
-REGISTER_PROFILES: dict[str, tuple[int, int]] = {
-    "2.7.0": (42, 59),
-    "2.5.0": (40, 58),
-    "2.3.0": (40, 55),
-    "2.1.0": (40, 51),
-    "2.0.0": (40, 34),
-    "1.5.0": (31, 12),
-}
-
-
-def version_to_register(version_str: str) -> int:
-    """Convert version string '3.1.0' to register value 310."""
-    parts = version_str.split(".")
-    if len(parts) != 3:
-        raise ValueError(f"Invalid version: {version_str}")
-    return int(parts[0]) * 100 + int(parts[1]) * 10 + int(parts[2])
-
-
-def get_model_name(model_id: int) -> str:
-    """Return human-readable model name."""
-    if model_id < 1:
-        return "Unknown"
+def parse_serial(text: str) -> int:
+    """Parse a serial number that fits the announcement's 32 bits."""
     try:
-        index = (model_id - 1) // 2
-        base_name = AIRFI_MODELS[index]
-        variant = "L" if model_id % 2 == 1 else "R"
-    except IndexError:
-        return "Unknown"
-    return f"Model {base_name.replace('{}', variant)}"
+        serial = int(text)
+    except ValueError:
+        serial = -1
+    if not 0 <= serial <= 0xFFFFFFFF:
+        raise argparse.ArgumentTypeError(f"invalid serial number: {text}")
+    return serial
 
 
-def build_input_registers(
-    *,
-    firmware: str,
-    modbus: str,
-    input_count: int,
-) -> list[int]:
-    """Build initial input register values with simulated sensor data.
+def parse_ipv4(text: str) -> str:
+    """Parse an IPv4 address."""
+    try:
+        return str(ipaddress.IPv4Address(text))
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"invalid IPv4 address: {text}") from err
 
-    Register map (1-based addressing, stored 0-based):
-        3x00001: Hardware version
-        3x00002: Firmware version
-        3x00003: Modbus map version
-        3x00004: Outdoor air temperature (°C x 10)
-        3x00005: (reserved)
-        3x00006: Extract air temperature (°C x 10)
-        3x00007: Exhaust air temperature (°C x 10)
-        3x00008: Supply air temperature (°C x 10)
-        3x00023: Relative humidity (0-100%)
-    """
-    values = [0] * input_count
 
-    # 3x00001: Hardware version (e.g. 1.0.0 = 100)
-    values[0] = 100
-    # 3x00002: Firmware version
-    values[1] = version_to_register(firmware)
-    # 3x00003: Modbus map version
-    values[2] = version_to_register(modbus)
-    # 3x00004: Outdoor air temperature (e.g. 5.2°C = 52)
-    values[3] = 52
-    # 3x00005: reserved
-    values[4] = 0
-    # 3x00006: Extract air temperature (e.g. 21.5°C = 215)
-    values[5] = 215
-    # 3x00007: Exhaust air temperature (e.g. 8.3°C = 83)
-    values[6] = 83
-    # 3x00008: Supply air temperature (e.g. 20.0°C = 200)
-    values[7] = 200
+def version_to_register(version: Version) -> int:
+    """Encode a version the way the unit reports it: 3.1.0 is 310."""
+    major, minor, patch = version
+    return major * 100 + minor * 10 + patch
 
-    # 3x00023: Relative humidity (45%)
-    if input_count >= 23:
-        values[22] = 45
 
+def register_counts(map_version: Version) -> tuple[int, int]:
+    """Return the (input, holding) register counts for a register map version."""
+    for version, counts in REGISTER_PROFILES:
+        if map_version >= version:
+            return counts
+    return REGISTER_PROFILES[-1][1]
+
+
+def _set(values: list[int], register: int, value: int) -> None:
+    if register <= len(values):
+        values[register - 1] = value
+
+
+def build_input_registers(*, firmware: Version, map_version: Version) -> list[int]:
+    """Build input registers with versions and plausible sensor values (temperatures in tenths of °C)."""
+    values = [0] * register_counts(map_version)[0]
+    _set(values, 1, HARDWARE_VERSION)
+    _set(values, 2, version_to_register(firmware))
+    _set(values, 3, version_to_register(map_version))
+    _set(values, INPUT_REGISTER_OUTDOOR_AIR_TEMP, 52)
+    _set(values, INPUT_REGISTER_EXTRACT_AIR_TEMP, 215)
+    _set(values, INPUT_REGISTER_EXHAUST_AIR_TEMP, 83)
+    _set(values, INPUT_REGISTER_SUPPLY_AIR_TEMP, 200)
+    _set(values, INPUT_REGISTER_RELATIVE_HUMIDITY, 45)
     return values
 
 
-def build_holding_registers(
-    *,
-    modbus: str,
-    holding_count: int,
-) -> list[int]:
-    """Build initial holding register values with reasonable defaults.
-
-    Register map (1-based addressing, stored 0-based):
-        4x00001: Fan speed (1-5)
-        4x00005: Target supply air temperature (°C x 10)
-        4x00012: Fan active state (0=at-home, 1=away)
-        4x00050: Minimum temperature (modbus >= 2.1.0)
-        4x00051: Boosted cooling (modbus >= 2.5.0)
-        4x00057: Sauna function (modbus >= 2.5.0)
-        4x00058: Fireplace function (modbus >= 2.5.0)
-    """
-    values = [0] * holding_count
-
-    # 4x00001: Fan speed = 3 (medium)
-    values[0] = 3
-    # 4x00005: Target temperature = 20.0°C
-    if holding_count >= 5:
-        values[4] = 200
-    # 4x00012: Fan active = at-home (0)
-    if holding_count >= 12:
-        values[11] = 0
-
-    # Modbus >= 2.1.0 features
-    if pkg_version.parse(modbus) >= pkg_version.parse("2.1.0") and holding_count >= 50:
-        # 4x00050: Minimum temperature = 15°C
-        values[49] = 15
-
-    # Modbus >= 2.5.0 features
-    if pkg_version.parse(modbus) >= pkg_version.parse("2.5.0"):
-        # 4x00051: Boosted cooling = off
-        if holding_count >= 51:
-            values[50] = 0
-        # 4x00057: Sauna function = off
-        if holding_count >= 57:
-            values[56] = 0
-        # 4x00058: Fireplace function = off
-        if holding_count >= 58:
-            values[57] = 0
-
+def build_holding_registers(*, map_version: Version) -> list[int]:
+    """Build holding registers: speed 3, at home, supply air setpoint 20 °C, minimum temperature 15 °C."""
+    values = [0] * register_counts(map_version)[1]
+    _set(values, HOLDING_REGISTER_FAN_SPEED, 3)
+    _set(values, HOLDING_REGISTER_TARGET_TEMPERATURE, 200)
+    _set(values, HOLDING_REGISTER_MINIMUM_TEMPERATURE, 15)
     return values
+
+
+class MockAirfiUnit:
+    """Answers Modbus TCP request frames like an Airfi unit.
+
+    Register N is protocol address N in both blocks, as in the Airfi register map.
+    """
+
+    def __init__(
+        self,
+        *,
+        input_registers: list[int],
+        holding_registers: list[int],
+        hidden_input_registers: frozenset[int] = frozenset(),
+        unit_id: int = DEFAULT_UNIT_ID,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        """Initialize the unit with its register values."""
+        self.input_registers = input_registers
+        self.holding_registers = holding_registers
+        self.hidden_input_registers = hidden_input_registers
+        self.unit_id = unit_id
+        self._clock = clock
+        self._last_drift = clock()
+
+    @classmethod
+    def for_versions(
+        cls, *, firmware: Version, map_version: Version, clock: Callable[[], float] = time.monotonic
+    ) -> Self:
+        """Build a unit with the registers and quirks of a firmware and register map version."""
+        return cls(
+            input_registers=build_input_registers(firmware=firmware, map_version=map_version),
+            holding_registers=build_holding_registers(map_version=map_version),
+            hidden_input_registers=frozenset({10}) if firmware == FIRMWARE_HIDING_INPUT_REGISTER_10 else frozenset(),
+            clock=clock,
+        )
+
+    def handle(self, frame: bytes) -> bytes | None:
+        """Return the response frame for one request frame, or None when the unit stays silent."""
+        if len(frame) < MBAP_HEADER.size + 1:
+            return None
+        transaction, _protocol, _length, unit_id = MBAP_HEADER.unpack_from(frame)
+        if unit_id not in (BROADCAST_UNIT_ID, self.unit_id):
+            return None
+        self._advance()
+        function = frame[MBAP_HEADER.size]
+        data = frame[MBAP_HEADER.size + 1 :]
+
+        if function in (READ_HOLDING_REGISTERS, READ_INPUT_REGISTERS, WRITE_SINGLE_REGISTER) and len(data) < 4:
+            return _exception(transaction, unit_id, function, ILLEGAL_DATA_VALUE)
+
+        if function in (READ_HOLDING_REGISTERS, READ_INPUT_REGISTERS):
+            address, count = struct.unpack_from(">HH", data)
+            values = self._read(function, address, count)
+            if values is None:
+                return _exception(transaction, unit_id, function, ILLEGAL_DATA_ADDRESS)
+            return _frame(transaction, unit_id, struct.pack(f">BB{count}H", function, 2 * count, *values))
+
+        if function == WRITE_SINGLE_REGISTER:
+            address, value = struct.unpack_from(">HH", data)
+            if not self._write(address, value):
+                return _exception(transaction, unit_id, function, ILLEGAL_DATA_ADDRESS)
+            return _frame(transaction, unit_id, struct.pack(">BHH", function, address, value))
+
+        return _exception(transaction, unit_id, function, ILLEGAL_FUNCTION)
+
+    def _read(self, function: int, address: int, count: int) -> list[int] | None:
+        registers = self.holding_registers if function == READ_HOLDING_REGISTERS else self.input_registers
+        last = address + count - 1
+        if count < 1 or address < 1 or last > len(registers):
+            return None
+        if function == READ_INPUT_REGISTERS and any(
+            address <= hidden <= last for hidden in self.hidden_input_registers
+        ):
+            return None
+        return registers[address - 1 : last]
+
+    def _write(self, address: int, value: int) -> bool:
+        if not 1 <= address <= len(self.holding_registers):
+            return False
+        self.holding_registers[address - 1] = value
+        return True
+
+    def _advance(self) -> None:
+        """Bring the time-driven registers up to the clock."""
+        now = self._clock()
+        if now - self._last_drift >= DRIFT_INTERVAL_SECONDS:
+            self._last_drift = now
+            self._drift()
+
+    def _drift(self) -> None:
+        for register in TEMPERATURE_REGISTERS:
+            value = self.input_registers[register - 1] + random.randint(-2, 2)
+            self.input_registers[register - 1] = max(0, min(65535, value))
+        humidity = self.input_registers[INPUT_REGISTER_RELATIVE_HUMIDITY - 1] + random.randint(-1, 1)
+        self.input_registers[INPUT_REGISTER_RELATIVE_HUMIDITY - 1] = max(20, min(80, humidity))
+
+
+def _frame(transaction: int, unit_id: int, pdu: bytes) -> bytes:
+    return MBAP_HEADER.pack(transaction, 0, len(pdu) + 1, unit_id) + pdu
+
+
+def _exception(transaction: int, unit_id: int, function: int, code: int) -> bytes:
+    return _frame(transaction, unit_id, struct.pack(">BB", function | 0x80, code))
+
+
+async def serve_client(unit: MockAirfiUnit, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    """Answer the requests on one connection until the client closes it."""
+    peer = writer.get_extra_info("peername")
+    LOGGER.debug("Client connected: %s", peer)
+    try:
+        while True:
+            header = await reader.readexactly(MBAP_HEADER.size)
+            length = MBAP_HEADER.unpack(header)[2]
+            if not 2 <= length <= MAX_FRAME_LENGTH:
+                LOGGER.warning("Closing %s: frame length %d", peer, length)
+                return
+            response = unit.handle(header + await reader.readexactly(length - 1))
+            if response is not None:
+                writer.write(response)
+                await writer.drain()
+    except asyncio.IncompleteReadError, ConnectionError:
+        pass
+    finally:
+        writer.close()
+        with contextlib.suppress(ConnectionError):
+            await writer.wait_closed()
+        LOGGER.debug("Client disconnected: %s", peer)
 
 
 def get_local_ip() -> str:
     """Get the local IP address used for outbound connections."""
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect(("8.8.8.8", 80))
-        ip = sock.getsockname()[0]
-        sock.close()
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
     except OSError:
         return "127.0.0.1"
-    else:
-        return ip
 
 
-def build_discovery_packet(
-    *,
-    local_ip: str,
-    serial: int,
-    model_id: int,
-) -> bytes:
-    """Build a 12-byte discovery packet matching the Airfi wire format.
+def build_discovery_packet(*, ip: str, serial: int, model_id: int) -> bytes:
+    """Build the unit's 12-byte announcement.
 
-    Format:
-        [0-3]  IP address octets (little-endian / reversed)
-        [4-5]  Device port (uint16 LE, always 4000)
-        [6-9]  Serial number (uint32 LE)
-        [10]   Unknown/constant (0x00)
-        [11]   Model ID
+    Bytes 0-3 IP address octets in reverse order, 4-5 device port (uint16 LE, always 4000),
+    6-9 serial number (uint32 LE), 10 constant 0, 11 model ID.
     """
-    octets = [int(o) for o in local_ip.split(".")]
-    packet = bytearray(12)
-    # IP reversed (little-endian octets)
-    packet[0] = octets[3]
-    packet[1] = octets[2]
-    packet[2] = octets[1]
-    packet[3] = octets[0]
-    # Port 4000 LE
-    struct.pack_into("<H", packet, 4, DISCOVERY_DEVICE_PORT)
-    # Serial LE
-    struct.pack_into("<I", packet, 6, serial)
-    # Constant
-    packet[10] = 0x00
-    # Model ID
-    packet[11] = model_id
-    return bytes(packet)
+    octets = bytes(reversed([int(octet) for octet in ip.split(".")]))
+    return octets + struct.pack("<HIBB", DISCOVERY_DEVICE_PORT, serial, 0, model_id)
 
 
-async def send_discovery_packets(
-    *,
-    advertised_ip: str,
-    serial: int,
-    model_id: int,
-    rate_seconds: float,
-    stop_event: asyncio.Event,
-) -> None:
-    """Periodically send UDP multicast discovery packets."""
-    packet = build_discovery_packet(local_ip=advertised_ip, serial=serial, model_id=model_id)
-
+async def send_announcements(packet: bytes, stop_event: asyncio.Event) -> None:
+    """Send the announcement every ANNOUNCE_INTERVAL_SECONDS, retrying after send errors."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
-
-    LOGGER.info(
-        "Discovery: broadcasting on %s:%d every %.1fs (IP=%s, serial=%d, model=%d)",
-        DISCOVERY_MULTICAST_GROUP,
-        DISCOVERY_MULTICAST_PORT,
-        rate_seconds,
-        advertised_ip,
-        serial,
-        model_id,
-    )
-
+    sending = True
     try:
         while not stop_event.is_set():
-            sock.sendto(packet, (DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
+            try:
+                sock.sendto(packet, (DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT))
+            except OSError as err:
+                if sending:
+                    LOGGER.warning(
+                        "Announcement not sent (%s); retrying. Adding the unit by its address still works", err
+                    )
+                    sending = False
+            else:
+                if not sending:
+                    LOGGER.info("Announcements sent again")
+                    sending = True
             with contextlib.suppress(TimeoutError):
-                await asyncio.wait_for(stop_event.wait(), timeout=rate_seconds)
+                await asyncio.wait_for(stop_event.wait(), timeout=ANNOUNCE_INTERVAL_SECONDS)
     finally:
         sock.close()
-        LOGGER.info("Discovery sender stopped")
 
 
-async def run_mock_device(args: argparse.Namespace) -> None:
-    """Run the mock Airfi device (Modbus server + discovery sender)."""
-    serial = int(args.serial)
-    firmware = args.firmware
-    modbus = args.modbus
-    model_id = int(args.model)
-    port = 502
-    advertised_ip = args.ip or get_local_ip()
-
-    # Resolve register profile
-    profile = None
-    for ver_str, lengths in sorted(
-        REGISTER_PROFILES.items(),
-        key=lambda x: pkg_version.parse(x[0]),
-        reverse=True,
-    ):
-        if pkg_version.parse(modbus) >= pkg_version.parse(ver_str):
-            profile = lengths
-            break
-    if profile is None:
-        profile = REGISTER_PROFILES["1.5.0"]
-
-    input_count, holding_count = profile
-
-    # Build register data
-    input_values = build_input_registers(
-        firmware=firmware,
-        modbus=modbus,
-        input_count=input_count,
-    )
-    holding_values = build_holding_registers(
-        modbus=modbus,
-        holding_count=holding_count,
-    )
-
-    LOGGER.info("=" * 60)
-    LOGGER.info("  Mock Airfi Air Handling Unit")
-    LOGGER.info("=" * 60)
-    LOGGER.info("  Serial:        %d", serial)
-    LOGGER.info("  Model:         %s (ID=%d)", get_model_name(model_id), model_id)
-    LOGGER.info("  Firmware:      %s", firmware)
-    LOGGER.info("  Modbus map:    %s", modbus)
-    LOGGER.info("  Registers:     %d input, %d holding", input_count, holding_count)
-    LOGGER.info("  Modbus port:   %d", port)
-    LOGGER.info("  Bind address:  %s", args.ip or "0.0.0.0 (all interfaces)")
-    LOGGER.info("  Discovery IP:  %s", advertised_ip)
-    LOGGER.info("=" * 60)
-
-    if firmware == "3.2.0":
-        LOGGER.warning("Firmware 3.2.0: input register 10 is hidden (bulk reads crossing it will fail)")
-    behaviour = MockAirfiBehaviour(hide_register_10=firmware == "3.2.0")
-
-    # Protocol address 1 is the first value of each block; coils and discrete inputs are unused placeholders.
-    device = SimDevice(
-        id=1,
-        simdata=(
-            [SimData(1, values=False, datatype=DataType.BITS)],
-            [SimData(1, values=False, datatype=DataType.BITS)],
-            [SimData(1, values=holding_values, datatype=DataType.REGISTERS)],
-            [SimData(1, values=input_values, datatype=DataType.REGISTERS)],
-        ),
-        action=behaviour.on_access,
-    )
-
-    # Prepare stop event and signal handlers
-    stop_event = asyncio.Event()
-
-    def _signal_handler() -> None:
-        LOGGER.info("Shutting down...")
-        stop_event.set()
-
-    loop = asyncio.get_running_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _signal_handler)
-
-    # Determine bind address: use --ip if provided and available, else 0.0.0.0
-    bind_addr = args.ip or "0.0.0.0"
-    if args.ip:
-        try:
-            test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            test_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            test_sock.bind((args.ip, port))
-            test_sock.close()
-        except OSError as exc:
-            if exc.errno == 99:  # EADDRNOTAVAIL
-                LOGGER.error(
-                    "IP address %s is not assigned to any local interface. "
-                    "Use a loopback alias like 127.0.0.2 instead.",
-                    args.ip,
-                )
-            else:
-                LOGGER.error("Cannot bind to %s:%d: %s", args.ip, port, exc)
-            raise SystemExit(1) from exc
-
-    # Create Modbus TCP server bound to the resolved address
-    server = ModbusTcpServer(
-        context=device,
-        address=(bind_addr, port),
-    )
-
-    # Start server with no fallback — if binding fails, it was reported above
-    await server.serve_forever(background=True)
-
-    # Start discovery
-    discovery_task = asyncio.create_task(
-        send_discovery_packets(
-            advertised_ip=advertised_ip,
-            serial=serial,
-            model_id=model_id,
-            rate_seconds=2.0,
-            stop_event=stop_event,
-        )
-    )
-
-    LOGGER.info("Modbus TCP server listening on %s:%d (slave_id=1)", bind_addr, port)
+async def run_mock_unit(args: argparse.Namespace) -> None:
+    """Run the Modbus server and the announcements until stopped."""
+    unit = MockAirfiUnit.for_versions(firmware=args.firmware, map_version=args.modbus)
+    bind_address = args.ip or "0.0.0.0"
+    announced_ip = args.ip or get_local_ip()
 
     try:
-        await stop_event.wait()
-    finally:
-        await server.shutdown()
-        discovery_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await discovery_task
+        server = await asyncio.start_server(
+            lambda reader, writer: serve_client(unit, reader, writer),
+            host=bind_address,
+            port=DEFAULT_MODBUS_PORT,
+            reuse_address=True,
+        )
+    except OSError as err:
+        hint = ". Use a loopback address like 127.0.0.2" if err.errno == errno.EADDRNOTAVAIL else ""
+        LOGGER.error("Cannot listen on %s:%d: %s%s", bind_address, DEFAULT_MODBUS_PORT, err, hint)
+        raise SystemExit(1) from err
 
-    LOGGER.info("Mock device stopped")
+    LOGGER.info("Mock Airfi unit: serial %d, %s (ID %d)", args.serial, get_model_name(args.model), args.model)
+    LOGGER.info(
+        "Firmware %s, register map %s: %d input, %d holding",
+        ".".join(map(str, args.firmware)),
+        ".".join(map(str, args.modbus)),
+        len(unit.input_registers),
+        len(unit.holding_registers),
+    )
+    LOGGER.info("Modbus TCP on %s:%d, answering Modbus ID %d", bind_address, DEFAULT_MODBUS_PORT, unit.unit_id)
+    if unit.hidden_input_registers:
+        LOGGER.warning("Input registers %s are hidden, reads covering them fail", sorted(unit.hidden_input_registers))
+
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop_event.set)
+
+    announcer: asyncio.Task[None] | None = None
+    if args.no_announce:
+        LOGGER.info("Announcements off")
+    else:
+        packet = build_discovery_packet(ip=announced_ip, serial=args.serial, model_id=args.model)
+        announcer = asyncio.create_task(send_announcements(packet, stop_event))
+        LOGGER.info("Announcing %s on %s:%d", announced_ip, DISCOVERY_MULTICAST_GROUP, DISCOVERY_MULTICAST_PORT)
+
+    async with server:
+        await stop_event.wait()
+        # Leaving the block waits for every client to disconnect, so a client still connected would keep the mock running.
+        server.close_clients()
+    if announcer is not None:
+        await announcer
+    LOGGER.info("Mock unit stopped")
 
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments."""
-    parser = argparse.ArgumentParser(description="Mock Airfi air handling unit (Modbus TCP server + UDP discovery)")
-    parser.add_argument("--serial", default="12345678", help="Device serial number (default: 12345678)")
-    parser.add_argument("--firmware", default="3.1.0", help="Firmware version (default: 3.1.0)")
-    parser.add_argument("--modbus", default="2.7.0", help="Modbus register map version (default: 2.7.0)")
-    parser.add_argument("--model", type=int, default=3, help="Model ID 1-38 (default: 3 = '150 L')")
+    parser = argparse.ArgumentParser(
+        description="Mock Airfi air handling unit (Modbus TCP server + announcements)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--serial", type=parse_serial, default=12345678, help="serial number")
+    parser.add_argument("--firmware", type=parse_version, default="3.8.1", help="firmware version")
+    parser.add_argument("--modbus", type=parse_version, default="3.0.0", help="register map version")
+    parser.add_argument(
+        "--model",
+        type=int,
+        default=3,
+        choices=range(1, 2 * len(AIRFI_MODELS) + 1),
+        metavar=f"1-{2 * len(AIRFI_MODELS)}",
+        help="model ID; odd IDs are L, even R models",
+    )
     parser.add_argument(
         "--ip",
+        type=parse_ipv4,
         default=None,
-        help="IP address to advertise in discovery packets (default: auto-detect)",
+        help="address to announce and bind to; without it, the detected local address is announced and all are bound",
     )
+    parser.add_argument("--no-announce", action="store_true", help="do not send announcements")
     return parser.parse_args()
 
 
 def main() -> int:
     """Entry point."""
     args = parse_args()
-
-    # Validate inputs
-    try:
-        version_to_register(args.firmware)
-        version_to_register(args.modbus)
-    except ValueError as e:
-        LOGGER.error("Invalid version format: %s", e)
-        return 1
-
-    if int(args.model) < 1 or int(args.model) > 38:
-        LOGGER.error("Model ID must be 1-38, got %d", int(args.model))
-        return 1
-
-    try:
-        asyncio.run(run_mock_device(args))
-    except KeyboardInterrupt:
-        LOGGER.info("Interrupted")
+    with contextlib.suppress(KeyboardInterrupt):
+        asyncio.run(run_mock_unit(args))
     return 0
 
 
